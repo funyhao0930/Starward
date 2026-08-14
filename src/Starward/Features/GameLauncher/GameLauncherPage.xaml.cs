@@ -94,7 +94,7 @@ public sealed partial class GameLauncherPage : PageBase
 
     private void InitializeGameFeature()
     {
-        GameFeatureConfig feature = GameFeatureConfig.FromGameId(CurrentGameId);
+        GameFeatureConfig feature = GameFeatureConfig.FromGameKey(CurrentGameKey);
         if (feature.SupportCloudGame)
         {
             Button_CloudGame.Visibility = Microsoft.UI.Xaml.Visibility.Visible;
@@ -204,12 +204,12 @@ public sealed partial class GameLauncherPage : PageBase
             }
             else
             {
-                gameInfo = await _hoYoPlayService.GetGameInfoAsync(CurrentGameId);
+                gameInfo = await _hoYoPlayService.GetGameInfoAsync(RequiredGameId);
             }
             if (gameInfo?.GameServerConfigs?.Count > 0)
             {
                 GameServers = gameInfo.GameServerConfigs;
-                if (GameServers.FirstOrDefault(x => x.GameId == CurrentGameId.Id) is GameServerConfig config)
+                if (GameServers.FirstOrDefault(x => x.GameId == RequiredGameId.Id) is GameServerConfig config)
                 {
                     SelectedGameServer = config;
                 }
@@ -307,7 +307,7 @@ public sealed partial class GameLauncherPage : PageBase
     {
         try
         {
-            GameInstallPath = GameLauncherService.GetGameInstallPath(CurrentGameId, out bool storageRemoved);
+            GameInstallPath = GameLauncherService.GetGameInstallPath(CurrentGameKey, out bool storageRemoved);
             IsInstallPathRemovableTipEnabled = storageRemoved;
             if (GameInstallPath is null || storageRemoved)
             {
@@ -320,8 +320,8 @@ public sealed partial class GameLauncherPage : PageBase
                                        : null;
             bool supportsVersionCheck = descriptor?.HasCapability(GameCapability.VersionCheck) ?? true;
 
-            isGameExeExists = await _gameLauncherService.IsGameExeExistsAsync(CurrentGameId);
-            localGameVersion = await _gameLauncherService.GetLocalGameVersionAsync(CurrentGameId);
+            isGameExeExists = await _gameLauncherService.IsGameExeExistsAsync(CurrentGameKey);
+            localGameVersion = await _gameLauncherService.GetLocalGameVersionAsync(CurrentGameKey);
             if (isGameExeExists && (localGameVersion != null || !supportsVersionCheck))
             {
                 GameState = GameState.StartGame;
@@ -337,7 +337,7 @@ public sealed partial class GameLauncherPage : PageBase
                 // 没有版本与下载接口，到此为止
                 return;
             }
-            (latestGameVersion, predownloadGameVersion) = await _gameLauncherService.GetLatestGameVersionAsync(CurrentGameId);
+            (latestGameVersion, predownloadGameVersion) = await _gameLauncherService.GetLatestGameVersionAsync(RequiredGameId);
             if (latestGameVersion > localGameVersion)
             {
                 GameState = GameState.UpdateGame;
@@ -346,7 +346,7 @@ public sealed partial class GameLauncherPage : PageBase
             if (predownloadGameVersion > localGameVersion)
             {
                 IsPredownloadButtonEnabled = true;
-                IsPredownloadFinished = await _gamePackageService.CheckPreDownloadFinishedAsync(CurrentGameId);
+                IsPredownloadFinished = await _gamePackageService.CheckPreDownloadFinishedAsync(RequiredGameId);
             }
             _ = CheckDX12ConfigAsync();
         }
@@ -376,8 +376,8 @@ public sealed partial class GameLauncherPage : PageBase
                 IsDX12OptionVisible = true;
             }
 
-            List<GameDXConfig> dxConfigs = await _hoYoPlayService.GetGameDXConfigsAsync([CurrentGameId]);
-            _dxConfig = dxConfigs.FirstOrDefault(x => x.GameId == CurrentGameId);
+            List<GameDXConfig> dxConfigs = await _hoYoPlayService.GetGameDXConfigsAsync([RequiredGameId]);
+            _dxConfig = dxConfigs.FirstOrDefault(x => x.GameId == RequiredGameId);
 
             if (_dxConfig?.EnableDXSwitch is true)
             {
@@ -435,7 +435,7 @@ public sealed partial class GameLauncherPage : PageBase
                 }
                 else
                 {
-                    GameLauncherService.ChangeGameInstallPath(CurrentGameId, folder);
+                    GameLauncherService.ChangeGameInstallPath(CurrentGameKey, folder);
                     CheckGameVersion();
                     WeakReferenceMessenger.Default.Send(new GameInstallPathChangedMessage());
                 }
@@ -545,7 +545,7 @@ public sealed partial class GameLauncherPage : PageBase
     {
         try
         {
-            GameProcess = await _gameLauncherService.GetGameProcessAsync(CurrentGameId);
+            GameProcess = await _gameLauncherService.GetGameProcessAsync(CurrentGameKey);
             if (GameProcess != null)
             {
                 GameState = GameState.GameIsRunning;
@@ -584,7 +584,7 @@ public sealed partial class GameLauncherPage : PageBase
     {
         try
         {
-            var process = await _gameLauncherService.StartGameAsync(CurrentGameId);
+            var process = await _gameLauncherService.StartGameAsync(CurrentGameKey);
             if (process is not null)
             {
                 GameState = GameState.GameIsRunning;
@@ -621,7 +621,7 @@ public sealed partial class GameLauncherPage : PageBase
         {
             if (_gameInstallTask is null)
             {
-                await new InstallGameDialog { CurrentGameId = CurrentGameId, XamlRoot = this.XamlRoot, }.ShowAsync();
+                await new InstallGameDialog { CurrentGameKey = CurrentGameKey, XamlRoot = this.XamlRoot, }.ShowAsync();
             }
             else
             {
@@ -645,8 +645,8 @@ public sealed partial class GameLauncherPage : PageBase
                 CheckGameVersion();
                 return;
             }
-            AudioLanguage audio = await _gamePackageService.GetAudioLanguageAsync(CurrentGameId, GameInstallPath);
-            var task = await _gameInstallService.StartInstallAsync(CurrentGameId, GameInstallPath, audio);
+            AudioLanguage audio = await _gamePackageService.GetAudioLanguageAsync(RequiredGameId, GameInstallPath);
+            var task = await _gameInstallService.StartInstallAsync(RequiredGameId, GameInstallPath, audio);
             if (task is not null)
             {
                 _gameInstallTask = task;
@@ -681,7 +681,7 @@ public sealed partial class GameLauncherPage : PageBase
         {
             if (_gameInstallTask is null)
             {
-                await new PreDownloadDialog { CurrentGameId = this.CurrentGameId, XamlRoot = this.XamlRoot }.ShowAsync();
+                await new PreDownloadDialog { CurrentGameId = this.RequiredGameId, XamlRoot = this.XamlRoot }.ShowAsync();
             }
             else if (_gameInstallTask.Operation is GameInstallOperation.Predownload)
             {
@@ -731,8 +731,8 @@ public sealed partial class GameLauncherPage : PageBase
         {
             if (localGameVersion is not null && latestGameVersion > localGameVersion)
             {
-                AudioLanguage audio = await _gamePackageService.GetAudioLanguageAsync(CurrentGameId, GameInstallPath);
-                GameInstallContext? task = await _gameInstallService.StartUpdateAsync(CurrentGameId, GameInstallPath!, audio);
+                AudioLanguage audio = await _gamePackageService.GetAudioLanguageAsync(RequiredGameId, GameInstallPath);
+                GameInstallContext? task = await _gameInstallService.StartUpdateAsync(RequiredGameId, GameInstallPath!, audio);
                 if (task is not null)
                 {
                     _gameInstallTask = task;
@@ -804,7 +804,7 @@ public sealed partial class GameLauncherPage : PageBase
     {
         try
         {
-            _gameInstallTask ??= _gameInstallService.GetGameInstallTask(CurrentGameId);
+            _gameInstallTask ??= _gameInstallService.GetGameInstallTask(RequiredGameId);
             if (_gameInstallTask is not null)
             {
                 if (_gameInstallTask.Operation is GameInstallOperation.Predownload)
@@ -821,7 +821,7 @@ public sealed partial class GameLauncherPage : PageBase
 
     private void OnGameInstallTaskStarted(object _, GameInstallTaskStartedMessage message)
     {
-        if (message.InstallTask.GameId == CurrentGameId)
+        if (message.InstallTask.GameId == RequiredGameId)
         {
             _gameInstallTask = message.InstallTask;
             _dispatchTimer.Start();
@@ -939,7 +939,7 @@ public sealed partial class GameLauncherPage : PageBase
     [RelayCommand]
     private async Task OpenGameLauncherSettingDialogAsync()
     {
-        await new GameLauncherSettingDialog { CurrentGameId = this.CurrentGameId, XamlRoot = this.XamlRoot }.ShowAsync();
+        await new GameLauncherSettingDialog { CurrentGameKey = this.CurrentGameKey, XamlRoot = this.XamlRoot }.ShowAsync();
     }
 
 
@@ -992,11 +992,11 @@ public sealed partial class GameLauncherPage : PageBase
         try
         {
             CanStopVideo = false;
-            BackgroundImages = await _backgroundService.GetGameBackgroundsAsync(CurrentGameId);
+            BackgroundImages = await _backgroundService.GetGameBackgroundsAsync(CurrentGameKey);
             if (BackgroundImages.Count > 1)
             {
                 Border_SwitchBackgroundImage.Visibility = Visibility.Visible;
-                GameBackground? currentBackground = await _backgroundService.GetSuggestedGameBackgroundAsync(CurrentGameId);
+                GameBackground? currentBackground = await _backgroundService.GetSuggestedGameBackgroundAsync(CurrentGameKey);
                 if (currentBackground != null && BackgroundImages.FirstOrDefault(x => x.Id == currentBackground.Id) is GameBackground current)
                 {
                     currentBackgroundImageIndex = Math.Clamp(BackgroundImages.IndexOf(current), 0, BackgroundImages.Count - 1);
@@ -1190,7 +1190,7 @@ public sealed partial class GameLauncherPage : PageBase
     {
         try
         {
-            Process? process = CloudGameService.GetCloudGameProcess(CurrentGameId);
+            Process? process = CloudGameService.GetCloudGameProcess(RequiredGameId);
             if (process is not null)
             {
                 RunningGameService.AddRuninngGame(CurrentGameBiz, process);

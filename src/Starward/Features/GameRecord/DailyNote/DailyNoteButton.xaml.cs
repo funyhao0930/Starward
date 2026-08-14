@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Starward.Core;
+using Starward.Core.Games;
 using Starward.Core.GameRecord;
 using Starward.Core.GameRecord.BH3.DailyNote;
 using Starward.Core.GameRecord.Genshin.DailyNote;
@@ -82,7 +83,7 @@ public sealed partial class DailyNoteButton : UserControl
         {
             return;
         }
-        if (!GameFeatureConfig.FromGameId(CurrentGameId).SupportDailyNote)
+        if (!GameFeatureConfig.FromGameKey(GameKeyResolver.Resolve(CurrentGameId.GameBiz.Value) ?? default).SupportDailyNote)
         {
             return;
         }

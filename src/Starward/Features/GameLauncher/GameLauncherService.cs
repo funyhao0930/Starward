@@ -53,9 +53,9 @@ internal partial class GameLauncherService
     /// </summary>
     /// <param name="gameId"></param>
     /// <returns></returns>
-    public static string? GetGameInstallPath(GameId gameId)
+    public static string? GetGameInstallPath(GameKey key)
     {
-        return GetGameInstallPath(gameId.GameBiz);
+        return GetGameInstallPath(SettingsKey(key));
     }
 
 
@@ -95,10 +95,11 @@ internal partial class GameLauncherService
     /// <param name="gameId"></param>
     /// <param name="storageRemoved">可移动存储设备已移除</param>
     /// <returns></returns>
-    public static string? GetGameInstallPath(GameId gameId, out bool storageRemoved)
+    public static string? GetGameInstallPath(GameKey key, out bool storageRemoved)
     {
+        GameBiz gameBiz = SettingsKey(key);
         storageRemoved = false;
-        var path = AppConfig.GetGameInstallPath(gameId.GameBiz);
+        var path = AppConfig.GetGameInstallPath(gameBiz);
         if (string.IsNullOrWhiteSpace(path))
         {
             return null;
@@ -108,14 +109,14 @@ internal partial class GameLauncherService
         {
             return path;
         }
-        else if (AppConfig.GetGameInstallPathRemovable(gameId.GameBiz))
+        else if (AppConfig.GetGameInstallPathRemovable(gameBiz))
         {
             storageRemoved = true;
             return path;
         }
         else
         {
-            ChangeGameInstallPath(gameId, null);
+            ChangeGameInstallPath(gameBiz, null);
             return null;
         }
     }
@@ -128,9 +129,9 @@ internal partial class GameLauncherService
     /// <param name="gameId"></param>
     /// <param name="installPath"></param>
     /// <returns></returns>
-    public async Task<Version?> GetLocalGameVersionAsync(GameId gameId, string? installPath = null)
+    public async Task<Version?> GetLocalGameVersionAsync(GameKey key, string? installPath = null)
     {
-        return await GetLocalGameVersionAsync(gameId.GameBiz, installPath);
+        return await GetLocalGameVersionAsync(SettingsKey(key), installPath);
     }
 
 
@@ -221,11 +222,10 @@ internal partial class GameLauncherService
     /// </summary>
     /// <param name="gameId"></param>
     /// <returns></returns>
-    private static GameKey GetGameKey(GameId gameId)
-    {
-        return GameKeyResolver.Resolve(gameId.GameBiz.Value)
-            ?? throw new ArgumentOutOfRangeException(nameof(gameId), gameId.GameBiz.Value, "Cannot resolve the game key.");
-    }
+    /// <summary>
+    /// 应用配置与数据库使用的键
+    /// </summary>
+    private static GameBiz SettingsKey(GameKey key) => new(GameKeyResolver.ToSettingsKey(key));
 
 
 
@@ -234,11 +234,10 @@ internal partial class GameLauncherService
     /// </summary>
     /// <param name="gameId"></param>
     /// <returns></returns>
-    public async Task<string> GetGameExeNameAsync(GameId gameId)
+    public async Task<string> GetGameExeNameAsync(GameKey key)
     {
-        GameKey key = GetGameKey(gameId);
         string? name = await _providerRegistry.GetRequiredLaunchProvider(key).GetExecutableNameAsync(key);
-        return name ?? throw new ArgumentOutOfRangeException($"Unknown game ({gameId.Id}, {gameId.GameBiz}).");
+        return name ?? throw new ArgumentOutOfRangeException(nameof(key), key.ToString(), "Unknown game.");
     }
 
 
@@ -249,14 +248,13 @@ internal partial class GameLauncherService
     /// </summary>
     /// <param name="gameId"></param>
     /// <returns></returns>
-    public async Task<string> GetGameProcessNameAsync(GameId gameId)
+    public async Task<string> GetGameProcessNameAsync(GameKey key)
     {
-        GameKey key = GetGameKey(gameId);
         if (_providerRegistry.GetGame(key)?.ProcessNameWithoutExtension is string processName)
         {
             return processName;
         }
-        return (await GetGameExeNameAsync(gameId)).Replace(".exe", "");
+        return (await GetGameExeNameAsync(key)).Replace(".exe", "");
     }
 
 
@@ -267,12 +265,12 @@ internal partial class GameLauncherService
     /// <param name="biz"></param>
     /// <param name="installPath"></param>
     /// <returns></returns>
-    public async Task<bool> IsGameExeExistsAsync(GameId gameId, string? installPath = null)
+    public async Task<bool> IsGameExeExistsAsync(GameKey key, string? installPath = null)
     {
-        installPath ??= GetGameInstallPath(gameId);
+        installPath ??= GetGameInstallPath(key);
         if (!string.IsNullOrWhiteSpace(installPath))
         {
-            var exe = Path.Join(installPath, await GetGameExeNameAsync(gameId));
+            var exe = Path.Join(installPath, await GetGameExeNameAsync(key));
             return File.Exists(exe);
         }
         return false;
@@ -285,10 +283,10 @@ internal partial class GameLauncherService
     /// </summary>
     /// <param name="gameId"></param>
     /// <returns></returns>
-    public async Task<Process?> GetGameProcessAsync(GameId gameId)
+    public async Task<Process?> GetGameProcessAsync(GameKey key)
     {
         int currentSessionId = Process.GetCurrentProcess().SessionId;
-        string name = await GetGameProcessNameAsync(gameId);
+        string name = await GetGameProcessNameAsync(key);
         return Process.GetProcessesByName(name).Where(x => x.SessionId == currentSessionId && !IsProcessPending(x)).FirstOrDefault();
     }
 
@@ -331,21 +329,20 @@ internal partial class GameLauncherService
     /// 本方法只负责执行、记录游玩时间与错误处理。
     /// </summary>
     /// <returns></returns>
-    public async Task<Process?> StartGameAsync(GameId gameId, string? installPath = null)
+    public async Task<Process?> StartGameAsync(GameKey key, string? installPath = null)
     {
         const int ERROR_CANCELLED = 0x000004C7;
         try
         {
-            if (await GetGameProcessAsync(gameId) is Process existingProcess)
+            if (await GetGameProcessAsync(key) is Process existingProcess)
             {
                 throw new Exception($"Game is running: {existingProcess.ProcessName}.exe ({existingProcess.Id}).");
             }
 
-            GameKey key = GetGameKey(gameId);
             var options = new GameLaunchOptions
             {
                 InstallPath = installPath,
-                ConfiguredInstallPath = GetGameInstallPath(gameId),
+                ConfiguredInstallPath = GetGameInstallPath(key),
             };
             GameLaunchCommand command;
             try
@@ -358,7 +355,7 @@ internal partial class GameLauncherService
                 throw;
             }
 
-            _logger.LogInformation("Start game ({biz})\r\npath: {exe}\r\narg: {arg}", gameId, command.FileName, command.Arguments);
+            _logger.LogInformation("Start game ({key})\r\npath: {exe}\r\narg: {arg}", key, command.FileName, command.Arguments);
             var info = new ProcessStartInfo
             {
                 FileName = command.FileName,
@@ -373,11 +370,11 @@ internal partial class GameLauncherService
                 if (command.TrackByProcessName)
                 {
                     // 创建出来的进程是第三方工具或 cmd.exe，需要按进程名查找真正的游戏进程
-                    return await _playTimeService.StartProcessToLogAsync(gameId);
+                    return await _playTimeService.StartProcessToLogAsync(key);
                 }
                 else
                 {
-                    await _playTimeService.StartProcessToLogAsync(gameId, process.Id);
+                    await _playTimeService.StartProcessToLogAsync(key, process.Id);
                     return process;
                 }
             }
@@ -399,9 +396,9 @@ internal partial class GameLauncherService
     /// <param name="gameId"></param>
     /// <param name="path"></param>
     /// <returns></returns>
-    public static string? ChangeGameInstallPath(GameId gameId, string? path)
+    public static string? ChangeGameInstallPath(GameKey key, string? path)
     {
-        return ChangeGameInstallPath(gameId.GameBiz, path);
+        return ChangeGameInstallPath(SettingsKey(key), path);
     }
 
 
@@ -474,9 +471,9 @@ internal partial class GameLauncherService
     /// </summary>
     /// <param name="gameId"></param>
     /// <returns></returns>
-    public static string? GetThirdPartyToolPath(GameId gameId)
+    public static string? GetThirdPartyToolPath(GameKey key)
     {
-        string? path = AppConfig.GetThirdPartyToolPath(gameId.GameBiz);
+        string? path = AppConfig.GetThirdPartyToolPath(SettingsKey(key));
         if (!string.IsNullOrWhiteSpace(path))
         {
             path = GetFullPathIfRelativePath(path);
@@ -487,7 +484,7 @@ internal partial class GameLauncherService
         }
         else
         {
-            AppConfig.SetThirdPartyToolPath(gameId.GameBiz, null);
+            AppConfig.SetThirdPartyToolPath(SettingsKey(key), null);
             return null;
         }
     }
@@ -499,18 +496,18 @@ internal partial class GameLauncherService
     /// <param name="gameId"></param>
     /// <param name="path"></param>
     /// <returns></returns>
-    public static string? SetThirdPartyToolPath(GameId gameId, string? path)
+    public static string? SetThirdPartyToolPath(GameKey key, string? path)
     {
         if (File.Exists(path))
         {
             path = Path.GetFullPath(path);
             string relativePath = GetRelativePathIfInRemovableStorage(path, out bool removable);
-            AppConfig.SetThirdPartyToolPath(gameId.GameBiz, relativePath);
+            AppConfig.SetThirdPartyToolPath(SettingsKey(key), relativePath);
         }
         else
         {
             path = null;
-            AppConfig.SetThirdPartyToolPath(gameId.GameBiz, null);
+            AppConfig.SetThirdPartyToolPath(SettingsKey(key), null);
         }
         return path;
     }

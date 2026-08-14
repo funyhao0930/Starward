@@ -49,9 +49,9 @@ public sealed partial class GameSettingPage : PageBase
             GameBiz.nap => new BitmapImage(AppConfig.EmojiBangboo),
             _ => null,
         };
-        if (CurrentGameId.GameBiz == GameBiz.bh3_global)
+        if (RequiredGameId.GameBiz == GameBiz.bh3_global)
         {
-            CurrentGameBiz = CurrentGameId.Id switch
+            CurrentGameBiz = RequiredGameId.Id switch
             {
                 "g0mMIvshDb" => GameBiz.bh3_jp,
                 "uxB4MC7nzC" => GameBiz.bh3_kr,
@@ -212,7 +212,7 @@ public sealed partial class GameSettingPage : PageBase
     {
         try
         {
-            var localVersion = await _gameLauncherService.GetLocalGameVersionAsync(CurrentGameId);
+            var localVersion = await _gameLauncherService.GetLocalGameVersionAsync(CurrentGameKey);
             if (localVersion is null)
             {
                 StackPanel_Emoji.Visibility = Visibility.Visible;

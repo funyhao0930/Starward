@@ -1,9 +1,11 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.UI.Xaml;
+using Starward.Core;
 using Starward.Core.Games;
 using Starward.Core.HoYoPlay;
 using Starward.Features.HoYoPlay;
 using Starward.Helpers;
+using Starward.Providers.HoYo;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -63,16 +65,17 @@ public class BackgroundService
     /// <param name="gameId"></param>
     /// <param name="path"></param>
     /// <returns></returns>
-    public static bool TryGetCustomBgFilePath(GameId gameId, [NotNullWhen(true)] out string? path)
+    public static bool TryGetCustomBgFilePath(GameKey key, [NotNullWhen(true)] out string? path)
     {
         path = null;
-        if (gameId is null)
+        if (!key.IsValid)
         {
             return false;
         }
-        if (AppConfig.GetEnableCustomBg(gameId.GameBiz))
+        GameBiz biz = SettingsKey(key);
+        if (AppConfig.GetEnableCustomBg(biz))
         {
-            path = GetBgFilePath(AppConfig.GetCustomBg(gameId.GameBiz));
+            path = GetBgFilePath(AppConfig.GetCustomBg(biz));
             if (File.Exists(path))
             {
                 return true;
@@ -102,17 +105,17 @@ public class BackgroundService
     /// </summary>
     /// <param name="gameId"></param>
     /// <returns></returns>
-    public static string? GetCachedBackgroundFile(GameId gameId)
+    public static string? GetCachedBackgroundFile(GameKey key)
     {
-        if (gameId is null)
+        if (!key.IsValid)
         {
             return null;
         }
-        if (TryGetCustomBgFilePath(gameId, out string? path))
+        if (TryGetCustomBgFilePath(key, out string? path))
         {
             return path;
         }
-        path = GetBgFilePath(AppConfig.GetBg(gameId.GameBiz));
+        path = GetBgFilePath(AppConfig.GetBg(SettingsKey(key)));
         return File.Exists(path) ? path : null;
     }
 
@@ -123,18 +126,20 @@ public class BackgroundService
     /// 该游戏是否有 HoYoPlay 那样的在线背景图接口。
     /// 只支持启动的游戏没有，对它们调用会抛出 Unknown launcher id。
     /// </summary>
-    private bool SupportsOnlineBackground(GameId? gameId)
+    private bool SupportsOnlineBackground(GameKey key)
     {
-        if (gameId is null)
+        if (!key.IsValid)
         {
             return false;
         }
-        if (GameKeyResolver.Resolve(gameId.GameBiz.Value) is not GameKey key)
-        {
-            return true;
-        }
         return _providerRegistry.GetGame(key)?.HasCapability(GameCapability.Install) ?? true;
     }
+
+
+    /// <summary>
+    /// 应用配置使用的键
+    /// </summary>
+    private static GameBiz SettingsKey(GameKey key) => new(GameKeyResolver.ToSettingsKey(key));
 
 
     /// <summary>
@@ -143,19 +148,20 @@ public class BackgroundService
     /// <param name="gameId"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    public async Task<List<GameBackground>> GetGameBackgroundsAsync(GameId gameId, CancellationToken cancellationToken = default)
+    public async Task<List<GameBackground>> GetGameBackgroundsAsync(GameKey key, CancellationToken cancellationToken = default)
     {
         // 只支持启动的游戏没有 HoYoPlay 那样的在线背景图接口，
         // 在这里统一拦下，调用方不必各自判断
-        if (!SupportsOnlineBackground(gameId))
+        if (!SupportsOnlineBackground(key))
         {
             List<GameBackground> local = [];
-            if (TryGetCustomBgFilePath(gameId, out string? customPath))
+            if (TryGetCustomBgFilePath(key, out string? customPath))
             {
                 local.Add(GameBackground.FromCustomFile(customPath));
             }
             return local;
         }
+        GameId gameId = HoYoGameIds.Resolve(key)!;
         GameBackgroundInfo backgroundInfo = await _hoYoPlayService.GetGameBackgroundAsync(gameId, cancellationToken);
         List<GameBackground> backgrounds = backgroundInfo?.Backgrounds?.ToList() ?? [];
         GameInfo gameInfo = await _hoYoPlayService.GetGameInfoAsync(gameId, cancellationToken);
@@ -163,7 +169,7 @@ public class BackgroundService
         {
             backgrounds.Add(GameBackground.FromPosterUrl(gameInfo.Display.Background.Url));
         }
-        if (TryGetCustomBgFilePath(gameId, out string? path))
+        if (TryGetCustomBgFilePath(key, out string? path))
         {
             backgrounds.Add(GameBackground.FromCustomFile(path));
         }
@@ -172,16 +178,16 @@ public class BackgroundService
 
 
 
-    public async Task<GameBackground?> GetSuggestedGameBackgroundAsync(GameId gameId, CancellationToken cancellationToken = default)
+    public async Task<GameBackground?> GetSuggestedGameBackgroundAsync(GameKey key, CancellationToken cancellationToken = default)
     {
-        if (TryGetCustomBgFilePath(gameId, out string? file))
+        if (TryGetCustomBgFilePath(key, out string? file))
         {
             return GameBackground.FromCustomFile(file);
         }
-        List<GameBackground> backgrounds = await GetGameBackgroundsAsync(gameId, cancellationToken);
+        List<GameBackground> backgrounds = await GetGameBackgroundsAsync(key, cancellationToken);
         GameBackground? bg = null;
-        string? lastBg = AppConfig.GetBg(gameId.GameBiz);
-        string? lastBgIds = AppConfig.GetGameBackgroundIds(gameId.GameBiz);
+        string? lastBg = AppConfig.GetBg(SettingsKey(key));
+        string? lastBgIds = AppConfig.GetGameBackgroundIds(SettingsKey(key));
         string firstBgId = backgrounds.FirstOrDefault()?.Id ?? string.Empty;
         if (!string.IsNullOrWhiteSpace(lastBg) && (lastBgIds?.StartsWith(firstBgId) ?? false))
         {
@@ -223,9 +229,9 @@ public class BackgroundService
     /// </summary>
     /// <param name="gameId"></param>
     /// <returns></returns>
-    public static string? GetFallbackBackgroundImage(GameId gameId)
+    public static string? GetFallbackBackgroundImage(GameKey key)
     {
-        string? bg = GetBgFilePath(AppConfig.GetBg(gameId.GameBiz));
+        string? bg = GetBgFilePath(AppConfig.GetBg(SettingsKey(key)));
         if (!File.Exists(bg))
         {
             string baseFolder = AppContext.BaseDirectory;

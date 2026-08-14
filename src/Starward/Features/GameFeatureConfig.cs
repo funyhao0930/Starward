@@ -124,25 +124,19 @@ internal partial class GameFeatureConfig
 
 
     /// <summary>
-    /// 兼容层：现有调用方仍以 <see cref="GameId"/> 为货币。
-    /// 本方法是静态的，无法使用构造函数注入，因此沿用应用既有的 <see cref="AppConfig.GetService{T}"/>；
-    /// 新代码应直接使用 <see cref="FromDescriptor(GameDescriptor?)"/>。
+    /// 由游戏标识查出可以使用的功能。
+    /// <para/>
+    /// 本方法是静态的，无法使用构造函数注入，因此沿用应用既有的
+    /// <see cref="AppConfig.GetService{T}"/>；这是本类型唯一一处。
     /// </summary>
-    public static GameFeatureConfig FromGameId(GameId? gameId)
+    public static GameFeatureConfig FromGameKey(GameKey key)
     {
-        if (gameId is null)
+        if (!key.IsValid)
         {
             return None;
         }
-        // 必须用 GameKeyResolver：非米哈游游戏的键是 GameKey 的正规字符串，
-        // 用 HoYo 的映射会解析失败，导致这些游戏只剩启动页
-        if (GameKeyResolver.Resolve(gameId.GameBiz.Value) is not GameKey key)
-        {
-            // 无法识别的键，与重构前一致，只允许启动
-            return FromCapabilities(GameCapability.Launch);
-        }
         GameDescriptor? descriptor = AppConfig.GetService<IGameProviderRegistry>().GetGame(key);
-        // HoYoPlay 接口返回但尚未适配的游戏，只允许启动
+        // 供应商接口返回但尚未适配的游戏，只允许启动
         return FromCapabilities(descriptor?.Capabilities ?? GameCapability.Launch);
     }
 

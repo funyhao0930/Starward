@@ -13,7 +13,7 @@
 
     <Grid>
 
-        <sfb:AppBackground x:Name="AppBackground" CurrentGameId="{x:Bind CurrentGameId}" />
+        <sfb:AppBackground x:Name="AppBackground" CurrentGameKey="{x:Bind CurrentGameKey}" />
 
 
         <Border Width="56"

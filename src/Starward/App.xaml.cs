@@ -3,6 +3,7 @@ using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.Windows.AppLifecycle;
 using Starward.Core;
+using Starward.Core.Games;
 using Starward.Core.HoYoPlay;
 using Starward.Features.GameLauncher;
 using Starward.Features.GamepadControl;
@@ -125,11 +126,10 @@ public partial class App : Application
 
         if (args[0].ToLower() is "startgame")
         {
-            GameBiz biz = (GameBiz)config.GetValue<string>("biz");
-            GameId? gameId = GameId.FromGameBiz(biz);
-            if (gameId is not null)
+            // 用 GameKeyResolver 解析，非米哈游游戏也能从命令行启动
+            if (GameKeyResolver.Resolve(config.GetValue<string>("biz")) is GameKey key)
             {
-                await AppConfig.GetService<GameLauncherService>().StartGameAsync(gameId);
+                await AppConfig.GetService<GameLauncherService>().StartGameAsync(key);
             }
             Environment.Exit(0);
         }

@@ -6,6 +6,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Animation;
 using NuGet.Versioning;
 using Starward.Core;
+using Starward.Core.Games;
 using Starward.Core.HoYoPlay;
 using Starward.Features.Gacha;
 using Starward.Features.GameLauncher;
@@ -35,7 +36,13 @@ public sealed partial class MainView : UserControl
     private readonly ILogger<MainView> _logger = AppConfig.GetLogger<MainView>();
 
 
-    public GameId? CurrentGameId { get; private set => SetProperty(ref field, value); }
+    public GameKey CurrentGameKey { get; private set => SetProperty(ref field, value); }
+
+
+    /// <summary>
+    /// 兼容层：HoYoPlay 的游戏标识，由 <see cref="CurrentGameKey"/> 推导
+    /// </summary>
+    public GameId? CurrentGameId => HoYoGameIds.Resolve(CurrentGameKey);
 
 
     private GameFeatureConfig CurrentGameFeatureConfig { get; set; }
@@ -54,8 +61,8 @@ public sealed partial class MainView : UserControl
     {
         this.Loaded += MainView_Loaded;
         // 崩坏三国际服的区服选择由 HoYoGameIds 在解析时读取，不再就地改写
-        CurrentGameId = GameSelector.CurrentGameId;
-        CurrentGameFeatureConfig = GameFeatureConfig.FromGameId(CurrentGameId);
+        CurrentGameKey = GameSelector.CurrentGameKey;
+        CurrentGameFeatureConfig = GameFeatureConfig.FromGameKey(CurrentGameKey);
         UpdateNavigationView();
         WeakReferenceMessenger.Default.Register<MainViewNavigateMessage>(this, OnMainViewNavigateMessageReceived);
         WeakReferenceMessenger.Default.Register<BH3GlobalGameServerChangedMessage>(this, OnBH3GlobalGameServerChanged);
@@ -83,10 +90,10 @@ public sealed partial class MainView : UserControl
 
 
 
-    private void GameSelector_CurrentGameChanged(object? sender, (GameId, bool DoubleTapped) e)
+    private void GameSelector_CurrentGameChanged(object? sender, (GameKey Key, bool DoubleTapped) e)
     {
-        CurrentGameId = e.Item1;
-        CurrentGameFeatureConfig = GameFeatureConfig.FromGameId(CurrentGameId);
+        CurrentGameKey = e.Key;
+        CurrentGameFeatureConfig = GameFeatureConfig.FromGameKey(CurrentGameKey);
         UpdateNavigationView();
     }
 
@@ -96,10 +103,9 @@ public sealed partial class MainView : UserControl
     {
         if (CurrentGameId?.GameBiz == GameBiz.bh3_global)
         {
-            // 新的区服 id 已由发送方写入配置，这里重新解析出一个新的 GameId
-            CurrentGameId = HoYoGameIds.Resolve(GameBiz.bh3_global) ?? CurrentGameId;
+            // 新的区服 id 已由发送方写入配置，重新解析后通知界面
             OnPropertyChanged(nameof(CurrentGameId));
-            NavigateTo(typeof(GameLauncherPage), CurrentGameId, new SuppressNavigationTransitionInfo());
+            NavigateTo(typeof(GameLauncherPage), CurrentGameKey, new SuppressNavigationTransitionInfo());
         }
     }
 
@@ -123,7 +129,7 @@ public sealed partial class MainView : UserControl
         NavigationViewItem_GenshinBeyondGacha.Visibility = CurrentGameFeatureConfig.SupportedPages.Contains(nameof(GenshinBeyondGachaPage)).ToVisibility();
 
         // 抽卡记录名称
-        string gachalogText = CurrentGameId?.GameBiz.Game switch
+        string gachalogText = CurrentGameKey.GameId switch
         {
             GameBiz.hk4e => Lang.GachaLogService_WishRecords,
             GameBiz.hkrpg => Lang.GachaLogService_WarpRecords,
@@ -131,18 +137,18 @@ public sealed partial class MainView : UserControl
             _ => "",
         };
 
-        if (CurrentGameId?.GameBiz.IsChinaServer() ?? false)
+        if (CurrentGameKey.ChannelId is GameChannelIds.China)
         {
             ToolTipService.SetToolTip(NavigationViewItem_HoyolabToolbox, Lang.HyperionToolbox);
             TextBlock_HoyolabToolbox.Text = Lang.HyperionToolbox;
         }
-        if (CurrentGameId?.GameBiz.IsGlobalServer() ?? false)
+        if (CurrentGameKey.ChannelId is GameChannelIds.Global)
         {
             ToolTipService.SetToolTip(NavigationViewItem_HoyolabToolbox, Lang.HoYoLABToolbox);
             TextBlock_HoyolabToolbox.Text = Lang.HoYoLABToolbox;
         }
 
-        if (CurrentGameId is null)
+        if (!CurrentGameKey.IsValid)
         {
             NavigateTo(typeof(BlankPage));
         }
@@ -193,7 +199,7 @@ public sealed partial class MainView : UserControl
     private void NavigateTo(Type? page, object? param = null, NavigationTransitionInfo? infoOverride = null)
     {
         page ??= typeof(GameLauncherPage);
-        if (page.Name is nameof(BlankPage) && CurrentGameId is null)
+        if (page.Name is nameof(BlankPage) && !CurrentGameKey.IsValid)
         {
 
         }
@@ -205,7 +211,7 @@ public sealed partial class MainView : UserControl
         {
             MainView_NavigationView.SelectedItem = NavigationViewItem_Launcher;
         }
-        MainView_Frame.Navigate(page, param ?? CurrentGameId, infoOverride);
+        MainView_Frame.Navigate(page, param ?? CurrentGameKey, infoOverride);
         if (page.Name is nameof(BlankPage) or nameof(GameLauncherPage))
         {
             Border_OverlayMask.Opacity = 0;

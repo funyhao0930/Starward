@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using Starward.Core;
+using Starward.Core.Games;
 using Starward.Core.HoYoPlay;
 using Starward.Features.GameLauncher;
 using Starward.Features.HoYoPlay;
@@ -38,7 +39,7 @@ internal partial class GamePackageService
     /// <returns></returns>
     public static string? GetGameInstallPath(GameId gameId)
     {
-        return GameLauncherService.GetGameInstallPath(gameId);
+        return GameLauncherService.GetGameInstallPath(GameKeyOf(gameId));
     }
 
 
@@ -51,7 +52,7 @@ internal partial class GamePackageService
     /// <returns></returns>
     public async Task<Version?> GetLocalGameVersionAsync(GameId gameId, string? installPath = null)
     {
-        return await _gameLauncherService.GetLocalGameVersionAsync(gameId, installPath);
+        return await _gameLauncherService.GetLocalGameVersionAsync(GameKeyOf(gameId), installPath);
     }
 
 
@@ -64,7 +65,7 @@ internal partial class GamePackageService
     /// <returns></returns>
     public async Task<bool> CheckPreDownloadFinishedAsync(GameId gameId, string? installPath = null)
     {
-        installPath ??= GameLauncherService.GetGameInstallPath(gameId);
+        installPath ??= GameLauncherService.GetGameInstallPath(GameKeyOf(gameId));
         if (string.IsNullOrWhiteSpace(installPath))
         {
             return false;
@@ -137,7 +138,7 @@ internal partial class GamePackageService
         {
             return AudioLanguage.None;
         }
-        installPath ??= GameLauncherService.GetGameInstallPath(gameId);
+        installPath ??= GameLauncherService.GetGameInstallPath(GameKeyOf(gameId));
         AudioLanguage flag = AudioLanguage.None;
         string file = Path.Join(installPath, config.AudioPackageScanDir);
         if (File.Exists(file))
@@ -175,6 +176,15 @@ internal partial class GamePackageService
         if (lang.HasFlag(AudioLanguage.Japanese)) { lines.Add("Japanese"); }
         if (lang.HasFlag(AudioLanguage.Korean)) { lines.Add("Korean"); }
         await File.WriteAllLinesAsync(file, lines);
+    }
+
+    /// <summary>
+    /// 边界转换：本服务只服务米哈游游戏，但通用服务以 GameKey 为准
+    /// </summary>
+    private static GameKey GameKeyOf(GameId gameId)
+    {
+        return GameKeyResolver.Resolve(gameId.GameBiz.Value)
+            ?? throw new ArgumentOutOfRangeException(nameof(gameId), gameId.GameBiz.Value, "Cannot resolve the game key.");
     }
 
 

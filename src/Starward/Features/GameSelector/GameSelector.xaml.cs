@@ -37,7 +37,7 @@ public sealed partial class GameSelector : UserControl
 {
 
 
-    public event EventHandler<(GameId, bool DoubleTapped)>? CurrentGameChanged;
+    public event EventHandler<(GameKey Key, bool DoubleTapped)>? CurrentGameChanged;
 
 
     private readonly ILogger<GameSelector> _logger = AppConfig.GetLogger<GameSelector>();
@@ -65,7 +65,7 @@ public sealed partial class GameSelector : UserControl
     public GameBiz CurrentGameBiz { get; set; }
 
 
-    public GameId? CurrentGameId { get; set; }
+    public GameKey CurrentGameKey { get; set; }
 
 
     public ObservableCollection<GameBizIcon> GameBizIcons { get; set => SetProperty(ref field, value); } = new();
@@ -212,10 +212,10 @@ public sealed partial class GameSelector : UserControl
                 CurrentGameBiz = lastSelectedGameBiz;
             }
 
-            CurrentGameId = CurrentGameBizIcon?.GameId;
-            if (CurrentGameId is not null)
+            CurrentGameKey = CurrentGameBizIcon?.Key ?? default;
+            if (CurrentGameKey.IsValid)
             {
-                CurrentGameChanged?.Invoke(this, (CurrentGameId, false));
+                CurrentGameChanged?.Invoke(this, (CurrentGameKey, false));
             }
 
             if (AppConfig.IsGameBizSelectorPinned)
@@ -349,10 +349,10 @@ public sealed partial class GameSelector : UserControl
 
             CurrentGameBizIcon = icon;
             CurrentGameBiz = icon.GameBiz;
-            CurrentGameId = icon.GameId;
+            CurrentGameKey = icon.Key;
             icon.IsSelected = true;
 
-            CurrentGameChanged?.Invoke(this, (icon.GameId, false));
+            CurrentGameChanged?.Invoke(this, (icon.Key, false));
             AppConfig.CurrentGameBiz = icon.GameBiz;
         }
     }
@@ -375,11 +375,11 @@ public sealed partial class GameSelector : UserControl
 
             CurrentGameBizIcon = icon;
             CurrentGameBiz = icon.GameBiz;
-            CurrentGameId = icon.GameId;
+            CurrentGameKey = icon.Key;
             icon.IsSelected = true;
             HideFullBackground();
 
-            CurrentGameChanged?.Invoke(this, (icon.GameId, true));
+            CurrentGameChanged?.Invoke(this, (icon.Key, true));
             AppConfig.CurrentGameBiz = icon.GameBiz;
         }
     }
@@ -715,7 +715,7 @@ public sealed partial class GameSelector : UserControl
                 {
                     CurrentGameBizIcon = icon;
                     CurrentGameBiz = icon.GameBiz;
-                    CurrentGameId = icon.GameId;
+                    CurrentGameKey = icon.Key;
                     icon.IsSelected = true;
                 }
                 else
@@ -724,7 +724,7 @@ public sealed partial class GameSelector : UserControl
                     server.IsSelected = true;
                 }
 
-                CurrentGameChanged?.Invoke(this, (server.GameId, false));
+                CurrentGameChanged?.Invoke(this, (server.Key, false));
                 // 关闭弹出的服务器选择菜单
                 if (VisualTreeHelper.GetOpenPopupsForXamlRoot(this.XamlRoot).FirstOrDefault() is Popup popup)
                 {
@@ -819,7 +819,7 @@ public sealed partial class GameSelector : UserControl
                 int serverCount = 0;
                 foreach (GameBizIcon server in display.Servers)
                 {
-                    string? installPath = GameLauncherService.GetGameInstallPath(server.GameId);
+                    string? installPath = GameLauncherService.GetGameInstallPath(server.Key);
                     if (Directory.Exists(installPath))
                     {
                         server.InstallPath = installPath;

@@ -1,6 +1,7 @@
 using Grpc.Core;
 using Microsoft.Extensions.Logging;
 using Starward.Core;
+using Starward.Core.Games;
 using Starward.Core.HoYoPlay;
 using Starward.Features.GameLauncher;
 using Starward.Features.RPC;
@@ -343,7 +344,7 @@ internal class GameInstallService
                 InstallPath = installPath,
                 UserDataFolder = AppConfig.UserDataFolder,
                 ScreenshotFolder = AppConfig.ScreenshotFolder,
-                GameExeName = await _gameLauncherService.GetGameExeNameAsync(gameId),
+                GameExeName = await _gameLauncherService.GetGameExeNameAsync(GameKeyOf(gameId)),
             };
             var response = await _gameInstallerClient.UninstallGameAsync(request);
             if (response.Success)
@@ -369,7 +370,7 @@ internal class GameInstallService
         {
             return null;
         }
-        if (GameFeatureConfig.FromGameId(gameId).SupportHardLink)
+        if (GameFeatureConfig.FromGameKey(GameKeyOf(gameId)).SupportHardLink)
         {
             string game = gameId.GameBiz.Game;
             Version? lastVersion = null;
@@ -412,6 +413,14 @@ internal class GameInstallService
         return null;
     }
 
+    /// <summary>
+    /// 边界转换：本服务只服务米哈游游戏，但通用服务以 GameKey 为准
+    /// </summary>
+    private static GameKey GameKeyOf(GameId gameId)
+    {
+        return GameKeyResolver.Resolve(gameId.GameBiz.Value)
+            ?? throw new ArgumentOutOfRangeException(nameof(gameId), gameId.GameBiz.Value, "Cannot resolve the game key.");
+    }
 
 
 }

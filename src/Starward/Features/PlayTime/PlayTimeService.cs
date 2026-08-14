@@ -404,12 +404,12 @@ internal class PlayTimeService
     /// </summary>
     /// <param name="gameId"></param>
     /// <returns></returns>
-    public async Task<Process?> StartProcessToLogAsync(GameId gameId)
+    public async Task<Process?> StartProcessToLogAsync(GameKey key)
     {
         try
         {
-            var biz = gameId.GameBiz;
-            string name = await GetGameExeNameWithoutExtensionAsync(gameId);
+            GameBiz biz = new(GameKeyResolver.ToSettingsKey(key));
+            string name = await GetGameExeNameWithoutExtensionAsync(key);
             for (int i = 0; i < 15; i++)
             {
                 await Task.Delay(2000);
@@ -463,13 +463,13 @@ internal class PlayTimeService
     /// <param name="gameId"></param>
     /// <param name="pid"></param>
     /// <returns></returns>
-    public async Task StartProcessToLogAsync(GameId gameId, int pid)
+    public async Task StartProcessToLogAsync(GameKey key, int pid)
     {
         try
         {
             Process process = Process.GetProcessById(pid);
-            var biz = gameId.GameBiz;
-            string name = await GetGameExeNameWithoutExtensionAsync(gameId);
+            GameBiz biz = new(GameKeyResolver.ToSettingsKey(key));
+            string name = await GetGameExeNameWithoutExtensionAsync(key);
             if (process.ProcessName != name)
             {
                 _logger.LogWarning("Game process ({biz}, {gamePid}) is not the expected process ({name})", biz, pid, process.ProcessName);
@@ -492,7 +492,7 @@ internal class PlayTimeService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Start process to log play time: GameBiz {biz}, Pid {pid}", gameId.GameBiz, pid);
+            _logger.LogError(ex, "Start process to log play time: GameBiz {biz}, Pid {pid}", GameKeyResolver.ToSettingsKey(key), pid);
         }
     }
 
@@ -504,19 +504,15 @@ internal class PlayTimeService
     /// </summary>
     /// <param name="gameId"></param>
     /// <returns></returns>
-    public async Task<string> GetGameExeNameWithoutExtensionAsync(GameId gameId)
+    public async Task<string> GetGameExeNameWithoutExtensionAsync(GameKey key)
     {
-        // 必须用 GameKeyResolver：非米哈游游戏的键是 GameKey 的正规字符串，
-        // 用 HoYo 的映射会直接抛出，导致这些游戏完全记录不到游玩时间
-        GameKey key = GameKeyResolver.Resolve(gameId.GameBiz.Value)
-            ?? throw new ArgumentOutOfRangeException(nameof(gameId), gameId.GameBiz.Value, "Cannot resolve the game key.");
         // 部分游戏启动的是一层外壳，记录游玩时间要找的是真正的游戏进程
         if (_providerRegistry.GetGame(key)?.ProcessNameWithoutExtension is string processName)
         {
             return processName;
         }
         string? name = await _providerRegistry.GetRequiredLaunchProvider(key).GetExecutableNameAsync(key);
-        return name?.Replace(".exe", "") ?? throw new ArgumentOutOfRangeException($"Unknown game ({gameId.Id}, {gameId.GameBiz}).");
+        return name?.Replace(".exe", "") ?? throw new ArgumentOutOfRangeException(nameof(key), key.ToString(), "Unknown game.");
     }
 
 

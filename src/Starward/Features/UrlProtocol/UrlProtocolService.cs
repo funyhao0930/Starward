@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Win32;
 using Starward.Core;
+using Starward.Core.Games;
 using Starward.Core.HoYoPlay;
 using Starward.Features.GameLauncher;
 using Starward.Features.PlayTime;
@@ -65,11 +66,11 @@ internal class UrlProtocolService
                 }
                 if (uri.Host is "startgame")
                 {
-                    if (GameBiz.TryParse(uri.AbsolutePath.Trim('/'), out GameBiz biz) && GameId.FromGameBiz(biz) is GameId gameId)
+                    if (GameKeyResolver.Resolve(uri.AbsolutePath.Trim('/')) is GameKey key)
                     {
                         var kvs = HttpUtility.ParseQueryString(uri.Query);
                         string? installPath = kvs["install_path"];
-                        await AppConfig.GetService<GameLauncherService>().StartGameAsync(gameId, installPath);
+                        await AppConfig.GetService<GameLauncherService>().StartGameAsync(key, installPath);
                     }
                     else
                     {
@@ -79,16 +80,16 @@ internal class UrlProtocolService
                 }
                 if (uri.Host is "playtime")
                 {
-                    if (GameBiz.TryParse(uri.AbsolutePath.Trim('/'), out GameBiz biz) && GameId.FromGameBiz(biz) is GameId gameId)
+                    if (GameKeyResolver.Resolve(uri.AbsolutePath.Trim('/')) is GameKey key)
                     {
                         var kvs = HttpUtility.ParseQueryString(uri.Query);
                         if (int.TryParse(kvs["pid"], out int pid))
                         {
-                            await AppConfig.GetService<PlayTimeService>().StartProcessToLogAsync(gameId, pid);
+                            await AppConfig.GetService<PlayTimeService>().StartProcessToLogAsync(key, pid);
                         }
                         else
                         {
-                            await AppConfig.GetService<PlayTimeService>().StartProcessToLogAsync(gameId);
+                            await AppConfig.GetService<PlayTimeService>().StartProcessToLogAsync(key);
                         }
                     }
                     else

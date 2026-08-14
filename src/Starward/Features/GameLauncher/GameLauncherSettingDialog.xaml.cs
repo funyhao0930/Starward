@@ -15,6 +15,7 @@ using Starward.Features.GameInstall;
 using Starward.Features.GameSelector;
 using Starward.Features.HoYoPlay;
 using Starward.Helpers;
+using Starward.Providers.HoYo;
 using Starward.RPC.GameInstall;
 using System;
 using System.Collections.Generic;
@@ -66,7 +67,25 @@ public sealed partial class GameLauncherSettingDialog : ContentDialog
 
 
 
-    public GameId CurrentGameId { get; set; }
+    /// <summary>
+    /// 当前游戏，对话框的唯一身份来源
+    /// </summary>
+    public GameKey CurrentGameKey { get; set; }
+
+
+    /// <summary>
+    /// 兼容层：HoYoPlay 的游戏标识，由 <see cref="CurrentGameKey"/> 推导
+    /// </summary>
+    public GameId? CurrentGameId => HoYoGameIds.Resolve(CurrentGameKey);
+
+    /// <summary>
+    /// 已确定是米哈游游戏时使用：本对话框的在线功能都在能力判断之后才会执行。
+    /// 假设不成立时立刻失败，而不是留下空引用。
+    /// </summary>
+    private GameId RequiredGameId => CurrentGameId
+        ?? throw new GameCapabilityNotSupportedException(CurrentGameKey, GameCapability.Install,
+                                                        $"Game '{CurrentGameKey}' has no HoYoPlay game id.");
+
 
 
     public GameBiz CurrentGameBiz { get; set; }
@@ -136,7 +155,7 @@ public sealed partial class GameLauncherSettingDialog : ContentDialog
 
     private async void GameLauncherSettingDialog_Loaded(object sender, RoutedEventArgs e)
     {
-        CurrentGameBiz = CurrentGameId?.GameBiz ?? GameBiz.None;
+        CurrentGameBiz = RequiredGameId?.GameBiz ?? GameBiz.None;
         CheckCanRepairGame();
         await InitializeBasicInfoAsync();
         InitializeStartArgument();
@@ -248,14 +267,14 @@ public sealed partial class GameLauncherSettingDialog : ContentDialog
     {
         try
         {
-            if (GameKeyResolver.Resolve(CurrentGameId.GameBiz.Value) is GameKey gameKey
+            if (GameKeyResolver.Resolve(RequiredGameId.GameBiz.Value) is GameKey gameKey
                 && _providerRegistry.GetGame(gameKey) is GameDescriptor descriptor)
             {
                 CurrentGameBizIcon = new GameBizIcon(descriptor);
             }
-            InstallPath = GameLauncherService.GetGameInstallPath(CurrentGameId, out bool storageRemoved);
+            InstallPath = GameLauncherService.GetGameInstallPath(CurrentGameKey, out bool storageRemoved);
             GameSize = GetSize(InstallPath);
-            if (await _gameLauncherService.GetGameProcessAsync(CurrentGameId) is null)
+            if (await _gameLauncherService.GetGameProcessAsync(CurrentGameKey) is null)
             {
                 UninstallAndRepairEnabled = InstallPath != null && !storageRemoved;
             }
@@ -295,7 +314,7 @@ public sealed partial class GameLauncherSettingDialog : ContentDialog
     {
         get
         {
-            if (GameKeyResolver.Resolve(CurrentGameId?.GameBiz.Value) is not GameKey key)
+            if (GameKeyResolver.Resolve(RequiredGameId?.GameBiz.Value) is not GameKey key)
             {
                 return true;
             }
@@ -311,14 +330,14 @@ public sealed partial class GameLauncherSettingDialog : ContentDialog
             {
                 return;
             }
-            GameConfig? config = await _hoyoPlayService.GetGameConfigAsync(CurrentGameId);
+            GameConfig? config = await _hoyoPlayService.GetGameConfigAsync(RequiredGameId);
             if (config is not null)
             {
                 if (!string.IsNullOrWhiteSpace(config.AudioPackageScanDir))
                 {
                     _hasAudioPackages = true;
                     Segmented_SelectLanguage.SelectedItems.Clear();
-                    AudioLanguage audioLanguage = await _gamePackageService.GetAudioLanguageAsync(CurrentGameId, InstallPath);
+                    AudioLanguage audioLanguage = await _gamePackageService.GetAudioLanguageAsync(RequiredGameId, InstallPath);
                     if (audioLanguage.HasFlag(AudioLanguage.Chinese))
                     {
                         Segmented_SelectLanguage.SelectedItems.Add(SegmentedItem_Chinese);
@@ -377,7 +396,7 @@ public sealed partial class GameLauncherSettingDialog : ContentDialog
     {
         try
         {
-            GameLauncherService.ChangeGameInstallPath(CurrentGameId, null);
+            GameLauncherService.ChangeGameInstallPath(CurrentGameKey, null);
             WeakReferenceMessenger.Default.Send(new GameInstallPathChangedMessage());
             await InitializeBasicInfoAsync();
             await TryStopGameInstallTaskAsync();
@@ -407,7 +426,7 @@ public sealed partial class GameLauncherSettingDialog : ContentDialog
                 else
                 {
                     TextBlock_NetworkDriveWarning.Visibility = Visibility.Collapsed;
-                    GameLauncherService.ChangeGameInstallPath(CurrentGameId, folder);
+                    GameLauncherService.ChangeGameInstallPath(CurrentGameKey, folder);
                     await InitializeBasicInfoAsync();
                     WeakReferenceMessenger.Default.Send(new GameInstallPathChangedMessage());
                     if (previousInstallPath != folder)
@@ -430,7 +449,7 @@ public sealed partial class GameLauncherSettingDialog : ContentDialog
     /// </summary>
     private void CheckCanRepairGame()
     {
-        if (_gameInstallService.GetGameInstallTask(CurrentGameId) is GameInstallContext task)
+        if (_gameInstallService.GetGameInstallTask(RequiredGameId) is GameInstallContext task)
         {
             if (task.State is not GameInstallState.Stop and not GameInstallState.Finish)
             {
@@ -487,7 +506,7 @@ public sealed partial class GameLauncherSettingDialog : ContentDialog
                     _ => AudioLanguage.None,
                 };
             }
-            GameInstallContext? task = await _gameInstallService.StartRepairAsync(CurrentGameId, InstallPath, audio);
+            GameInstallContext? task = await _gameInstallService.StartRepairAsync(RequiredGameId, InstallPath, audio);
             if (task is not null && task.State is not GameInstallState.Stop and not GameInstallState.Error)
             {
                 WeakReferenceMessenger.Default.Send(new GameInstallTaskStartedMessage(task));
@@ -559,7 +578,7 @@ public sealed partial class GameLauncherSettingDialog : ContentDialog
         try
         {
             UninstallError = null;
-            if (await _gameLauncherService.GetGameProcessAsync(CurrentGameId) is not null)
+            if (await _gameLauncherService.GetGameProcessAsync(CurrentGameKey) is not null)
             {
                 UninstallError = Lang.LauncherPage_GameIsRunning;
                 await InitializeBasicInfoAsync();
@@ -567,13 +586,13 @@ public sealed partial class GameLauncherSettingDialog : ContentDialog
             }
             if (Directory.Exists(InstallPath))
             {
-                if (await _gameInstallService.StartUninstallAsync(CurrentGameId, InstallPath))
+                if (await _gameInstallService.StartUninstallAsync(RequiredGameId, InstallPath))
                 {
                     _logger.LogInformation("""
                         Uninstall game finished:
                         GameId: {gameId} {gameBiz}
                         InstallPath: {installPath}
-                        """, CurrentGameId.Id, CurrentGameId.GameBiz, InstallPath);
+                        """, RequiredGameId.Id, RequiredGameId.GameBiz, InstallPath);
                     Grid_UninstallWarning.Visibility = Visibility.Collapsed;
                     WeakReferenceMessenger.Default.Send(new GameInstallPathChangedMessage());
                     CheckCanRepairGame();
@@ -608,7 +627,7 @@ public sealed partial class GameLauncherSettingDialog : ContentDialog
     {
         try
         {
-            if (_gameInstallService.GetGameInstallTask(CurrentGameId) is GameInstallContext task)
+            if (_gameInstallService.GetGameInstallTask(RequiredGameId) is GameInstallContext task)
             {
                 if (task.State is not GameInstallState.Stop and not GameInstallState.Finish)
                 {
@@ -682,7 +701,7 @@ public sealed partial class GameLauncherSettingDialog : ContentDialog
     {
         try
         {
-            GameLauncherService.SetThirdPartyToolPath(CurrentGameId, value);
+            GameLauncherService.SetThirdPartyToolPath(CurrentGameKey, value);
         }
         catch { }
     }
@@ -693,7 +712,7 @@ public sealed partial class GameLauncherSettingDialog : ContentDialog
     {
         _StartGameArgument = AppConfig.GetStartArgument(CurrentGameBiz);
         _EnableThirdPartyTool = AppConfig.GetEnableThirdPartyTool(CurrentGameBiz);
-        _ThirdPartyToolPath = GameLauncherService.GetThirdPartyToolPath(CurrentGameId);
+        _ThirdPartyToolPath = GameLauncherService.GetThirdPartyToolPath(CurrentGameKey);
         OnPropertyChanged(nameof(StartGameArgument));
         OnPropertyChanged(nameof(EnableThirdPartyTool));
         OnPropertyChanged(nameof(ThirdPartyToolPath));
@@ -1019,10 +1038,10 @@ public sealed partial class GameLauncherSettingDialog : ContentDialog
             {
                 return;
             }
-            var gamePackage = await _hoyoPlayService.GetGamePackageAsync(CurrentGameId);
+            var gamePackage = await _hoyoPlayService.GetGamePackageAsync(RequiredGameId);
             LatestVersion = gamePackage.Main.Major!.Version;
             var list = GetGameResourcePackageGroups(gamePackage.Main);
-            var sdk = await _hoyoPlayService.GetGameChannelSDKAsync(CurrentGameId);
+            var sdk = await _hoyoPlayService.GetGameChannelSDKAsync(RequiredGameId);
             if (sdk is not null)
             {
                 list.Add(new PackageGroup

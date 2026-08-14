@@ -6,6 +6,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
+using Starward.Core.Games;
 using Starward.Core.HoYoPlay;
 using Starward.Features.HoYoPlay;
 using Starward.Features.ViewHost;
@@ -194,7 +195,7 @@ public sealed partial class GameBannerAndPost : UserControl
     {
         try
         {
-            if (GameFeatureConfig.FromGameId(CurrentGameId).InGameNoticesWindow)
+            if (GameFeatureConfig.FromGameKey(GameKeyResolver.Resolve(CurrentGameId.GameBiz.Value) ?? default).InGameNoticesWindow)
             {
                 Button_InGameNotices.Visibility = Visibility.Visible;
             }

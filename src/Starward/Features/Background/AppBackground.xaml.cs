@@ -7,6 +7,7 @@ using Microsoft.Graphics.Canvas.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
+using Starward.Core.Games;
 using Starward.Core.HoYoPlay;
 using Starward.Features.Codec;
 using Starward.Features.ViewHost;
@@ -76,11 +77,14 @@ public sealed partial class AppBackground : UserControl
 
 
 
-    public GameId CurrentGameId
+    /// <summary>
+    /// 当前游戏，背景由它决定
+    /// </summary>
+    public GameKey CurrentGameKey
     {
         get; set
         {
-            if (field is null)
+            if (!field.IsValid)
             {
                 field = value;
                 InitializeBackgroundImage();
@@ -118,7 +122,7 @@ public sealed partial class AppBackground : UserControl
     {
         try
         {
-            var file = BackgroundService.GetCachedBackgroundFile(CurrentGameId);
+            var file = BackgroundService.GetCachedBackgroundFile(CurrentGameKey);
             if (file != null)
             {
                 if (!BackgroundService.FileIsSupportedVideo(file))
@@ -164,7 +168,7 @@ public sealed partial class AppBackground : UserControl
             updateBackgroundCts = new();
             CancellationToken cancellationToken = updateBackgroundCts.Token;
 
-            if (CurrentGameId is null)
+            if (!CurrentGameKey.IsValid)
             {
                 DisposeVideoResource();
                 BackgroundImageSource = new BitmapImage(new Uri("ms-appx:///Assets/Image/UI_CutScene_1130320101A.png"));
@@ -181,10 +185,10 @@ public sealed partial class AppBackground : UserControl
                     bool timeout = i == 0 && background is null;
                     CancellationToken apiCancellationToken = timeout ? new CancellationTokenSource(1000).Token : CancellationToken.None;
                     CancellationToken downloadCancellationToken = timeout ? new CancellationTokenSource(3000).Token : CancellationToken.None;
-                    gameBackground = background ?? await _backgroundService.GetSuggestedGameBackgroundAsync(CurrentGameId, apiCancellationToken);
+                    gameBackground = background ?? await _backgroundService.GetSuggestedGameBackgroundAsync(CurrentGameKey, apiCancellationToken);
                     if (gameBackground is null)
                     {
-                        filePath = BackgroundService.GetFallbackBackgroundImage(CurrentGameId);
+                        filePath = BackgroundService.GetFallbackBackgroundImage(CurrentGameKey);
                     }
                     else if (gameBackground.Type is GameBackground.BACKGROUND_TYPE_CUSTOM)
                     {
@@ -202,11 +206,11 @@ public sealed partial class AppBackground : UserControl
                 catch (OperationCanceledException)
                 {
                     apiCancelled = true;
-                    filePath = BackgroundService.GetFallbackBackgroundImage(CurrentGameId);
+                    filePath = BackgroundService.GetFallbackBackgroundImage(CurrentGameKey);
                 }
                 catch (Exception ex)
                 {
-                    filePath = BackgroundService.GetFallbackBackgroundImage(CurrentGameId);
+                    filePath = BackgroundService.GetFallbackBackgroundImage(CurrentGameKey);
                     _logger.LogError(ex, "Update background image");
                 }
                 if (cancellationToken.IsCancellationRequested)
@@ -246,9 +250,9 @@ public sealed partial class AppBackground : UserControl
                     CurrentGameBackground = gameBackground;
                     if (!apiCancelled && gameBackground?.Type is not GameBackground.BACKGROUND_TYPE_CUSTOM)
                     {
-                        AppConfig.SetBg(CurrentGameId.GameBiz, Path.GetFileName(filePath));
-                        var list = await _backgroundService.GetGameBackgroundsAsync(CurrentGameId);
-                        AppConfig.SetGameBackgroundIds(CurrentGameId.GameBiz, string.Join(',', list.Select(x => x.Id)));
+                        AppConfig.SetBg(GameKeyResolver.ToSettingsKey(CurrentGameKey), Path.GetFileName(filePath));
+                        var list = await _backgroundService.GetGameBackgroundsAsync(CurrentGameKey);
+                        AppConfig.SetGameBackgroundIds(GameKeyResolver.ToSettingsKey(CurrentGameKey), string.Join(',', list.Select(x => x.Id)));
                     }
                 }
             }

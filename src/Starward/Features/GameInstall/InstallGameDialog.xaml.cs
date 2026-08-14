@@ -7,10 +7,12 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Starward.Core;
+using Starward.Core.Games;
 using Starward.Core.HoYoPlay;
 using Starward.Features.GameLauncher;
 using Starward.Features.HoYoPlay;
 using Starward.Helpers;
+using Starward.Providers.HoYo;
 using Starward.RPC.GameInstall;
 using System;
 using System.Collections.Generic;
@@ -45,15 +47,33 @@ public sealed partial class InstallGameDialog : ContentDialog
 
 
 
-    public GameId CurrentGameId { get; set; }
+    /// <summary>
+    /// 当前游戏，对话框的唯一身份来源
+    /// </summary>
+    public GameKey CurrentGameKey { get; set; }
+
+
+    /// <summary>
+    /// 兼容层：HoYoPlay 的游戏标识，由 <see cref="CurrentGameKey"/> 推导
+    /// </summary>
+    public GameId? CurrentGameId => HoYoGameIds.Resolve(CurrentGameKey);
+
+    /// <summary>
+    /// 已确定是米哈游游戏时使用：本对话框的在线功能都在能力判断之后才会执行。
+    /// 假设不成立时立刻失败，而不是留下空引用。
+    /// </summary>
+    private GameId RequiredGameId => CurrentGameId
+        ?? throw new GameCapabilityNotSupportedException(CurrentGameKey, GameCapability.Install,
+                                                        $"Game '{CurrentGameKey}' has no HoYoPlay game id.");
+
 
 
 
     private void InstallGameDialog_Loaded(object sender, RoutedEventArgs e)
     {
-        if (CurrentGameId is null)
+        if (RequiredGameId is null)
         {
-            _logger.LogWarning("CurrentGameId is null.");
+            _logger.LogWarning("RequiredGameId is null.");
             this.Hide();
             return;
         }
@@ -78,7 +98,7 @@ public sealed partial class InstallGameDialog : ContentDialog
             string? defaultFolder = AppConfig.DefaultGameInstallationPath;
             if (Directory.Exists(defaultFolder))
             {
-                SetInstallationPath(Path.GetFullPath(Path.Combine(defaultFolder, CurrentGameId.GameBiz)));
+                SetInstallationPath(Path.GetFullPath(Path.Combine(defaultFolder, RequiredGameId.GameBiz)));
                 return;
             }
             string baseFolder = "";
@@ -105,7 +125,7 @@ public sealed partial class InstallGameDialog : ContentDialog
                     baseFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "miHoYo");
                 }
             }
-            string target = Path.Combine(baseFolder, CurrentGameId.GameBiz);
+            string target = Path.Combine(baseFolder, RequiredGameId.GameBiz);
             if (Path.IsPathFullyQualified(target))
             {
                 SetInstallationPath(Path.GetFullPath(target));
@@ -123,10 +143,10 @@ public sealed partial class InstallGameDialog : ContentDialog
     {
         try
         {
-            GameConfig? config = await _hoYoPlayService.GetGameConfigAsync(CurrentGameId);
+            GameConfig? config = await _hoYoPlayService.GetGameConfigAsync(RequiredGameId);
             if (config is null)
             {
-                _logger.LogWarning("GameConfig of ({GameBiz}) is null.", CurrentGameId.GameBiz);
+                _logger.LogWarning("GameConfig of ({GameBiz}) is null.", RequiredGameId.GameBiz);
                 this.Hide();
                 return;
             }
@@ -136,13 +156,13 @@ public sealed partial class InstallGameDialog : ContentDialog
                 Segmented_SelectLanguage.Visibility = Visibility.Visible;
                 SetDefaultAudioPackage();
             }
-            if (GameFeatureConfig.FromGameId(CurrentGameId).SupportHardLink)
+            if (GameFeatureConfig.FromGameKey(CurrentGameKey).SupportHardLink)
             {
                 StackPanel_HardLink.Visibility = Visibility.Visible;
             }
             if (config.DefaultDownloadMode is DownloadMode.DOWNLOAD_MODE_CHUNK)
             {
-                var branch = await _hoYoPlayService.GetGameBranchAsync(CurrentGameId);
+                var branch = await _hoYoPlayService.GetGameBranchAsync(RequiredGameId);
                 if (branch is not null)
                 {
                     _gameSophonChunkBuild = await _hoYoPlayService.GetGameSophonChunkBuildAsync(branch, branch.Main);
@@ -150,7 +170,7 @@ public sealed partial class InstallGameDialog : ContentDialog
             }
             if (_gameSophonChunkBuild is null)
             {
-                _gamePackage = await _hoYoPlayService.GetGamePackageAsync(CurrentGameId);
+                _gamePackage = await _hoYoPlayService.GetGamePackageAsync(RequiredGameId);
             }
             ComputePackageSize();
             CheckCanStartInstallation();
@@ -224,7 +244,7 @@ public sealed partial class InstallGameDialog : ContentDialog
         {
             if (value)
             {
-                SetInstallationPath(Path.Combine(_selectPath, CurrentGameId.GameBiz));
+                SetInstallationPath(Path.Combine(_selectPath, RequiredGameId.GameBiz));
             }
             else
             {
@@ -333,7 +353,7 @@ public sealed partial class InstallGameDialog : ContentDialog
                 _selectPath = path;
                 if (AutomaticallyCreateSubfolderForInstall)
                 {
-                    path = Path.Combine(path, CurrentGameId.GameBiz);
+                    path = Path.Combine(path, RequiredGameId.GameBiz);
                 }
                 SetInstallationPath(path);
             }
@@ -392,12 +412,12 @@ public sealed partial class InstallGameDialog : ContentDialog
     {
         try
         {
-            GameInstallContext? task = await _gameInstallService.StartInstallAsync(CurrentGameId, InstallationPath, _audioLanguage);
+            GameInstallContext? task = await _gameInstallService.StartInstallAsync(RequiredGameId, InstallationPath, _audioLanguage);
             if (task is not null && task.State is not GameInstallState.Stop and not GameInstallState.Error)
             {
-                GameLauncherService.ChangeGameInstallPath(CurrentGameId, InstallationPath);
+                GameLauncherService.ChangeGameInstallPath(CurrentGameKey, InstallationPath);
                 WeakReferenceMessenger.Default.Send(new GameInstallTaskStartedMessage(task));
-                if (_selectPath is not null && InstallationPath.EndsWith(CurrentGameId.GameBiz))
+                if (_selectPath is not null && InstallationPath.EndsWith(RequiredGameId.GameBiz))
                 {
                     AppConfig.DefaultGameInstallationPath = _selectPath;
                 }

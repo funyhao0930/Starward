@@ -175,7 +175,7 @@ public sealed partial class GenshinBeyondGachaPage : PageBase
             }
             else
             {
-                var path = GameLauncherService.GetGameInstallPath(CurrentGameId);
+                var path = GameLauncherService.GetGameInstallPath(CurrentGameKey);
                 if (!Directory.Exists(path))
                 {
                     // 游戏未安装
@@ -376,7 +376,7 @@ public sealed partial class GenshinBeyondGachaPage : PageBase
     {
         try
         {
-            var installPath = GameLauncherService.GetGameInstallPath(CurrentGameId);
+            var installPath = GameLauncherService.GetGameInstallPath(CurrentGameKey);
             if (Directory.Exists(installPath))
             {
                 var webCachesPath = GenshinBeyondGachaClient.GetWebCachesFolderPath(CurrentGameBiz, installPath);
@@ -401,7 +401,7 @@ public sealed partial class GenshinBeyondGachaPage : PageBase
     {
         try
         {
-            var installPath = GameLauncherService.GetGameInstallPath(CurrentGameId);
+            var installPath = GameLauncherService.GetGameInstallPath(CurrentGameKey);
             if (Directory.Exists(installPath))
             {
                 var path = GenshinBeyondGachaClient.GetGachaCacheFilePath(CurrentGameBiz, installPath);

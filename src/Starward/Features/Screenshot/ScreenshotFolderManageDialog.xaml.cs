@@ -3,7 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Starward.Core.HoYoPlay;
+using Starward.Core.Games;
 using Starward.Helpers;
 using System;
 using System.Collections.Generic;
@@ -24,7 +24,7 @@ public sealed partial class ScreenshotFolderManageDialog : ContentDialog
     private ILogger<ScreenshotFolderManageDialog> _logger = AppConfig.GetLogger<ScreenshotFolderManageDialog>();
 
 
-    public GameId CurrentGameId { get; set; }
+    public GameKey CurrentGameKey { get; set; }
 
 
     public List<ScreenshotFolder> Folders { get; set; }
@@ -178,7 +178,7 @@ public sealed partial class ScreenshotFolderManageDialog : ContentDialog
                             return;
                         }
                     }
-                    _logger.LogWarning("Game exe name of {GameBiz} is null, cannot backup screenshots.", CurrentGameId.GameBiz);
+                    _logger.LogWarning("Game exe name of {GameKey} is null, cannot backup screenshots.", CurrentGameKey);
                     TextBlock_BackupResult.Visibility = Visibility.Visible;
                     TextBlock_BackupResult.Text = Lang.ScreenshotFolderManageDialog_FailedToBackupScreenshots;
                     return;

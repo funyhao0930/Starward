@@ -8,6 +8,7 @@ using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.UI.Xaml.Navigation;
 using Starward.Core;
 using Starward.Core.Games;
+using Starward.Core.HoYoPlay;
 using Starward.Features.GameLauncher;
 using Starward.Features.HoYoPlay;
 using Starward.Frameworks;
@@ -222,7 +223,8 @@ public sealed partial class ScreenshotPage2 : PageBase
         try
         {
             string? backupFolder = null, screenshotFolder = null;
-            string? installPath = GameLauncherService.GetGameInstallPath(CurrentGameId);
+            // 用存储键而不是 HoYoPlay 的 GameId，非米哈游游戏也能取得安装目录
+            string? installPath = GameLauncherService.GetGameInstallPath(CurrentGameBiz);
             GameDescriptor? descriptor = GameKeyResolver.Resolve(CurrentGameBiz.Value) is GameKey gameKey
                                        ? _providerRegistry.GetGame(gameKey)
                                        : null;
@@ -233,8 +235,10 @@ public sealed partial class ScreenshotPage2 : PageBase
 
             if (name is null || screenshotFolder is null)
             {
-                // 未适配的米哈游游戏，退回 HoYoPlay 接口
-                var config = await _hoyoplayService.GetGameConfigAsync(CurrentGameId);
+                // 未适配的米哈游游戏，退回 HoYoPlay 接口；只支持启动的游戏没有这个接口
+                GameConfig? config = CurrentGameId is GameId gameId
+                                   ? await _hoyoplayService.GetGameConfigAsync(gameId)
+                                   : null;
                 if (config is not null)
                 {
                     name ??= config.ExeFileName.Replace(".exe", "");
@@ -450,7 +454,7 @@ public sealed partial class ScreenshotPage2 : PageBase
             var dialog = new ScreenshotFolderManageDialog
             {
                 Folders = _folders,
-                CurrentGameId = this.CurrentGameId,
+                CurrentGameKey = this.CurrentGameKey,
                 XamlRoot = this.XamlRoot,
             };
             await dialog.ShowAsync();

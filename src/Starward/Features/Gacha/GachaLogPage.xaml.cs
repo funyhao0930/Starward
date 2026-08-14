@@ -475,7 +475,7 @@ public sealed partial class GachaLogPage : PageBase
             }
             else
             {
-                var path = GameLauncherService.GetGameInstallPath(CurrentGameId);
+                var path = GameLauncherService.GetGameInstallPath(CurrentGameKey);
                 if (!Directory.Exists(path))
                 {
                     // 游戏未安装
@@ -949,7 +949,7 @@ public sealed partial class GachaLogPage : PageBase
     {
         try
         {
-            var installPath = GameLauncherService.GetGameInstallPath(CurrentGameId);
+            var installPath = GameLauncherService.GetGameInstallPath(CurrentGameKey);
             if (Directory.Exists(installPath))
             {
                 var webCachesPath = GachaLogClient.GetWebCachesFolderPath(CurrentGameBiz, installPath);
@@ -974,7 +974,7 @@ public sealed partial class GachaLogPage : PageBase
     {
         try
         {
-            var installPath = GameLauncherService.GetGameInstallPath(CurrentGameId);
+            var installPath = GameLauncherService.GetGameInstallPath(CurrentGameKey);
             if (Directory.Exists(installPath))
             {
                 var path = GachaLogClient.GetGachaCacheFilePath(CurrentGameBiz, installPath);
