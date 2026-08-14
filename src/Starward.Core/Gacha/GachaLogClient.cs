@@ -111,6 +111,21 @@ public abstract class GachaLogClient
 
 
 
+    /// <summary>
+    /// 从本机文件中找出带授权信息的抽卡记录 URL。
+    /// <para/>
+    /// 米哈游的游戏都放在游戏目录的 webCaches 里，因此默认实现就是
+    /// <see cref="GetGachaUrlFromWebCache"/>；其他供应商藏在别处
+    /// （日志文件、公共的 WebView 缓存等），由各自的客户端覆写。
+    /// </summary>
+    /// <param name="gameBiz">米哈游游戏的 GameBiz，其他供应商为存储键</param>
+    /// <param name="installPath">游戏安装目录</param>
+    public virtual string? FindGachaUrlFromLocalFiles(GameBiz gameBiz, string? installPath = null)
+    {
+        return GetGachaUrlFromWebCache(gameBiz, installPath);
+    }
+
+
     public static string? GetGachaUrlFromWebCache(GameBiz gameBiz, string? installPath = null)
     {
         var file = GetGachaCacheFilePath(gameBiz, installPath);

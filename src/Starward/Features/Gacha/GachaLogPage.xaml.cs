@@ -482,7 +482,7 @@ public sealed partial class GachaLogPage : PageBase
                     InAppToast.MainWindow?.Warning(null, Lang.GachaLogPage_GameNotInstalled);
                     return;
                 }
-                url = _gachaLogService.GetGachaLogUrlFromWebCache(CurrentGameBiz, path);
+                url = _gachaLogService.GetGachaLogUrlFromWebCache(path);
                 if (string.IsNullOrWhiteSpace(url))
                 {
                     // 无法找到 URL，请在游戏中打开抽卡记录页面

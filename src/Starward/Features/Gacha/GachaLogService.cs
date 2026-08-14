@@ -89,9 +89,13 @@ internal abstract class GachaLogService
 
 
 
-    public virtual string? GetGachaLogUrlFromWebCache(GameBiz gameBiz, string path)
+    /// <summary>
+    /// 从本机文件中找出带授权信息的抽卡记录 URL。
+    /// 藏在哪个文件、长什么样由各游戏的客户端决定。
+    /// </summary>
+    public virtual string? GetGachaLogUrlFromWebCache(string? installPath)
     {
-        return GachaLogClient.GetGachaUrlFromWebCache(gameBiz, path);
+        return _client.FindGachaUrlFromLocalFiles(CurrentGameBiz, installPath);
     }
 
 
