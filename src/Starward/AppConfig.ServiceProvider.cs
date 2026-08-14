@@ -7,6 +7,8 @@ using Starward.Core.Gacha.StarRail;
 using Starward.Core.Gacha.ZZZ;
 using Starward.Core.GameNotice;
 using Starward.Core.GameRecord;
+using Starward.Core.Games;
+using Starward.Core.Games.HoYo;
 using Starward.Core.HoYoPlay;
 using Starward.Core.SelfQuery;
 using Starward.Features.Background;
@@ -23,6 +25,7 @@ using Starward.Features.RPC;
 using Starward.Features.Screenshot;
 using Starward.Features.SelfQuery;
 using Starward.Features.Update;
+using Starward.Providers.HoYo;
 using Starward.Setup.Core;
 using System;
 using System.IO;
@@ -57,6 +60,16 @@ public static partial class AppConfig
             sc.AddSingleton<HoYoPlayClient>();
             sc.AddSingleton<GameNoticeClient>();
             sc.AddSingleton<HoYoPlayService>();
+
+            // 多游戏 Provider 架构
+            sc.AddSingleton<IGameProviderRegistry, GameProviderRegistry>();
+            sc.AddSingleton<IGameLaunchSettings, AppConfigGameLaunchSettings>();
+            sc.AddSingleton<IHoYoGameInfoSource, HoYoGameInfoSource>();
+            sc.AddSingleton<IHoYoLaunchHooks, HoYoLaunchHooks>();
+            sc.AddSingleton<IGameCatalogProvider, HoYoCatalogProvider>();
+            sc.AddSingleton<IGameDiscoveryProvider, HoYoDiscoveryProvider>();
+            sc.AddSingleton<IGameLaunchProvider, HoYoLaunchProvider>();
+
             sc.AddSingleton<BackgroundService>();
             sc.AddSingleton<GameLauncherService>();
             sc.AddSingleton<GamePackageService>();
