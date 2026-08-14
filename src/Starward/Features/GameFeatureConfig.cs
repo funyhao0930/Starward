@@ -1,4 +1,5 @@
-using Starward.Core;
+using Starward.Core.Games;
+using Starward.Core.Games.HoYo;
 using Starward.Core.HoYoPlay;
 using Starward.Features.Gacha;
 using Starward.Features.GameLauncher;
@@ -10,6 +11,11 @@ using System.Collections.Generic;
 
 namespace Starward.Features;
 
+/// <summary>
+/// 单款游戏可以使用的功能。
+/// 不再按 GameBiz 逐个硬编码，而是由 <see cref="GameDescriptor.Capabilities"/> 推导，
+/// 新增游戏时只需要在对应的 Provider 中声明能力。
+/// </summary>
 internal partial class GameFeatureConfig
 {
 
@@ -57,237 +63,86 @@ internal partial class GameFeatureConfig
 
 
 
+    /// <summary>
+    /// 没有选择游戏时使用
+    /// </summary>
+    public static GameFeatureConfig None { get; } = new();
+
+
+
+    /// <summary>
+    /// 由游戏描述推导可以使用的功能
+    /// </summary>
+    public static GameFeatureConfig FromDescriptor(GameDescriptor? descriptor)
+    {
+        if (descriptor is null)
+        {
+            return None;
+        }
+        return FromCapabilities(descriptor.Capabilities);
+    }
+
+
+
+    /// <summary>
+    /// 由能力标志推导可以使用的功能
+    /// </summary>
+    public static GameFeatureConfig FromCapabilities(GameCapability capabilities)
+    {
+        if (capabilities is GameCapability.None)
+        {
+            return None;
+        }
+        var pages = new List<string>();
+        AddPageIf(pages, capabilities, GameCapability.Launch, nameof(GameLauncherPage));
+        AddPageIf(pages, capabilities, GameCapability.GameSetting, nameof(GameSettingPage));
+        AddPageIf(pages, capabilities, GameCapability.Screenshot, nameof(ScreenshotPage));
+        AddPageIf(pages, capabilities, GameCapability.Gacha, nameof(GachaLogPage));
+        AddPageIf(pages, capabilities, GameCapability.GameRecord, nameof(GameRecordPage));
+        AddPageIf(pages, capabilities, GameCapability.SelfQuery, nameof(SelfQueryPage));
+        AddPageIf(pages, capabilities, GameCapability.BeyondGacha, nameof(GenshinBeyondGachaPage));
+        return new GameFeatureConfig
+        {
+            SupportedPages = pages,
+            InGameNoticesWindow = capabilities.HasFlag(GameCapability.InGameNotices),
+            SupportHardLink = capabilities.HasFlag(GameCapability.HardLink),
+            SupportCloudGame = capabilities.HasFlag(GameCapability.CloudGame),
+            SupportGameAccountSwitcher = capabilities.HasFlag(GameCapability.AccountSwitcher),
+            SupportDailyNote = capabilities.HasFlag(GameCapability.DailyNote),
+        };
+    }
+
+
+    private static void AddPageIf(List<string> pages, GameCapability capabilities, GameCapability required, string pageName)
+    {
+        if (capabilities.HasFlag(required))
+        {
+            pages.Add(pageName);
+        }
+    }
+
+
+
+    /// <summary>
+    /// 兼容层：现有调用方仍以 <see cref="GameId"/> 为货币。
+    /// 本方法是静态的，无法使用构造函数注入，因此沿用应用既有的 <see cref="AppConfig.GetService{T}"/>；
+    /// 新代码应直接使用 <see cref="FromDescriptor(GameDescriptor?)"/>。
+    /// </summary>
     public static GameFeatureConfig FromGameId(GameId? gameId)
     {
         if (gameId is null)
         {
             return None;
         }
-        GameFeatureConfig config = gameId.GameBiz.Value switch
+        // 无法识别的 GameBiz，与重构前一致，只允许启动
+        if (!HoYoGameMapping.TryFromGameBiz(gameId.GameBiz, out GameKey key))
         {
-            GameBiz.bh3_cn => bh3_cn,
-            GameBiz.bh3_global => bh3_global,
-            GameBiz.hk4e_cn => hk4e_cn,
-            GameBiz.hk4e_global => hk4e_global,
-            GameBiz.hk4e_bilibili => hk4e_bilibili,
-            GameBiz.hkrpg_cn => hkrpg_cn,
-            GameBiz.hkrpg_global => hkrpg_global,
-            GameBiz.hkrpg_bilibili => hkrpg_bilibili,
-            GameBiz.nap_cn => nap_cn,
-            GameBiz.nap_global => nap_global,
-            GameBiz.nap_bilibili => nap_bilibili,
-            _ => Default,
-        };
-        return config;
+            return FromCapabilities(GameCapability.Launch);
+        }
+        GameDescriptor? descriptor = AppConfig.GetService<IGameProviderRegistry>().GetGame(key);
+        // HoYoPlay 接口返回但尚未适配的游戏，只允许启动
+        return FromCapabilities(descriptor?.Capabilities ?? GameCapability.Launch);
     }
-
-
-
-
-
-    private static readonly GameFeatureConfig None = new();
-
-
-    private static readonly GameFeatureConfig Default = new()
-    {
-        SupportedPages = [nameof(GameLauncherPage)]
-    };
-
-
-    private static readonly GameFeatureConfig bh3_cn = new()
-    {
-        SupportedPages =
-        [
-            nameof(GameLauncherPage),
-            nameof(GameSettingPage),
-            nameof(ScreenshotPage),
-            nameof(GameRecordPage),
-        ],
-        InGameNoticesWindow = true,
-        SupportGameAccountSwitcher = true,
-        SupportDailyNote = true,
-    };
-
-
-    private static readonly GameFeatureConfig bh3_global = new()
-    {
-        SupportedPages =
-        [
-            nameof(GameLauncherPage),
-            nameof(GameSettingPage),
-            nameof(ScreenshotPage),
-            nameof(GameRecordPage),
-        ],
-        InGameNoticesWindow = true,
-        SupportDailyNote = true,
-    };
-
-
-    private static readonly GameFeatureConfig hk4e_cn = new()
-    {
-        SupportedPages =
-        [
-            nameof(GameLauncherPage),
-            nameof(GameSettingPage),
-            nameof(ScreenshotPage),
-            nameof(GachaLogPage),
-            nameof(GameRecordPage),
-            nameof(SelfQueryPage),
-            nameof(GenshinBeyondGachaPage),
-        ],
-        InGameNoticesWindow = true,
-        SupportHardLink = true,
-        SupportCloudGame = true,
-        SupportGameAccountSwitcher = true,
-        SupportDailyNote = true,
-    };
-
-
-    private static readonly GameFeatureConfig hk4e_global = new()
-    {
-        SupportedPages =
-        [
-            nameof(GameLauncherPage),
-            nameof(GameSettingPage),
-            nameof(ScreenshotPage),
-            nameof(GachaLogPage),
-            nameof(GameRecordPage),
-            nameof(SelfQueryPage),
-            nameof(GenshinBeyondGachaPage),
-        ],
-        InGameNoticesWindow = true,
-        SupportHardLink = true,
-        SupportCloudGame = true,
-        SupportGameAccountSwitcher = true,
-        SupportDailyNote = true,
-    };
-
-
-    private static readonly GameFeatureConfig hk4e_bilibili = new()
-    {
-        SupportedPages =
-        [
-            nameof(GameLauncherPage),
-            nameof(GameSettingPage),
-            nameof(ScreenshotPage),
-            nameof(GachaLogPage),
-            nameof(GameRecordPage),
-            nameof(SelfQueryPage),
-            nameof(GenshinBeyondGachaPage),
-        ],
-        InGameNoticesWindow = true,
-        SupportHardLink = true,
-        SupportDailyNote = true,
-    };
-
-
-    private static readonly GameFeatureConfig hkrpg_cn = new()
-    {
-        SupportedPages =
-        [
-            nameof(GameLauncherPage),
-            nameof(GameSettingPage),
-            nameof(ScreenshotPage),
-            nameof(GachaLogPage),
-            nameof(GameRecordPage),
-            nameof(SelfQueryPage),
-        ],
-        InGameNoticesWindow = true,
-        SupportHardLink = true,
-        SupportGameAccountSwitcher = true,
-        SupportDailyNote = true,
-    };
-
-
-    private static readonly GameFeatureConfig hkrpg_global = new()
-    {
-        SupportedPages =
-        [
-            nameof(GameLauncherPage),
-            nameof(GameSettingPage),
-            nameof(ScreenshotPage),
-            nameof(GachaLogPage),
-            nameof(GameRecordPage),
-            nameof(SelfQueryPage),
-        ],
-        InGameNoticesWindow = true,
-        SupportHardLink = true,
-        SupportGameAccountSwitcher = true,
-        SupportDailyNote = true,
-    };
-
-
-    private static readonly GameFeatureConfig hkrpg_bilibili = new()
-    {
-        SupportedPages =
-        [
-            nameof(GameLauncherPage),
-            nameof(GameSettingPage),
-            nameof(ScreenshotPage),
-            nameof(GachaLogPage),
-            nameof(GameRecordPage),
-            nameof(SelfQueryPage),
-        ],
-        InGameNoticesWindow = true,
-        SupportHardLink = true,
-        SupportDailyNote = true,
-    };
-
-
-
-    private static readonly GameFeatureConfig nap_cn = new()
-    {
-        SupportedPages =
-        [
-            nameof(GameLauncherPage),
-            nameof(GameSettingPage),
-            nameof(ScreenshotPage),
-            nameof(GachaLogPage),
-            nameof(GameRecordPage),
-            nameof(SelfQueryPage),
-        ],
-        InGameNoticesWindow = true,
-        SupportHardLink = true,
-        SupportGameAccountSwitcher = true,
-        SupportDailyNote = true,
-        SupportCloudGame = true,
-    };
-
-
-    private static readonly GameFeatureConfig nap_global = new()
-    {
-        SupportedPages =
-        [
-            nameof(GameLauncherPage),
-            nameof(GameSettingPage),
-            nameof(ScreenshotPage),
-            nameof(GachaLogPage),
-            nameof(GameRecordPage),
-            nameof(SelfQueryPage),
-        ],
-        InGameNoticesWindow = true,
-        SupportHardLink = true,
-        SupportGameAccountSwitcher = true,
-        SupportDailyNote = true,
-    };
-
-
-    private static readonly GameFeatureConfig nap_bilibili = new()
-    {
-        SupportedPages =
-        [
-            nameof(GameLauncherPage),
-            nameof(GameSettingPage),
-            nameof(ScreenshotPage),
-            nameof(GachaLogPage),
-            nameof(GameRecordPage),
-            nameof(SelfQueryPage),
-        ],
-        InGameNoticesWindow = true,
-        SupportHardLink = true,
-        SupportDailyNote = true,
-    };
-
 
 
 }

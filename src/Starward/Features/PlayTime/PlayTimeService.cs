@@ -2,10 +2,11 @@ using Dapper;
 using Microsoft.Extensions.Logging;
 using Microsoft.Windows.AppLifecycle;
 using Starward.Core;
+using Starward.Core.Games;
+using Starward.Core.Games.HoYo;
 using Starward.Core.HoYoPlay;
 using Starward.Features.Database;
 using Starward.Features.GameLauncher;
-using Starward.Features.HoYoPlay;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -20,14 +21,14 @@ internal class PlayTimeService
 
     private readonly ILogger<PlayTimeService> _logger;
 
-    private readonly HoYoPlayService _hoYoPlayService;
+    private readonly IGameProviderRegistry _providerRegistry;
 
 
 
-    public PlayTimeService(ILogger<PlayTimeService> logger, HoYoPlayService hoYoPlayService)
+    public PlayTimeService(ILogger<PlayTimeService> logger, IGameProviderRegistry providerRegistry)
     {
         _logger = logger;
-        _hoYoPlayService = hoYoPlayService;
+        _providerRegistry = providerRegistry;
     }
 
 
@@ -505,12 +506,8 @@ internal class PlayTimeService
     /// <returns></returns>
     public async Task<string> GetGameExeNameWithoutExtensionAsync(GameId gameId)
     {
-        string? name = GameLauncherService.GetGameExeName(gameId.GameBiz);
-        if (string.IsNullOrWhiteSpace(name))
-        {
-            var config = await _hoYoPlayService.GetGameConfigAsync(gameId);
-            name = config?.ExeFileName;
-        }
+        GameKey key = HoYoGameMapping.FromGameBiz(gameId.GameBiz);
+        string? name = await _providerRegistry.GetRequiredLaunchProvider(key).GetExecutableNameAsync(key);
         return name?.Replace(".exe", "") ?? throw new ArgumentOutOfRangeException($"Unknown game ({gameId.Id}, {gameId.GameBiz}).");
     }
 

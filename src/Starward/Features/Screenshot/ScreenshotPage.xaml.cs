@@ -6,6 +6,8 @@ using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.UI.Xaml.Navigation;
 using Starward.Core;
+using Starward.Core.Games;
+using Starward.Core.Games.HoYo;
 using Starward.Features.GameLauncher;
 using Starward.Features.HoYoPlay;
 using Starward.Frameworks;
@@ -203,15 +205,9 @@ public sealed partial class ScreenshotPage : PageBase
         try
         {
             string? backupFolder = null, screenshotFolder = null;
-            string? name = GameLauncherService.GetGameExeName(CurrentGameBiz)?.Replace(".exe", "");
-            string? relativePath = CurrentGameBiz.Game switch
-            {
-                GameBiz.hk4e => "ScreenShot",
-                GameBiz.hkrpg => @"StarRail_Data\ScreenShots",
-                GameBiz.bh3 => @"ScreenShot",
-                GameBiz.nap => @"ScreenShot",
-                _ => null,
-            };
+            GameKey gameKey = HoYoGameMapping.FromGameBiz(CurrentGameBiz);
+            string? name = HoYoGameMapping.GetExecutableName(gameKey)?.Replace(".exe", "");
+            string? relativePath = HoYoGameMapping.GetScreenshotRelativePath(gameKey);
             if (name is null || relativePath is null)
             {
                 var config = await _hoyoplayService.GetGameConfigAsync(CurrentGameId);

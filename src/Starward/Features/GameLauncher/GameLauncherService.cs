@@ -1,7 +1,8 @@
 using Microsoft.Extensions.Logging;
 using Starward.Core;
+using Starward.Core.Games;
+using Starward.Core.Games.HoYo;
 using Starward.Core.HoYoPlay;
-using Starward.Features.GameSetting;
 using Starward.Features.HoYoPlay;
 using Starward.Features.PlayTime;
 using Starward.Helpers;
@@ -15,6 +16,12 @@ using System.Threading.Tasks;
 
 namespace Starward.Features.GameLauncher;
 
+/// <summary>
+/// 通用的游戏启动服务。只负责与游戏无关的部分：
+/// 检查游戏是否正在运行、执行 <see cref="ProcessStartInfo"/>、记录游玩时间、管理员权限、错误处理。
+/// <para/>
+/// 游戏专属的进程名、启动参数、启动前操作由 <see cref="IGameLaunchProvider"/> 负责。
+/// </summary>
 internal partial class GameLauncherService
 {
 
@@ -26,15 +33,15 @@ internal partial class GameLauncherService
 
     private readonly PlayTimeService _playTimeService;
 
-    private readonly GameAuthLoginService _gameAuthLoginService;
+    private readonly IGameProviderRegistry _providerRegistry;
 
 
-    public GameLauncherService(ILogger<GameLauncherService> logger, HoYoPlayService hoYoPlayService, PlayTimeService playTimeService, GameAuthLoginService gameAuthLoginService)
+    public GameLauncherService(ILogger<GameLauncherService> logger, HoYoPlayService hoYoPlayService, PlayTimeService playTimeService, IGameProviderRegistry providerRegistry)
     {
         _logger = logger;
         _hoYoPlayService = hoYoPlayService;
         _playTimeService = playTimeService;
-        _gameAuthLoginService = gameAuthLoginService;
+        _providerRegistry = providerRegistry;
     }
 
 
@@ -202,43 +209,27 @@ internal partial class GameLauncherService
 
 
     /// <summary>
-    /// 游戏进程名，带 .exe 扩展名
+    /// 通用游戏标识
     /// </summary>
     /// <param name="gameId"></param>
     /// <returns></returns>
-    public async Task<string> GetGameExeNameAsync(GameId gameId)
+    private static GameKey GetGameKey(GameId gameId)
     {
-        string? name = GetGameExeName(gameId.GameBiz);
-        if (string.IsNullOrWhiteSpace(name))
-        {
-            var config = await _hoYoPlayService.GetGameConfigAsync(gameId);
-            name = config?.ExeFileName;
-        }
-        return name ?? throw new ArgumentOutOfRangeException($"Unknown game ({gameId.Id}, {gameId.GameBiz}).");
+        return HoYoGameMapping.FromGameBiz(gameId.GameBiz);
     }
 
 
 
     /// <summary>
-    /// 游戏进程名，带 .exe 扩展名
+    /// 游戏进程名，带 .exe 扩展名。由对应的 <see cref="IGameLaunchProvider"/> 提供。
     /// </summary>
     /// <param name="gameId"></param>
     /// <returns></returns>
-    public static string? GetGameExeName(GameBiz gameBiz)
+    public async Task<string> GetGameExeNameAsync(GameId gameId)
     {
-        string? name = gameBiz.Value switch
-        {
-            GameBiz.hk4e_cn or GameBiz.hk4e_bilibili => "YuanShen.exe",
-            GameBiz.hk4e_global => "GenshinImpact.exe",
-            _ => gameBiz.Game switch
-            {
-                GameBiz.hkrpg => "StarRail.exe",
-                GameBiz.bh3 => "BH3.exe",
-                GameBiz.nap => "ZenlessZoneZero.exe",
-                _ => null,
-            },
-        };
-        return name;
+        GameKey key = GetGameKey(gameId);
+        string? name = await _providerRegistry.GetRequiredLaunchProvider(key).GetExecutableNameAsync(key);
+        return name ?? throw new ArgumentOutOfRangeException($"Unknown game ({gameId.Id}, {gameId.GameBiz}).");
     }
 
 
@@ -309,7 +300,8 @@ internal partial class GameLauncherService
 
 
     /// <summary>
-    /// 启动游戏
+    /// 启动游戏。游戏专属的部分由 <see cref="IGameLaunchProvider"/> 构建成 <see cref="GameLaunchCommand"/>，
+    /// 本方法只负责执行、记录游玩时间与错误处理。
     /// </summary>
     /// <returns></returns>
     public async Task<Process?> StartGameAsync(GameId gameId, string? installPath = null)
@@ -321,84 +313,39 @@ internal partial class GameLauncherService
             {
                 throw new Exception($"Game is running: {existingProcess.ProcessName}.exe ({existingProcess.Id}).");
             }
-            string? exe = null, arg = null, verb = null;
-            if (Directory.Exists(installPath))
+
+            GameKey key = GetGameKey(gameId);
+            var options = new GameLaunchOptions
             {
-                var e = Path.Join(installPath, await GetGameExeNameAsync(gameId));
-                if (File.Exists(e))
-                {
-                    exe = e;
-                }
+                InstallPath = installPath,
+                ConfiguredInstallPath = GetGameInstallPath(gameId),
+            };
+            GameLaunchCommand command;
+            try
+            {
+                command = await _providerRegistry.GetRequiredLaunchProvider(key).CreateLaunchCommandAsync(key, options);
             }
-            bool thirdPartyTool = false;
-            if (string.IsNullOrWhiteSpace(exe) && AppConfig.GetEnableThirdPartyTool(gameId.GameBiz))
+            catch (FileNotFoundException ex)
             {
-                exe = GetThirdPartyToolPath(gameId);
-                if (File.Exists(exe))
-                {
-                    thirdPartyTool = true;
-                    verb = Path.GetExtension(exe) is ".exe" or ".bat" ? "runas" : "";
-                }
-                else
-                {
-                    exe = null;
-                    SetThirdPartyToolPath(gameId, null);
-                    _logger.LogWarning("Third party tool not found: {path}", exe);
-                }
-            }
-            if (string.IsNullOrWhiteSpace(exe))
-            {
-                var folder = GetGameInstallPath(gameId);
-                var name = await GetGameExeNameAsync(gameId);
-                exe = Path.Join(folder, name);
-                verb = "runas";
-                if (!File.Exists(exe))
-                {
-                    _logger.LogWarning("Game exe not found: {path}", exe);
-                    throw new FileNotFoundException("Game exe not found", name);
-                }
-            }
-            arg = AppConfig.GetStartArgument(gameId.GameBiz)?.Trim();
-            if (AppConfig.EnableLoginAuthTicket is true)
-            {
-                string? ticket = await _gameAuthLoginService.CreateAuthTicketByGameBiz(gameId);
-                if (!string.IsNullOrWhiteSpace(ticket))
-                {
-                    arg += $" login_auth_ticket={ticket}";
-                }
-            }
-            if (AppConfig.GetUsePopupWindow(gameId.GameBiz))
-            {
-                arg += " -popupwindow";
-            }
-            if (AppConfig.GetEnableDX12(gameId.GameBiz))
-            {
-                arg += " -use-d3d12";
+                _logger.LogWarning("Game exe not found: {name}", ex.FileName);
+                throw;
             }
 
-            if (gameId.GameBiz.Game is GameBiz.hk4e)
-            {
-                GameSettingService.SetGenshinEnableHDR(gameId.GameBiz, AppConfig.EnableGenshinHDR);
-            }
-            if (!thirdPartyTool && AppConfig.StartGameWithCMD)
-            {
-                arg = $"""/c start "" /d "{Path.GetDirectoryName(exe)}" "{exe}" {arg}""";
-                exe = "cmd.exe";
-            }
-            _logger.LogInformation("Start game ({biz})\r\npath: {exe}\r\narg: {arg}", gameId, exe, arg);
+            _logger.LogInformation("Start game ({biz})\r\npath: {exe}\r\narg: {arg}", gameId, command.FileName, command.Arguments);
             var info = new ProcessStartInfo
             {
-                FileName = exe,
-                Arguments = arg,
-                UseShellExecute = true,
-                Verb = verb,
-                WorkingDirectory = Path.GetDirectoryName(exe),
+                FileName = command.FileName,
+                Arguments = command.Arguments,
+                UseShellExecute = command.UseShellExecute,
+                Verb = command.Verb,
+                WorkingDirectory = command.WorkingDirectory,
             };
             Process? process = Process.Start(info);
             if (process != null)
             {
-                if (thirdPartyTool || AppConfig.StartGameWithCMD)
+                if (command.TrackByProcessName)
                 {
+                    // 创建出来的进程是第三方工具或 cmd.exe，需要按进程名查找真正的游戏进程
                     return await _playTimeService.StartProcessToLogAsync(gameId);
                 }
                 else
