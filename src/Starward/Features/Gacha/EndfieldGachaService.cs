@@ -106,7 +106,7 @@ internal class EndfieldGachaService : GachaLogService
         using var dapper = DatabaseService.CreateConnection();
         var list = dapper.Query<GryphlineGachaItem>($"SELECT * FROM {GachaTableName} WHERE Uid = @uid ORDER BY Id;", new { uid }).ToList();
         using var fs = System.IO.File.Create(file);
-        await JsonSerializer.SerializeAsync(fs, new { uid, list }, AppConfig.JsonSerializerOptions);
+        await JsonSerializer.SerializeAsync(fs, new SimpleGachaExportFile<GryphlineGachaItem> { Uid = uid, List = list }, AppConfig.JsonSerializerOptions);
     }
 
 
