@@ -37,7 +37,7 @@ public sealed partial class GameBannerAndPost : UserControl
     private readonly GameNoticeService _gameNoticeService = AppConfig.GetService<GameNoticeService>();
 
 
-    public GameId CurrentGameId { get; set; }
+    public GameId? CurrentGameId { get; set; }
 
 
 
@@ -172,6 +172,12 @@ public sealed partial class GameBannerAndPost : UserControl
     {
         try
         {
+            // 只支持启动的游戏没有公告接口
+            if (CurrentGameId is null)
+            {
+                ShowBannerAndPost = false;
+                return;
+            }
             var content = await _hoYoPlayService.GetGameContentAsync(CurrentGameId);
             if (content is null || !AppConfig.EnableBannerAndPost)
             {
@@ -195,7 +201,7 @@ public sealed partial class GameBannerAndPost : UserControl
     {
         try
         {
-            if (GameFeatureConfig.FromGameKey(GameKeyResolver.Resolve(CurrentGameId.GameBiz.Value) ?? default).InGameNoticesWindow)
+            if (GameFeatureConfig.FromGameKey(GameKeyResolver.Resolve(CurrentGameId?.GameBiz.Value) ?? default).InGameNoticesWindow)
             {
                 Button_InGameNotices.Visibility = Visibility.Visible;
             }
@@ -210,7 +216,7 @@ public sealed partial class GameBannerAndPost : UserControl
             }
             else
             {
-                IsGameNoticesAlert = await _gameNoticeService.IsNoticeAlertAsync(CurrentGameId.GameBiz);
+                IsGameNoticesAlert = await _gameNoticeService.IsNoticeAlertAsync(CurrentGameId!.GameBiz);
             }
         }
         catch (Exception ex)

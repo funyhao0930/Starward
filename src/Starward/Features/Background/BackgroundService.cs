@@ -126,14 +126,7 @@ public class BackgroundService
     /// 该游戏是否有 HoYoPlay 那样的在线背景图接口。
     /// 只支持启动的游戏没有，对它们调用会抛出 Unknown launcher id。
     /// </summary>
-    private bool SupportsOnlineBackground(GameKey key)
-    {
-        if (!key.IsValid)
-        {
-            return false;
-        }
-        return _providerRegistry.GetGame(key)?.HasCapability(GameCapability.Install) ?? true;
-    }
+    private bool SupportsOnlineBackground(GameKey key) => _providerRegistry.SupportsCapability(key, GameCapability.Install);
 
 
     /// <summary>

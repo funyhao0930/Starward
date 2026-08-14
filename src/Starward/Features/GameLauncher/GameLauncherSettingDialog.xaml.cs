@@ -310,17 +310,7 @@ public sealed partial class GameLauncherSettingDialog : ContentDialog
     /// 该游戏是否有 HoYoPlay 那样的在线安装包接口。
     /// 只支持启动的游戏没有，音频语言与游戏资源等区块对它们没有意义。
     /// </summary>
-    private bool SupportsPackageApi
-    {
-        get
-        {
-            if (GameKeyResolver.Resolve(RequiredGameId?.GameBiz.Value) is not GameKey key)
-            {
-                return true;
-            }
-            return _providerRegistry.GetGame(key)?.HasCapability(GameCapability.Install) ?? true;
-        }
-    }
+    private bool SupportsPackageApi => _providerRegistry.SupportsCapability(CurrentGameKey, GameCapability.Install);
 
     private async Task InitializeAudioLanguageAsync()
     {

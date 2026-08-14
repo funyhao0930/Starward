@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Starward.Core;
+using Starward.Core.Games;
 using Starward.Core.HoYoPlay;
 using System;
 using System.Collections.Generic;
@@ -43,8 +44,34 @@ public class HoYoPlayService
 
 
 
+
+    /// <summary>
+    /// 本服务只能服务米哈游游戏。
+    /// <para/>
+    /// 以前对其他游戏调用会一路走到 BuildUrl，得到难以理解的
+    /// <c>Unknown launcher id</c>；现在在入口就明确指出是哪款游戏缺少哪项能力，
+    /// 漏网的调用端可以立刻辨认。
+    /// </summary>
+    private static void EnsureHoYoGame(GameId? gameId)
+    {
+        // gameId 为 null 表示调用方拿到的是非米哈游游戏，
+        // 直接放行会在 BuildUrl 里变成难以定位的空引用
+        if (gameId is null)
+        {
+            throw new GameCapabilityNotSupportedException(default, GameCapability.Install,
+                "The HoYoPlay API was called without a game id, which means the game is not a HoYoPlay game.");
+        }
+        if (LauncherId.FromGameId(gameId) is null)
+        {
+            GameKey key = GameKeyResolver.Resolve(gameId.GameBiz.Value) ?? default;
+            throw new GameCapabilityNotSupportedException(key, GameCapability.Install,
+                $"Game '{gameId.GameBiz}' is not a HoYoPlay game, the HoYoPlay API is not available for it.");
+        }
+    }
+
     public async Task<GameInfo> GetGameInfoAsync(GameId gameId, CancellationToken cancellationToken = default)
     {
+        EnsureHoYoGame(gameId);
         if (!_memoryCache.TryGetValue($"{nameof(GameInfo)}_{gameId.Id}", out GameInfo? info))
         {
             string lang = CultureInfo.CurrentUICulture.Name;
@@ -145,6 +172,7 @@ public class HoYoPlayService
 
     public async Task<GameBackgroundInfo> GetGameBackgroundAsync(GameId gameId, CancellationToken cancellationToken = default)
     {
+        EnsureHoYoGame(gameId);
         if (!_memoryCache.TryGetValue($"{nameof(GameBackgroundInfo)}_{gameId.Id}", out GameBackgroundInfo? background))
         {
             string lang = CultureInfo.CurrentUICulture.Name;
@@ -162,6 +190,7 @@ public class HoYoPlayService
 
     public async Task<GameContent> GetGameContentAsync(GameId gameId, CancellationToken cancellationToken = default)
     {
+        EnsureHoYoGame(gameId);
         if (!_memoryCache.TryGetValue($"{nameof(GameContent)}_{gameId.Id}", out GameContent? content))
         {
             string lang = CultureInfo.CurrentUICulture.Name;
@@ -175,6 +204,7 @@ public class HoYoPlayService
 
     public async Task<GamePackage> GetGamePackageAsync(GameId gameId, CancellationToken cancellationToken = default)
     {
+        EnsureHoYoGame(gameId);
         if (!_memoryCache.TryGetValue($"{nameof(GamePackage)}_{gameId.Id}", out GamePackage? package))
         {
             string lang = CultureInfo.CurrentUICulture.Name;
@@ -192,6 +222,7 @@ public class HoYoPlayService
 
     public async Task<GameConfig?> GetGameConfigAsync(GameId gameId, CancellationToken cancellationToken = default)
     {
+        EnsureHoYoGame(gameId);
         if (!_memoryCache.TryGetValue($"{nameof(GameConfig)}_{gameId.Id}", out GameConfig? config))
         {
             string lang = CultureInfo.CurrentUICulture.Name;
@@ -230,6 +261,7 @@ public class HoYoPlayService
 
     public async Task<GameChannelSDK?> GetGameChannelSDKAsync(GameId gameId, CancellationToken cancellationToken = default)
     {
+        EnsureHoYoGame(gameId);
         if (!_memoryCache.TryGetValue($"{nameof(GameChannelSDK)}_{gameId.Id}", out GameChannelSDK? sdk))
         {
             string lang = CultureInfo.CurrentUICulture.Name;
@@ -247,6 +279,7 @@ public class HoYoPlayService
 
     public async Task<GameBranch?> GetGameBranchAsync(GameId gameId, CancellationToken cancellationToken = default)
     {
+        EnsureHoYoGame(gameId);
         if (!_memoryCache.TryGetValue($"{nameof(GameBranch)}_{gameId.Id}", out GameBranch? branch))
         {
             string lang = CultureInfo.CurrentUICulture.Name;
@@ -292,6 +325,10 @@ public class HoYoPlayService
 
     public async Task<List<GameDXConfig>> GetGameDXConfigsAsync(IEnumerable<GameId> gameIds, CancellationToken cancellationToken = default)
     {
+        foreach (GameId id in gameIds)
+        {
+            EnsureHoYoGame(id);
+        }
         string key = $"{nameof(GameDXConfig)}_{string.Join(',', gameIds.Select(x => x.Id))}";
         if (!_memoryCache.TryGetValue(key, out List<GameDXConfig>? dxConfigs))
         {

@@ -170,25 +170,15 @@ public sealed partial class GameLauncherPage : PageBase
 
 
     /// <summary>
+    /// 该游戏是否有 HoYoPlay 那样的在线接口。只支持启动的游戏没有。
+    /// </summary>
+    private bool SupportsPackageApi => _providerRegistry.SupportsCapability(CurrentGameKey, GameCapability.Install);
+
+
+    /// <summary>
     /// 初始化区服选项，仅崩坏三国际服使用
     /// </summary>
     /// <returns></returns>
-
-    /// <summary>
-    /// 该游戏是否有 HoYoPlay 那样的在线接口。只支持启动的游戏没有。
-    /// </summary>
-    private bool SupportsPackageApi
-    {
-        get
-        {
-            if (GameKeyResolver.Resolve(CurrentGameBiz.Value) is not GameKey key)
-            {
-                return true;
-            }
-            return _providerRegistry.GetGame(key)?.HasCapability(GameCapability.Install) ?? true;
-        }
-    }
-
     private async Task InitializeGameServerAsync()
     {
         try
@@ -1190,6 +1180,11 @@ public sealed partial class GameLauncherPage : PageBase
     {
         try
         {
+            // 云游戏是米哈游专属能力，其他游戏没有对应的 GameId
+            if (!_providerRegistry.SupportsCapability(CurrentGameKey, GameCapability.CloudGame))
+            {
+                return;
+            }
             Process? process = CloudGameService.GetCloudGameProcess(RequiredGameId);
             if (process is not null)
             {
