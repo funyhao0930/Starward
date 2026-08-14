@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Starward.Core;
+using Starward.Core.Games;
 using Starward.Core.HoYoPlay;
 using Starward.Features.Background;
 using Starward.Features.CloudGame;
@@ -45,6 +46,9 @@ public sealed partial class GameLauncherPage : PageBase
     private readonly GameInstallService _gameInstallService = AppConfig.GetService<GameInstallService>();
 
     private readonly HoYoPlayService _hoYoPlayService = AppConfig.GetService<HoYoPlayService>();
+
+
+    private readonly IGameProviderRegistry _providerRegistry = AppConfig.GetService<IGameProviderRegistry>();
 
 
     private readonly Microsoft.UI.Dispatching.DispatcherQueueTimer _dispatchTimer;
@@ -289,9 +293,15 @@ public sealed partial class GameLauncherPage : PageBase
                 GameState = GameState.InstallGame;
                 return;
             }
+            // 只支持启动的游戏没有版本接口，本地版本号读不到也不影响启动
+            GameDescriptor? descriptor = GameKeyResolver.Resolve(CurrentGameBiz.Value) is GameKey gameKey
+                                       ? _providerRegistry.GetGame(gameKey)
+                                       : null;
+            bool supportsVersionCheck = descriptor?.HasCapability(GameCapability.VersionCheck) ?? true;
+
             isGameExeExists = await _gameLauncherService.IsGameExeExistsAsync(CurrentGameId);
             localGameVersion = await _gameLauncherService.GetLocalGameVersionAsync(CurrentGameId);
-            if (isGameExeExists && localGameVersion != null)
+            if (isGameExeExists && (localGameVersion != null || !supportsVersionCheck))
             {
                 GameState = GameState.StartGame;
             }
@@ -301,6 +311,11 @@ public sealed partial class GameLauncherPage : PageBase
                 return;
             }
             await CheckGameRunningAsync();
+            if (!supportsVersionCheck)
+            {
+                // 没有版本与下载接口，到此为止
+                return;
+            }
             (latestGameVersion, predownloadGameVersion) = await _gameLauncherService.GetLatestGameVersionAsync(CurrentGameId);
             if (latestGameVersion > localGameVersion)
             {

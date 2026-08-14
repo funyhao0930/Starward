@@ -7,7 +7,6 @@ using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.UI.Xaml.Navigation;
 using Starward.Core;
 using Starward.Core.Games;
-using Starward.Core.Games.HoYo;
 using Starward.Features.GameLauncher;
 using Starward.Features.HoYoPlay;
 using Starward.Frameworks;
@@ -34,6 +33,9 @@ public sealed partial class ScreenshotPage : PageBase
 
 
     private readonly HoYoPlayService _hoyoplayService = AppConfig.GetService<HoYoPlayService>();
+
+
+    private readonly IGameProviderRegistry _providerRegistry = AppConfig.GetService<IGameProviderRegistry>();
 
 
 
@@ -205,18 +207,30 @@ public sealed partial class ScreenshotPage : PageBase
         try
         {
             string? backupFolder = null, screenshotFolder = null;
-            GameKey gameKey = HoYoGameMapping.FromGameBiz(CurrentGameBiz);
-            string? name = HoYoGameMapping.GetExecutableName(gameKey)?.Replace(".exe", "");
-            string? relativePath = HoYoGameMapping.GetScreenshotRelativePath(gameKey);
-            if (name is null || relativePath is null)
+            string? installPath = GameLauncherService.GetGameInstallPath(CurrentGameId);
+            GameDescriptor? descriptor = GameKeyResolver.Resolve(CurrentGameBiz.Value) is GameKey gameKey
+                                       ? _providerRegistry.GetGame(gameKey)
+                                       : null;
+
+            string? name = descriptor?.ProcessNameWithoutExtension;
+            // 截图目录可能是相对于安装目录的，也可能在用户的图片文件夹中
+            screenshotFolder = descriptor?.ResolveScreenshotPaths(installPath).FirstOrDefault();
+
+            if (name is null || screenshotFolder is null)
             {
+                // 未适配的米哈游游戏，退回 HoYoPlay 接口
                 var config = await _hoyoplayService.GetGameConfigAsync(CurrentGameId);
                 if (config is not null)
                 {
                     name ??= config.ExeFileName.Replace(".exe", "");
-                    relativePath ??= config.GameScreenshotDir;
+                    if (screenshotFolder is null && !string.IsNullOrWhiteSpace(config.GameScreenshotDir))
+                    {
+                        string folder2 = Path.Join(installPath, config.GameScreenshotDir);
+                        screenshotFolder = Directory.Exists(folder2) ? folder2 : null;
+                    }
                 }
             }
+
             string? folder = AppConfig.ScreenshotFolder;
             if (!Directory.Exists(folder))
             {
@@ -225,12 +239,6 @@ public sealed partial class ScreenshotPage : PageBase
             folder = Path.Join(folder, name);
             Directory.CreateDirectory(folder);
             backupFolder = folder;
-            string? installPath = GameLauncherService.GetGameInstallPath(CurrentGameId);
-            folder = Path.Join(installPath, relativePath);
-            if (Directory.Exists(folder))
-            {
-                screenshotFolder = folder;
-            }
             return (backupFolder, screenshotFolder);
         }
         catch (Exception ex)
