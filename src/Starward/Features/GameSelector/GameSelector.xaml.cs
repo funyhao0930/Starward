@@ -918,7 +918,10 @@ public sealed partial class GameSelector : UserControl
                     _logger.LogError(ex, "Auto search failed for provider {provider}", provider.ProviderId);
                 }
             }
-            AppConfig.SelectedGameBizs = string.Join(',', keys.Distinct());
+            // 与已固定的游戏合并，而不是整个替换：
+            // 搜索不到的游戏（例如用户手动指定过目录的）不能因此被移除
+            IEnumerable<string> existing = AppConfig.SelectedGameBizs?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries) ?? [];
+            AppConfig.SelectedGameBizs = string.Join(',', existing.Concat(keys).Distinct());
             InitializeGameSelector();
             if (!IsPinned)
             {

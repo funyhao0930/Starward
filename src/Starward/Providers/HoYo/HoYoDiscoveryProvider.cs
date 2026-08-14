@@ -21,14 +21,25 @@ internal class HoYoDiscoveryProvider : IGameDiscoveryProvider
 {
 
     /// <summary>
-    /// HoYoPlay 国服启动器的注册表位置
+    /// HoYoPlay 国服启动器的注册表位置，按新到旧排列。
     /// </summary>
-    private const string HypRegistryPath_China = @"HKEY_CURRENT_USER\Software\miHoYo\HYP\1_1";
+    private static readonly string[] HypRegistryPaths_China =
+    [
+        @"HKEY_CURRENT_USER\Software\miHoYo\HYP\1_1",
+        @"HKEY_CURRENT_USER\Software\miHoYo\HYP\1_0",
+    ];
 
     /// <summary>
-    /// HoYoPlay 国际服启动器的注册表位置
+    /// HoYoPlay 国际服启动器的注册表位置，按新到旧排列。
+    /// <para/>
+    /// 启动器把这一段版本号从 1_0 升到了 1_1，只查旧位置会找不到任何国际服游戏，
+    /// 因此两个都要查。
     /// </summary>
-    private const string HypRegistryPath_Global = @"HKEY_CURRENT_USER\Software\Cognosphere\HYP\1_0";
+    private static readonly string[] HypRegistryPaths_Global =
+    [
+        @"HKEY_CURRENT_USER\Software\Cognosphere\HYP\1_1",
+        @"HKEY_CURRENT_USER\Software\Cognosphere\HYP\1_0",
+    ];
 
     private const string GameInstallPathValueName = "GameInstallPath";
 
@@ -145,25 +156,28 @@ internal class HoYoDiscoveryProvider : IGameDiscoveryProvider
 
     private string? GetInstallPathFromRegistry(GameBiz gameBiz)
     {
-        try
+        string[] roots = gameBiz.Server switch
         {
-            string? root = gameBiz.Server switch
+            GameChannelIds.China => HypRegistryPaths_China,
+            GameChannelIds.Global => HypRegistryPaths_Global,
+            _ => [],
+        };
+        foreach (string root in roots)
+        {
+            try
             {
-                GameChannelIds.China => HypRegistryPath_China,
-                GameChannelIds.Global => HypRegistryPath_Global,
-                _ => null,
-            };
-            if (string.IsNullOrWhiteSpace(root))
-            {
-                return null;
+                if (Registry.GetValue($@"{root}\{gameBiz}", GameInstallPathValueName, null) is string path
+                    && !string.IsNullOrWhiteSpace(path))
+                {
+                    return path;
+                }
             }
-            return Registry.GetValue($@"{root}\{gameBiz}", GameInstallPathValueName, null) as string;
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Read install path from registry {root}: {biz}", root, gameBiz);
+            }
         }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Read install path from registry: {biz}", gameBiz);
-            return null;
-        }
+        return null;
     }
 
 }
