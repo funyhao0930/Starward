@@ -66,9 +66,6 @@ internal class HoYoLaunchHooks : IHoYoLaunchHooks
     }
 
 
-    private static GameId? TryGetGameId(GameKey key)
-    {
-        return HoYoGameMapping.TryToGameBiz(key, out GameBiz gameBiz) ? GameId.FromGameBiz(gameBiz) : null;
-    }
+    private static GameId? TryGetGameId(GameKey key) => HoYoGameIds.Resolve(key);
 
 }

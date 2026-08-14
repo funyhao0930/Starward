@@ -218,7 +218,8 @@ public sealed partial class GameLauncherPage : PageBase
                     SelectedGameServer = GameServers.FirstOrDefault();
                     if (SelectedGameServer is not null)
                     {
-                        CurrentGameId.Id = SelectedGameServer.GameId;
+                        // 记录选择而不是就地改写身份对象，HoYoGameIds 解析时会读取它
+                        AppConfig.LastGameIdOfBH3Global = SelectedGameServer.GameId;
                     }
                 }
             }

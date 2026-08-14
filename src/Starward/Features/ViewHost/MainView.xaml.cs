@@ -18,6 +18,7 @@ using Starward.Features.SelfQuery;
 using Starward.Features.Setting;
 using Starward.Features.Update;
 using Starward.Helpers;
+using Starward.Providers.HoYo;
 using System;
 using System.Net.Http;
 using System.Threading;
@@ -52,16 +53,8 @@ public sealed partial class MainView : UserControl
     private void InitializeMainView()
     {
         this.Loaded += MainView_Loaded;
-        GameId? gameId = GameSelector.CurrentGameId;
-        if (gameId?.GameBiz == GameBiz.bh3_global)
-        {
-            string? id = AppConfig.LastGameIdOfBH3Global;
-            if (!string.IsNullOrWhiteSpace(id))
-            {
-                gameId.Id = id;
-            }
-        }
-        CurrentGameId = gameId;
+        // 崩坏三国际服的区服选择由 HoYoGameIds 在解析时读取，不再就地改写
+        CurrentGameId = GameSelector.CurrentGameId;
         CurrentGameFeatureConfig = GameFeatureConfig.FromGameId(CurrentGameId);
         UpdateNavigationView();
         WeakReferenceMessenger.Default.Register<MainViewNavigateMessage>(this, OnMainViewNavigateMessageReceived);
@@ -92,15 +85,6 @@ public sealed partial class MainView : UserControl
 
     private void GameSelector_CurrentGameChanged(object? sender, (GameId, bool DoubleTapped) e)
     {
-        if (e.Item1.GameBiz == GameBiz.bh3_global)
-        {
-            // 崩坏3国际服区服
-            string? id = AppConfig.LastGameIdOfBH3Global;
-            if (!string.IsNullOrWhiteSpace(id))
-            {
-                e.Item1.Id = id;
-            }
-        }
         CurrentGameId = e.Item1;
         CurrentGameFeatureConfig = GameFeatureConfig.FromGameId(CurrentGameId);
         UpdateNavigationView();
@@ -112,7 +96,8 @@ public sealed partial class MainView : UserControl
     {
         if (CurrentGameId?.GameBiz == GameBiz.bh3_global)
         {
-            CurrentGameId.Id = message.GameId;
+            // 新的区服 id 已由发送方写入配置，这里重新解析出一个新的 GameId
+            CurrentGameId = HoYoGameIds.Resolve(GameBiz.bh3_global) ?? CurrentGameId;
             OnPropertyChanged(nameof(CurrentGameId));
             NavigateTo(typeof(GameLauncherPage), CurrentGameId, new SuppressNavigationTransitionInfo());
         }
