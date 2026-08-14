@@ -126,7 +126,7 @@
                                     <sc:CachedImage HorizontalAlignment="Center"
                                                     VerticalAlignment="Center"
                                                     CornerRadius="8"
-                                                    Source="{x:Bind GameInfo.Display.Thumbnail.Url}"
+                                                    Source="{x:Bind ThumbnailUri}"
                                                     Stretch="UniformToFill"
                                                     Style="{StaticResource NoAnimationImageExStyle}" />
                                     <!--  Logo  -->
@@ -134,7 +134,7 @@
                                                     HorizontalAlignment="Center"
                                                     VerticalAlignment="Center"
                                                     Background="#60000000"
-                                                    Source="{x:Bind GameInfo.Display.Logo.Url}"
+                                                    Source="{x:Bind LogoUri}"
                                                     Style="{StaticResource NoAnimationImageExStyle}" />
                                     <!--  鼠标移入时 Icon & 选择服务器  -->
                                     <Grid Name="Grid_GameBizDisplay_IconAndName"
@@ -156,7 +156,7 @@
                                                         HorizontalAlignment="Right"
                                                         VerticalAlignment="Center"
                                                         CornerRadius="8"
-                                                        Source="{x:Bind GameInfo.Display.Icon.Url}"
+                                                        Source="{x:Bind IconUri}"
                                                         Style="{StaticResource NoAnimationImageExStyle}" />
                                         <TextBlock Grid.Column="2"
                                                    Margin="8,0,0,0"

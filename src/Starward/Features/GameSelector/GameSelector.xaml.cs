@@ -5,11 +5,10 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Media;
-using Microsoft.Win32;
 using Starward.Core;
+using Starward.Core.Games;
 using Starward.Core.HoYoPlay;
 using Starward.Features.GameLauncher;
-using Starward.Features.HoYoPlay;
 using Starward.Features.Setting;
 using Starward.Features.ViewHost;
 using Starward.Helpers;
@@ -40,7 +39,7 @@ public sealed partial class GameSelector : UserControl
     public event EventHandler<(GameId, bool DoubleTapped)>? CurrentGameChanged;
 
 
-    private readonly HoYoPlayService _hoyoplayService = AppConfig.GetService<HoYoPlayService>();
+    private readonly IGameProviderRegistry _providerRegistry = AppConfig.GetService<IGameProviderRegistry>();
 
 
     private readonly GameLauncherService _gameLauncherService = AppConfig.GetService<GameLauncherService>();
@@ -82,9 +81,9 @@ public sealed partial class GameSelector : UserControl
 
     public void InitializeGameSelector()
     {
-        List<GameInfo> gameInfos = GetCachedGameInfos();
-        InitializeGameIconsArea(gameInfos);
-        InitializeGameServerArea(gameInfos);
+        IReadOnlyList<GameDescriptor> games = _providerRegistry.GetAllGames();
+        InitializeGameIconsArea(games);
+        InitializeGameServerArea(games);
         InitializeInstalledGamesCommand.Execute(null);
     }
 
@@ -152,18 +151,17 @@ public sealed partial class GameSelector : UserControl
 
 
 
-    private List<GameInfo> GetCachedGameInfos()
+    /// <summary>
+    /// 按旧的 GameBiz 字符串查找游戏描述。
+    /// 配置文件中保存的仍是 GameBiz 字符串，不改变格式以免用户既有数据失效。
+    /// </summary>
+    private static GameDescriptor? FindByLegacyGameBiz(IReadOnlyList<GameDescriptor> games, GameBiz gameBiz)
     {
-        try
+        if (string.IsNullOrWhiteSpace(gameBiz.Value))
         {
-            string? json = AppConfig.CachedGameInfo;
-            if (!string.IsNullOrWhiteSpace(json))
-            {
-                return JsonSerializer.Deserialize<List<GameInfo>>(json) ?? [];
-            }
+            return null;
         }
-        catch { }
-        return [];
+        return games.FirstOrDefault(x => x.LegacyGameBiz == gameBiz.Value);
     }
 
 
@@ -175,7 +173,7 @@ public sealed partial class GameSelector : UserControl
     /// <summary>
     /// 初始化游戏图标区域
     /// </summary>
-    private void InitializeGameIconsArea(List<GameInfo> gameInfos)
+    private void InitializeGameIconsArea(IReadOnlyList<GameDescriptor> games)
     {
         try
         {
@@ -186,15 +184,9 @@ public sealed partial class GameSelector : UserControl
             string? bizs = AppConfig.SelectedGameBizs;
             foreach (string str in bizs?.Split(',')?.Distinct() ?? [])
             {
-                if (GameBiz.TryParse(str, out GameBiz biz))
+                if (FindByLegacyGameBiz(games, str) is GameDescriptor descriptor)
                 {
-                    // 已知的 GameBiz
-                    GameBizIcons.Add(new GameBizIcon(biz));
-                }
-                else if (gameInfos.FirstOrDefault(x => x.GameBiz == biz) is GameInfo info)
-                {
-                    // 由 HoYoPlay API 获取，但未适配的 GameBiz
-                    GameBizIcons.Add(new GameBizIcon(info));
+                    GameBizIcons.Add(new GameBizIcon(descriptor));
                 }
             }
 
@@ -206,15 +198,9 @@ public sealed partial class GameSelector : UserControl
                 CurrentGameBizIcon.IsSelected = true;
                 CurrentGameBiz = lastSelectedGameBiz;
             }
-            else if (lastSelectedGameBiz.IsKnown())
+            else if (FindByLegacyGameBiz(games, lastSelectedGameBiz) is GameDescriptor descriptor)
             {
-                CurrentGameBizIcon = new GameBizIcon(lastSelectedGameBiz);
-                CurrentGameBizIcon.IsSelected = true;
-                CurrentGameBiz = lastSelectedGameBiz;
-            }
-            else if (gameInfos.FirstOrDefault(x => x.GameBiz == lastSelectedGameBiz) is GameInfo info)
-            {
-                CurrentGameBizIcon = new GameBizIcon(info);
+                CurrentGameBizIcon = new GameBizIcon(descriptor);
                 CurrentGameBizIcon.IsSelected = true;
                 CurrentGameBiz = lastSelectedGameBiz;
             }
@@ -562,61 +548,59 @@ public sealed partial class GameSelector : UserControl
 
 
     /// <summary>
-    /// 初始化游戏服务器选择区域
+    /// 渠道的显示顺序，与重构前的 ["_cn", "_global", "_bilibili"] 一致
     /// </summary>
-    private void InitializeGameServerArea(List<GameInfo> gameInfos)
+    private static int GetChannelRank(string channelId) => channelId switch
+    {
+        GameChannelIds.China => 0,
+        GameChannelIds.Global => 1,
+        GameChannelIds.Bilibili => 2,
+        _ => 3,
+    };
+
+
+    /// <summary>
+    /// 初始化游戏服务器选择区域。
+    /// 游戏清单来自所有 <see cref="IGameCatalogProvider"/>，按游戏分组，每组内是该游戏的所有渠道。
+    /// </summary>
+    private void InitializeGameServerArea(IReadOnlyList<GameDescriptor> games)
     {
         try
         {
+            // 当前语言为简体中文时优先显示国服的图片，否则优先显示国际服的图片
+            bool preferChinaServer = LanguageUtil.FilterLanguage(CultureInfo.CurrentUICulture.Name) is "zh-cn";
+            string preferredChannel = preferChinaServer ? GameChannelIds.China : GameChannelIds.Global;
+
             var list = new List<GameBizDisplay>();
+            foreach (IGrouping<(string ProviderId, string GameId), GameDescriptor> group
+                     in games.GroupBy(x => (x.Key.ProviderId, x.Key.GameId)))
+            {
+                List<GameDescriptor> channels = group.OrderBy(x => GetChannelRank(x.Key.ChannelId)).ToList();
 
-            if (LanguageUtil.FilterLanguage(CultureInfo.CurrentUICulture.Name) is "zh-cn")
-            {
-                // 当前语言为简体中文时，游戏信息显示从中国官服获取的内容
-                foreach (var info in gameInfos)
+                // 用于展示的渠道，找不到首选渠道时退回第一个有图片的渠道
+                GameDescriptor? display = channels.FirstOrDefault(x => x.Key.ChannelId == preferredChannel && !string.IsNullOrWhiteSpace(x.ThumbnailUri))
+                                       ?? channels.FirstOrDefault(x => !string.IsNullOrWhiteSpace(x.ThumbnailUri));
+                if (display is null)
                 {
-                    if (info.GameBiz.IsChinaServer() && !info.IsBilibiliServer())
-                    {
-                        list.Add(new GameBizDisplay { GameInfo = info });
-                    }
+                    // 与重构前一致：没有取得展示图片的游戏不显示在选择区域
+                    continue;
                 }
-            }
-            else
-            {
-                // 当前语言不为简体中文时，游戏信息显示从国际服获取的内容
-                foreach (var info in gameInfos)
-                {
-                    if (info.GameBiz.IsGlobalServer())
-                    {
-                        list.Add(new GameBizDisplay { GameInfo = info });
-                    }
-                }
-            }
 
-            // 分类每个游戏的服务器信息
-            foreach (var item in list)
-            {
-                string game = item.GameInfo.GameBiz.Game;
-                foreach (string suffix in (string[])["_cn", "_global", "_bilibili"])
+                var item = new GameBizDisplay
                 {
-                    GameBiz biz = game + suffix;
-                    if (biz.IsKnown())
+                    GameKey = display.Key,
+                    ThumbnailUri = display.ThumbnailUri,
+                    LogoUri = display.LogoUri,
+                    IconUri = display.IconUri,
+                };
+                foreach (GameDescriptor channel in channels)
+                {
+                    item.Servers.Add(new GameBizIcon(channel)
                     {
-                        var server = new GameBizIcon(biz)
-                        {
-                            IsPinned = GameBizIcons.Any(x => x.GameBiz == biz),
-                        };
-                        item.Servers.Add(server);
-                    }
-                    else if (gameInfos.FirstOrDefault(x => x.GameBiz == biz) is GameInfo info)
-                    {
-                        var server = new GameBizIcon(info)
-                        {
-                            IsPinned = GameBizIcons.Any(x => x.GameBiz == biz),
-                        };
-                        item.Servers.Add(server);
-                    }
+                        IsPinned = GameBizIcons.Any(x => x.Key == channel.Key),
+                    });
                 }
+                list.Add(item);
             }
             GameBizDisplays = new(list);
         }
@@ -633,18 +617,14 @@ public sealed partial class GameSelector : UserControl
     {
         try
         {
-            List<GameInfo> gameInfos = await _hoyoplayService.UpdateGameInfoListAsync();
-            InitializeGameServerArea(gameInfos);
+            await _providerRegistry.RefreshAllAsync();
+            IReadOnlyList<GameDescriptor> games = _providerRegistry.GetAllGames();
+            InitializeGameServerArea(games);
             foreach (GameBizIcon icon in GameBizIcons)
             {
-                if (icon.GameBiz.IsKnown())
+                if (games.FirstOrDefault(x => x.Key == icon.Key) is GameDescriptor descriptor)
                 {
-                    icon.UpdateInfo();
-                }
-                else
-                {
-                    GameInfo info = await _hoyoplayService.GetGameInfoAsync(icon.GameId);
-                    icon.UpdateInfo(info);
+                    icon.UpdateInfo(descriptor);
                 }
             }
             await InitializeInstalledGamesCommand.ExecuteAsync(null);
@@ -715,7 +695,7 @@ public sealed partial class GameSelector : UserControl
                     CurrentGameBizIcon.IsSelected = false;
                 }
 
-                if (GameBizIcons.FirstOrDefault(x => x.GameId == server.GameId) is GameBizIcon icon)
+                if (GameBizIcons.FirstOrDefault(x => x.Key == server.Key) is GameBizIcon icon)
                 {
                     CurrentGameBizIcon = icon;
                     CurrentGameBiz = icon.GameBiz;
@@ -752,8 +732,7 @@ public sealed partial class GameSelector : UserControl
     {
         if (sender is FrameworkElement fe && fe.DataContext is GameBizIcon server)
         {
-            var biz = server.GameBiz;
-            if (GameBizIcons.FirstOrDefault(x => x.GameBiz == biz) is GameBizIcon icon)
+            if (GameBizIcons.FirstOrDefault(x => x.Key == server.Key) is GameBizIcon icon)
             {
                 GameBizIcons.Remove(icon);
                 server.IsPinned = false;
@@ -887,50 +866,25 @@ public sealed partial class GameSelector : UserControl
 
 
     /// <summary>
-    /// 从注册表自动搜索已安装的游戏
+    /// 自动搜索已安装的游戏。
+    /// 各游戏公司的注册表位置等细节由对应的 <see cref="IGameDiscoveryProvider"/> 负责，
+    /// 游戏选择器不再自行判断。
     /// </summary>
     [RelayCommand]
-    public void AutoSearchInstalledGames()
+    public async Task AutoSearchInstalledGamesAsync()
     {
         try
         {
-            List<GameInfo> gameInfos = GetCachedGameInfos();
             var sb = new StringBuilder();
-            foreach (GameInfo item in gameInfos)
+            foreach (IGameDiscoveryProvider provider in _providerRegistry.DiscoveryProviders)
             {
-                GameBiz gameBiz = item.GameBiz;
-                if (item.IsBilibiliServer())
+                foreach (GameInstallation installation in await provider.DiscoverAsync())
                 {
-                    gameBiz = $"{gameBiz.Game}_bilibili";
-                }
-                string? path = GameLauncherService.GetGameInstallPath(gameBiz);
-                if (!string.IsNullOrWhiteSpace(path))
-                {
-                    if (Directory.Exists(path) || AppConfig.GetGameInstallPathRemovable(gameBiz))
+                    // 配置文件中保存的仍是 GameBiz 字符串
+                    if (_providerRegistry.GetGame(installation.Key)?.LegacyGameBiz is string biz && !string.IsNullOrWhiteSpace(biz))
                     {
-                        sb.Append(gameBiz);
+                        sb.Append(biz);
                         sb.Append(',');
-                        continue;
-                    }
-                }
-                string key = "";
-                if (gameBiz.Server is "cn")
-                {
-                    key = $@"HKEY_CURRENT_USER\Software\miHoYo\HYP\1_1\{gameBiz}";
-                }
-                else if (gameBiz.Server is "global")
-                {
-                    key = $@"HKEY_CURRENT_USER\Software\Cognosphere\HYP\1_0\{gameBiz}";
-                }
-                if (!string.IsNullOrWhiteSpace(key))
-                {
-                    path = Registry.GetValue(key, "GameInstallPath", null) as string;
-                    if (Directory.Exists(path))
-                    {
-                        AppConfig.SetGameInstallPath(gameBiz, path);
-                        sb.Append(gameBiz);
-                        sb.Append(',');
-                        continue;
                     }
                 }
             }

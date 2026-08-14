@@ -7,6 +7,8 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Starward.Core;
+using Starward.Core.Games;
+using Starward.Core.Games.HoYo;
 using Starward.Core.HoYoPlay;
 using Starward.Features.Background;
 using Starward.Features.GameInstall;
@@ -40,6 +42,8 @@ public sealed partial class GameLauncherSettingDialog : ContentDialog
 
 
     private readonly HoYoPlayService _hoyoPlayService = AppConfig.GetService<HoYoPlayService>();
+
+    private readonly IGameProviderRegistry _providerRegistry = AppConfig.GetService<IGameProviderRegistry>();
 
 
     private readonly GameLauncherService _gameLauncherService = AppConfig.GetService<GameLauncherService>();
@@ -244,14 +248,10 @@ public sealed partial class GameLauncherSettingDialog : ContentDialog
     {
         try
         {
-            if (CurrentGameId.GameBiz.IsKnown())
+            if (HoYoGameMapping.TryFromGameBiz(CurrentGameId.GameBiz, out GameKey gameKey)
+                && _providerRegistry.GetGame(gameKey) is GameDescriptor descriptor)
             {
-                CurrentGameBizIcon = new GameBizIcon(CurrentGameId.GameBiz);
-            }
-            else
-            {
-                var info = await _hoyoPlayService.GetGameInfoAsync(CurrentGameId);
-                CurrentGameBizIcon = new GameBizIcon(info);
+                CurrentGameBizIcon = new GameBizIcon(descriptor);
             }
             InstallPath = GameLauncherService.GetGameInstallPath(CurrentGameId, out bool storageRemoved);
             GameSize = GetSize(InstallPath);

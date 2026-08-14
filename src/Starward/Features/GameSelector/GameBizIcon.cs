@@ -1,11 +1,16 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using Starward.Core;
+using Starward.Core.Games;
 using Starward.Core.HoYoPlay;
 using System;
 
 
 namespace Starward.Features.GameSelector;
 
+/// <summary>
+/// 游戏选择器中的一个游戏渠道图标。
+/// 数据来自 <see cref="GameDescriptor"/>，不再直接依赖任何游戏公司的接口。
+/// </summary>
 public partial class GameBizIcon : ObservableObject, IEquatable<GameBizIcon>
 {
 
@@ -13,8 +18,21 @@ public partial class GameBizIcon : ObservableObject, IEquatable<GameBizIcon>
     private const double GB = 1 << 30;
 
 
+    /// <summary>
+    /// 通用游戏标识
+    /// </summary>
+    public GameKey Key { get; set; }
+
+
+    /// <summary>
+    /// 兼容层：现有页面与导航仍以 <see cref="HoYoPlay.GameId"/> 为货币
+    /// </summary>
     public GameId GameId { get; set; }
 
+
+    /// <summary>
+    /// 兼容层：应用配置仍以 GameBiz 字符串为键
+    /// </summary>
     public GameBiz GameBiz { get; set; }
 
 
@@ -49,77 +67,41 @@ public partial class GameBizIcon : ObservableObject, IEquatable<GameBizIcon>
 
 
 
-    public GameBizIcon(GameBiz gameBiz)
+    public GameBizIcon(GameDescriptor descriptor)
     {
-        GameBiz = gameBiz;
-        GameId = GameId.FromGameBiz(gameBiz)!;
-        GameIcon = GameBizToIcon(gameBiz);
-        ServerIcon = GameBizToServerIcon(gameBiz);
-        GameName = gameBiz.ToGameName();
-        ServerName = gameBiz.ToGameServerName();
+        Key = descriptor.Key;
+        GameBiz = descriptor.LegacyGameBiz ?? "";
+        GameId = new GameId { Id = descriptor.ProviderGameId ?? "", GameBiz = GameBiz };
+        GameIcon = descriptor.IconUri ?? "";
+        ServerIcon = descriptor.ChannelIconUri ?? "";
+        GameName = descriptor.DisplayName;
+        ServerName = descriptor.ChannelName ?? "";
     }
 
 
 
-    public GameBizIcon(GameInfo gameInfo)
+    public void UpdateInfo(GameDescriptor descriptor)
     {
-        GameId = gameInfo;
-        GameBiz = gameInfo.GameBiz;
-        GameIcon = gameInfo.Display.Icon.Url;
-        ServerIcon = GameBizToServerIcon(gameInfo.GameBiz);
-        GameName = gameInfo.Display.Name;
-        ServerName = gameInfo.GameBiz.ToGameServerName();
+        Key = descriptor.Key;
+        GameBiz = descriptor.LegacyGameBiz ?? "";
+        GameId = new GameId { Id = descriptor.ProviderGameId ?? "", GameBiz = GameBiz };
+        GameIcon = descriptor.IconUri ?? "";
+        ServerIcon = descriptor.ChannelIconUri ?? "";
+        GameName = descriptor.DisplayName;
+        ServerName = descriptor.ChannelName ?? "";
     }
 
-
-
-    public void UpdateInfo()
-    {
-        GameIcon = GameBizToIcon(GameBiz);
-        ServerIcon = GameBizToServerIcon(GameBiz);
-        GameName = GameBiz.ToGameName();
-        ServerName = GameBiz.ToGameServerName();
-    }
-
-
-    public void UpdateInfo(GameInfo gameInfo)
-    {
-        GameIcon = gameInfo.Display.Icon.Url;
-        ServerIcon = GameBizToServerIcon(gameInfo.GameBiz);
-        GameName = gameInfo.Display.Name;
-        ServerName = gameInfo.GameBiz.ToGameServerName();
-    }
-
-
-
-    private static string GameBizToIcon(GameBiz gameBiz)
-    {
-        return gameBiz.Game switch
-        {
-            GameBiz.bh3 => "ms-appx:///Assets/Image/icon_bh3.jpg",
-            GameBiz.hk4e => "ms-appx:///Assets/Image/icon_ys.jpg",
-            GameBiz.hkrpg => "ms-appx:///Assets/Image/icon_sr.jpg",
-            GameBiz.nap => "ms-appx:///Assets/Image/icon_zzz.jpg",
-            _ => "ms-appx:///Assets/Image/Transparent.png",
-        };
-    }
-
-
-    private static string GameBizToServerIcon(GameBiz gameBiz)
-    {
-        return gameBiz.Server switch
-        {
-            "cn" => "ms-appx:///Assets/Image/gameicon_hyperion.png",
-            "global" => "ms-appx:///Assets/Image/gameicon_hoyolab.png",
-            "bilibili" => "ms-appx:///Assets/Image/gameicon_bilibili.png",
-            _ => "ms-appx:///Assets/Image/Transparent.png",
-        };
-    }
 
 
     public bool Equals(GameBizIcon? other)
     {
-        return ReferenceEquals(this, other) || GameBiz == other?.GameBiz;
+        return ReferenceEquals(this, other) || Key == other?.Key;
     }
+
+
+    public override bool Equals(object? obj) => Equals(obj as GameBizIcon);
+
+
+    public override int GetHashCode() => Key.GetHashCode();
 
 }
