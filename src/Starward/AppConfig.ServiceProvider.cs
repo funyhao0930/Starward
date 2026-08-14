@@ -8,7 +8,10 @@ using Starward.Core.Gacha.ZZZ;
 using Starward.Core.GameNotice;
 using Starward.Core.GameRecord;
 using Starward.Core.Games;
+using Starward.Core.Games.Gryphline;
 using Starward.Core.Games.HoYo;
+using Starward.Core.Games.Hotta;
+using Starward.Core.Games.Kuro;
 using Starward.Core.HoYoPlay;
 using Starward.Core.SelfQuery;
 using Starward.Features.Background;
@@ -25,9 +28,13 @@ using Starward.Features.RPC;
 using Starward.Features.Screenshot;
 using Starward.Features.SelfQuery;
 using Starward.Features.Update;
+using Starward.Providers.Gryphline;
 using Starward.Providers.HoYo;
+using Starward.Providers.Hotta;
+using Starward.Providers.Kuro;
 using Starward.Setup.Core;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Http;
@@ -70,6 +77,17 @@ public static partial class AppConfig
             sc.AddSingleton<IGameDiscoveryProvider, HoYoDiscoveryProvider>();
             sc.AddSingleton<IGameLaunchProvider, HoYoLaunchProvider>();
 
+            // 仅支持启动的游戏，目录是固定的，启动流程也没有特殊之处，
+            // 因此复用通用的 Simple 实现，不必各自写一套。
+            AddSimpleGameProvider(sc, KuroGameMapping.ProviderId, KuroGameMapping.GetDescriptors);
+            sc.AddSingleton<IGameDiscoveryProvider, KuroDiscoveryProvider>();
+
+            AddSimpleGameProvider(sc, HottaGameMapping.ProviderId, HottaGameMapping.GetDescriptors);
+            sc.AddSingleton<IGameDiscoveryProvider, HottaDiscoveryProvider>();
+
+            AddSimpleGameProvider(sc, GryphlineGameMapping.ProviderId, GryphlineGameMapping.GetDescriptors);
+            sc.AddSingleton<IGameDiscoveryProvider, GryphlineDiscoveryProvider>();
+
             sc.AddSingleton<BackgroundService>();
             sc.AddSingleton<GameLauncherService>();
             sc.AddSingleton<GamePackageService>();
@@ -111,6 +129,21 @@ public static partial class AppConfig
             _serviceProvider = sc.BuildServiceProvider();
         }
     }
+
+    /// <summary>
+    /// 注册一个游戏与渠道固定、启动流程通用的供应商。
+    /// 目录与启动使用 <see cref="SimpleGameCatalogProvider"/> 与 <see cref="SimpleGameLaunchProvider"/>，
+    /// 搜索由各供应商自行实现，因为每家写入安装路径的位置都不同。
+    /// </summary>
+    private static void AddSimpleGameProvider(IServiceCollection sc, string providerId, Func<IReadOnlyList<GameDescriptor>> descriptorFactory)
+    {
+        sc.AddSingleton<IGameCatalogProvider>(_ => new SimpleGameCatalogProvider(providerId, descriptorFactory));
+        sc.AddSingleton<IGameLaunchProvider>(sp => new SimpleGameLaunchProvider(
+            providerId,
+            new SimpleGameCatalogProvider(providerId, descriptorFactory),
+            sp.GetRequiredService<IGameLaunchSettings>()));
+    }
+
 
     public static T GetService<T>()
     {

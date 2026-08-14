@@ -653,5 +653,41 @@ namespace Starward.Core.Localization {
                 return ResourceManager.GetString("ZZZQueryType_WEngine", resourceCulture);
             }
         }
-    }
+            
+        /// <summary>
+        ///   查找类似 Wuthering Waves 的本地化字符串。
+        /// </summary>
+        public static string Game_WutheringWaves {
+            get {
+                return ResourceManager.GetString("Game_WutheringWaves", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Neverness to Everness 的本地化字符串。
+        /// </summary>
+        public static string Game_NevernessToEverness {
+            get {
+                return ResourceManager.GetString("Game_NevernessToEverness", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Arknights: Endfield 的本地化字符串。
+        /// </summary>
+        public static string Game_Endfield {
+            get {
+                return ResourceManager.GetString("Game_Endfield", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Taiwan Server 的本地化字符串。
+        /// </summary>
+        public static string GameServer_TaiwanServer {
+            get {
+                return ResourceManager.GetString("GameServer_TaiwanServer", resourceCulture);
+            }
+        }
+}
 }
