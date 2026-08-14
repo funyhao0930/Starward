@@ -507,6 +507,11 @@ internal class PlayTimeService
     public async Task<string> GetGameExeNameWithoutExtensionAsync(GameId gameId)
     {
         GameKey key = HoYoGameMapping.FromGameBiz(gameId.GameBiz);
+        // 部分游戏启动的是一层外壳，记录游玩时间要找的是真正的游戏进程
+        if (_providerRegistry.GetGame(key)?.ProcessNameWithoutExtension is string processName)
+        {
+            return processName;
+        }
         string? name = await _providerRegistry.GetRequiredLaunchProvider(key).GetExecutableNameAsync(key);
         return name?.Replace(".exe", "") ?? throw new ArgumentOutOfRangeException($"Unknown game ({gameId.Id}, {gameId.GameBiz}).");
     }

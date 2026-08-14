@@ -18,4 +18,14 @@ public interface IGameDiscoveryProvider : IGameProvider
     /// </summary>
     ValueTask<IReadOnlyList<GameInstallation>> DiscoverAsync(CancellationToken cancellationToken = default);
 
+
+    /// <summary>
+    /// 读取本地已安装的版本号。每家记录版本的方式都不同，
+    /// 返回 null 表示无法确定，由调用方决定如何处理。
+    /// </summary>
+    ValueTask<Version?> GetLocalVersionAsync(GameKey key, string installPath, CancellationToken cancellationToken = default)
+    {
+        return ValueTask.FromResult<Version?>(null);
+    }
+
 }

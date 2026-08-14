@@ -70,8 +70,9 @@ public partial class GameBizIcon : ObservableObject, IEquatable<GameBizIcon>
     public GameBizIcon(GameDescriptor descriptor)
     {
         Key = descriptor.Key;
-        GameBiz = descriptor.LegacyGameBiz ?? "";
-        GameId = new GameId { Id = descriptor.ProviderGameId ?? "", GameBiz = GameBiz };
+        // 米哈游游戏是旧的 GameBiz 字符串，其他供应商是 GameKey 的正规字符串
+        GameBiz = descriptor.SettingsKey;
+        GameId = new GameId { Id = descriptor.ProviderGameId ?? descriptor.SettingsKey, GameBiz = GameBiz };
         GameIcon = descriptor.IconUri ?? "";
         ServerIcon = descriptor.ChannelIconUri ?? "";
         GameName = descriptor.DisplayName;
@@ -83,8 +84,8 @@ public partial class GameBizIcon : ObservableObject, IEquatable<GameBizIcon>
     public void UpdateInfo(GameDescriptor descriptor)
     {
         Key = descriptor.Key;
-        GameBiz = descriptor.LegacyGameBiz ?? "";
-        GameId = new GameId { Id = descriptor.ProviderGameId ?? "", GameBiz = GameBiz };
+        GameBiz = descriptor.SettingsKey;
+        GameId = new GameId { Id = descriptor.ProviderGameId ?? descriptor.SettingsKey, GameBiz = GameBiz };
         GameIcon = descriptor.IconUri ?? "";
         ServerIcon = descriptor.ChannelIconUri ?? "";
         GameName = descriptor.DisplayName;

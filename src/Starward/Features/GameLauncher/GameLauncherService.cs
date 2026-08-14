@@ -148,6 +148,14 @@ internal partial class GameLauncherService
         {
             return null;
         }
+        // 每家记录版本的方式都不同，先问对应的 Provider
+        if (GameKeyResolver.Resolve(gameBiz.Value) is GameKey key
+            && _providerRegistry.GetDiscoveryProvider(key.ProviderId) is IGameDiscoveryProvider discovery
+            && await discovery.GetLocalVersionAsync(key, installPath) is Version providerVersion)
+        {
+            return providerVersion;
+        }
+        // 米哈游游戏记录在安装目录的 config.ini 中
         var config = Path.Join(installPath, "config.ini");
         if (File.Exists(config))
         {
@@ -215,13 +223,14 @@ internal partial class GameLauncherService
     /// <returns></returns>
     private static GameKey GetGameKey(GameId gameId)
     {
-        return HoYoGameMapping.FromGameBiz(gameId.GameBiz);
+        return GameKeyResolver.Resolve(gameId.GameBiz.Value)
+            ?? throw new ArgumentOutOfRangeException(nameof(gameId), gameId.GameBiz.Value, "Cannot resolve the game key.");
     }
 
 
 
     /// <summary>
-    /// 游戏进程名，带 .exe 扩展名。由对应的 <see cref="IGameLaunchProvider"/> 提供。
+    /// 启动时执行的文件名，带 .exe 扩展名。由对应的 <see cref="IGameLaunchProvider"/> 提供。
     /// </summary>
     /// <param name="gameId"></param>
     /// <returns></returns>
@@ -230,6 +239,24 @@ internal partial class GameLauncherService
         GameKey key = GetGameKey(gameId);
         string? name = await _providerRegistry.GetRequiredLaunchProvider(key).GetExecutableNameAsync(key);
         return name ?? throw new ArgumentOutOfRangeException($"Unknown game ({gameId.Id}, {gameId.GameBiz}).");
+    }
+
+
+
+    /// <summary>
+    /// 查找游戏进程时使用的名称，不带 .exe 扩展名。
+    /// 部分游戏启动的是一层外壳，进程名与启动的文件名不同。
+    /// </summary>
+    /// <param name="gameId"></param>
+    /// <returns></returns>
+    public async Task<string> GetGameProcessNameAsync(GameId gameId)
+    {
+        GameKey key = GetGameKey(gameId);
+        if (_providerRegistry.GetGame(key)?.ProcessNameWithoutExtension is string processName)
+        {
+            return processName;
+        }
+        return (await GetGameExeNameAsync(gameId)).Replace(".exe", "");
     }
 
 
@@ -261,7 +288,7 @@ internal partial class GameLauncherService
     public async Task<Process?> GetGameProcessAsync(GameId gameId)
     {
         int currentSessionId = Process.GetCurrentProcess().SessionId;
-        var name = (await GetGameExeNameAsync(gameId)).Replace(".exe", "");
+        string name = await GetGameProcessNameAsync(gameId);
         return Process.GetProcessesByName(name).Where(x => x.SessionId == currentSessionId && !IsProcessPending(x)).FirstOrDefault();
     }
 

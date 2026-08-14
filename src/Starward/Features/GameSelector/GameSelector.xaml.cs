@@ -152,16 +152,17 @@ public sealed partial class GameSelector : UserControl
 
 
     /// <summary>
-    /// 按旧的 GameBiz 字符串查找游戏描述。
-    /// 配置文件中保存的仍是 GameBiz 字符串，不改变格式以免用户既有数据失效。
+    /// 按存储键查找游戏描述。
+    /// 米哈游游戏沿用旧的 GameBiz 字符串，其他供应商使用 GameKey 的正规字符串，
+    /// 两者都是纯字符串，配置文件格式不变。
     /// </summary>
-    private static GameDescriptor? FindByLegacyGameBiz(IReadOnlyList<GameDescriptor> games, GameBiz gameBiz)
+    private static GameDescriptor? FindBySettingsKey(IReadOnlyList<GameDescriptor> games, GameBiz gameBiz)
     {
         if (string.IsNullOrWhiteSpace(gameBiz.Value))
         {
             return null;
         }
-        return games.FirstOrDefault(x => x.LegacyGameBiz == gameBiz.Value);
+        return games.FirstOrDefault(x => x.SettingsKey == gameBiz.Value);
     }
 
 
@@ -184,7 +185,7 @@ public sealed partial class GameSelector : UserControl
             string? bizs = AppConfig.SelectedGameBizs;
             foreach (string str in bizs?.Split(',')?.Distinct() ?? [])
             {
-                if (FindByLegacyGameBiz(games, str) is GameDescriptor descriptor)
+                if (FindBySettingsKey(games, str) is GameDescriptor descriptor)
                 {
                     GameBizIcons.Add(new GameBizIcon(descriptor));
                 }
@@ -198,7 +199,7 @@ public sealed partial class GameSelector : UserControl
                 CurrentGameBizIcon.IsSelected = true;
                 CurrentGameBiz = lastSelectedGameBiz;
             }
-            else if (FindByLegacyGameBiz(games, lastSelectedGameBiz) is GameDescriptor descriptor)
+            else if (FindBySettingsKey(games, lastSelectedGameBiz) is GameDescriptor descriptor)
             {
                 CurrentGameBizIcon = new GameBizIcon(descriptor);
                 CurrentGameBizIcon.IsSelected = true;
@@ -881,7 +882,7 @@ public sealed partial class GameSelector : UserControl
                 foreach (GameInstallation installation in await provider.DiscoverAsync())
                 {
                     // 配置文件中保存的仍是 GameBiz 字符串
-                    if (_providerRegistry.GetGame(installation.Key)?.LegacyGameBiz is string biz && !string.IsNullOrWhiteSpace(biz))
+                    if (_providerRegistry.GetGame(installation.Key)?.SettingsKey is string biz && !string.IsNullOrWhiteSpace(biz))
                     {
                         sb.Append(biz);
                         sb.Append(',');

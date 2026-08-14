@@ -151,6 +151,13 @@ public static class HoYoGameMapping
 
 
     /// <summary>
+    /// 游戏进程名，带 .exe 扩展名。
+    /// 米哈游的游戏启动的就是游戏本体，因此与 <see cref="GetExecutableName"/> 相同。
+    /// </summary>
+    public static string? GetProcessName(GameKey key) => GetExecutableName(key);
+
+
+    /// <summary>
     /// 游戏截图目录，相对于游戏安装目录。无法确定时返回 null。
     /// </summary>
     public static string? GetScreenshotRelativePath(GameKey key)

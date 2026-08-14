@@ -143,6 +143,8 @@ public class HoYoCatalogProvider : IGameCatalogProvider
             ThumbnailUri = info?.Display?.Thumbnail?.Url,
             LogoUri = info?.Display?.Logo?.Url,
             ExecutableName = HoYoGameMapping.GetExecutableName(key),
+            ProcessName = HoYoGameMapping.GetProcessName(key),
+            ScreenshotPaths = HoYoGameMapping.GetScreenshotRelativePath(key) is string screenshot ? [screenshot] : [],
             Capabilities = HoYoGameMapping.GetCapabilities(key),
             LegacyGameBiz = legacyGameBiz,
             ProviderGameId = providerGameId,
