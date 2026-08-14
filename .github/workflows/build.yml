@@ -10,6 +10,21 @@ on:
 
 jobs:
 
+  test:
+    runs-on: windows-2025-vs2026
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v5
+
+    - name: Install .NET
+      uses: actions/setup-dotnet@v5
+      with:
+        global-json-file: global.json
+
+    - name: Test
+      run: dotnet test tests/Starward.Core.Tests -c Release
+
   build:
     runs-on: windows-2025-vs2026
     strategy:
