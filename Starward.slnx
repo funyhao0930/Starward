@@ -20,4 +20,7 @@
     <Platform Solution="*|x64" Project="x64" />
     <Platform Solution="*|x86" Project="x86" />
   </Project>
+  <Folder Name="/tests/">
+    <Project Path="tests/Starward.Core.Tests/Starward.Core.Tests.csproj" />
+  </Folder>
 </Solution>
