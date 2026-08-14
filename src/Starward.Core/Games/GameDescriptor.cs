@@ -80,9 +80,18 @@ public sealed record GameDescriptor
 
     /// <summary>
     /// 游戏本身需要的固定启动参数，与用户自定义的参数无关。
-    /// 例如异环需要 /launcher。
     /// </summary>
     public string? LaunchArguments { get; init; }
+
+
+    /// <summary>
+    /// 启动后等待游戏进程出现的最长时间。
+    /// <para/>
+    /// 直接启动游戏本体时进程几秒内就会出现，默认值足够；
+    /// 但经过登录外壳的游戏要等用户登录完，必须留足时间，
+    /// 否则记录游玩时间的进程会在用户进入游戏之前就放弃。
+    /// </summary>
+    public TimeSpan ProcessStartTimeout { get; init; } = TimeSpan.FromSeconds(30);
 
 
     /// <summary>

@@ -35,18 +35,6 @@ public class HoYoGameMappingTests
     /// </summary>
     public static TheoryData<string, GameCapability> ExpectedFeatureCapabilities => new()
     {
-        // 页面：GameLauncher、GameSetting、Screenshot、GameRecord
-        // 布尔：InGameNoticesWindow、SupportGameAccountSwitcher、SupportDailyNote
-        {
-            GameBiz.bh3_cn,
-            GameCapability.Launch | GameCapability.GameSetting | GameCapability.Screenshot | GameCapability.GameRecord
-            | GameCapability.InGameNotices | GameCapability.AccountSwitcher | GameCapability.DailyNote
-        },
-        {
-            GameBiz.bh3_global,
-            GameCapability.Launch | GameCapability.GameSetting | GameCapability.Screenshot | GameCapability.GameRecord
-            | GameCapability.InGameNotices | GameCapability.DailyNote
-        },
         // 页面：+ GachaLog、SelfQuery、GenshinBeyondGacha
         // 布尔：+ SupportHardLink、SupportCloudGame
         {
@@ -165,8 +153,6 @@ public class HoYoGameMappingTests
 
 
     [Theory]
-    [InlineData(GameBiz.bh3_cn, "BH3.exe")]
-    [InlineData(GameBiz.bh3_global, "BH3.exe")]
     [InlineData(GameBiz.hk4e_cn, "YuanShen.exe")]
     [InlineData(GameBiz.hk4e_bilibili, "YuanShen.exe")]
     [InlineData(GameBiz.hk4e_global, "GenshinImpact.exe")]

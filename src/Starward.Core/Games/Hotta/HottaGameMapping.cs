@@ -85,6 +85,8 @@ public static class HottaGameMapping
                 LaunchArguments = "/launcher",
                 // 外壳最终拉起的才是游戏本体，游玩时间要按它计算
                 ProcessName = "HTGame.exe",
+                // 要先在外壳里登录，游戏进程可能几分钟后才出现
+                ProcessStartTimeout = TimeSpan.FromMinutes(10),
                 ScreenshotPaths =
                 [
                     Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), "NevernessToEverness"),

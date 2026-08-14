@@ -377,8 +377,8 @@ public class NewGameProviderTests
         ], [], []);
 
         IReadOnlyList<GameDescriptor> games = registry.GetAllGames();
-        Assert.Equal(GameBiz.AllGameBizs.Count + 3, games.Count);
-        Assert.Equal(GameBiz.AllGameBizs.Count, games.Count(x => x.Key.IsProvider(GameProviderIds.HoYo)));
+        Assert.Equal(HoYoGameMapping.SupportedGameKeys.Count + 3, games.Count);
+        Assert.Equal(HoYoGameMapping.SupportedGameKeys.Count, games.Count(x => x.Key.IsProvider(GameProviderIds.HoYo)));
         Assert.NotNull(registry.GetGame(KuroGameMapping.WutheringWavesGlobal));
         Assert.NotNull(registry.GetGame(HoYoGameMapping.FromGameBiz(GameBiz.nap_bilibili)));
     }

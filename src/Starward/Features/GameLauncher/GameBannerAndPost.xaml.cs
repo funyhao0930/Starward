@@ -314,6 +314,11 @@ public sealed partial class GameBannerAndPost : UserControl
     {
         try
         {
+            // 按钮只在有游戏内通知能力时显示，这里再挡一次以防被其他方式触发
+            if (CurrentGameId is null)
+            {
+                return;
+            }
             new GameNoticeWindow
             {
                 CurrentGameBiz = CurrentGameId.GameBiz,

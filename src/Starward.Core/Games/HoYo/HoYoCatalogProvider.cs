@@ -50,7 +50,7 @@ public class HoYoCatalogProvider : IGameCatalogProvider
 
     public GameDescriptor? GetGame(GameKey key)
     {
-        if (!key.IsProvider(ProviderId) || !key.IsValid)
+        if (!key.IsProvider(ProviderId) || !key.IsValid || HoYoGameMapping.IsExcluded(key))
         {
             return null;
         }
@@ -78,7 +78,8 @@ public class HoYoCatalogProvider : IGameCatalogProvider
         var dic = new Dictionary<GameKey, GameInfo>();
         foreach (GameInfo info in _gameInfoSource?.GetCachedGameInfos() ?? [])
         {
-            if (TryGetGameKey(info, out GameKey key))
+            // 本分支不提供的游戏，不能从接口数据里绕回来
+            if (TryGetGameKey(info, out GameKey key) && !HoYoGameMapping.IsExcluded(key))
             {
                 dic[key] = info;
             }

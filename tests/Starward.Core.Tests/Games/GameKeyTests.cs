@@ -23,7 +23,8 @@ public class GameKeyTests
 
             Assert.True(HoYoGameMapping.TryToGameBiz(key, out GameBiz roundTripped));
             Assert.Equal(gameBiz.Value, roundTripped.Value);
-            Assert.True(HoYoGameMapping.IsSupported(key));
+            // 转换与「是否提供」是两件事：被排除的游戏一样能正确转换
+            Assert.Equal(!HoYoGameMapping.IsExcluded(key), HoYoGameMapping.IsSupported(key));
         }
     }
 
@@ -119,12 +120,32 @@ public class GameKeyTests
     }
 
 
+    /// <summary>
+    /// 支持的游戏是上游数据去掉本分支排除的游戏
+    /// </summary>
     [Fact]
-    public void SupportedGameKeys_MatchesAllGameBizs()
+    public void SupportedGameKeys_AreAllGameBizsMinusExcluded()
     {
-        Assert.Equal(GameBiz.AllGameBizs.Count, HoYoGameMapping.SupportedGameKeys.Count);
-        Assert.Equal(GameBiz.AllGameBizs.Select(x => x.Value).ToList(),
-                     HoYoGameMapping.SupportedGameKeys.Select(x => HoYoGameMapping.ToGameBiz(x).Value).ToList());
+        List<string> expected = GameBiz.AllGameBizs
+            .Select(HoYoGameMapping.FromGameBiz)
+            .Where(x => !HoYoGameMapping.IsExcluded(x))
+            .Select(x => HoYoGameMapping.ToGameBiz(x).Value)
+            .ToList();
+        Assert.Equal(expected, HoYoGameMapping.SupportedGameKeys.Select(x => HoYoGameMapping.ToGameBiz(x).Value).ToList());
+        Assert.DoesNotContain(HoYoGameMapping.SupportedGameKeys, HoYoGameMapping.IsExcluded);
+    }
+
+
+    /// <summary>
+    /// 本分支不提供崩坏3
+    /// </summary>
+    [Fact]
+    public void HonkaiImpact3rd_IsExcluded()
+    {
+        Assert.True(HoYoGameMapping.IsExcluded(HoYoGameMapping.FromGameBiz(GameBiz.bh3_cn)));
+        Assert.True(HoYoGameMapping.IsExcluded(HoYoGameMapping.FromGameBiz(GameBiz.bh3_global)));
+        Assert.False(HoYoGameMapping.IsExcluded(HoYoGameMapping.FromGameBiz(GameBiz.hk4e_cn)));
+        Assert.Empty(HoYoGameMapping.SupportedGameKeys.Where(x => x.GameId is GameBiz.bh3));
     }
 
 }

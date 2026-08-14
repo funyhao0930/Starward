@@ -94,7 +94,7 @@ public class GameProviderRegistryTests
     {
         GameProviderRegistry registry = CreateRegistry();
         IReadOnlyList<GameDescriptor> games = registry.GetAllGames();
-        Assert.Equal(GameBiz.AllGameBizs.Count + 1, games.Count);
+        Assert.Equal(HoYoGameMapping.SupportedGameKeys.Count + 1, games.Count);
         Assert.Contains(games, x => x.Key == new GameKey("kuro", "wuwa", "cn"));
         Assert.Contains(games, x => x.Key == HoYoGameMapping.FromGameBiz(GameBiz.hk4e_cn));
     }

@@ -40,9 +40,23 @@ public static class HoYoGameMapping
 
 
     /// <summary>
-    /// 所有已适配的游戏与渠道，与 <see cref="GameBiz.AllGameBizs"/> 一一对应
+    /// 本分支不提供崩坏3。
+    /// <para/>
+    /// 在这里过滤而不是改动 <see cref="GameBiz.AllGameBizs"/>，
+    /// 是为了不动上游的数据定义，将来合并上游改动时不会冲突，
+    /// 想恢复也只需要删掉这一项。
     /// </summary>
-    public static IReadOnlyList<GameKey> SupportedGameKeys { get; } = GameBiz.AllGameBizs.Select(FromGameBiz).ToList().AsReadOnly();
+    private static readonly string[] ExcludedGames = [Bh3];
+
+
+    /// <summary>
+    /// 所有已适配的游戏与渠道
+    /// </summary>
+    public static IReadOnlyList<GameKey> SupportedGameKeys { get; } = GameBiz.AllGameBizs
+        .Select(FromGameBiz)
+        .Where(x => !ExcludedGames.Contains(x.GameId))
+        .ToList()
+        .AsReadOnly();
 
 
 
@@ -115,7 +129,19 @@ public static class HoYoGameMapping
     /// </summary>
     public static bool IsSupported(GameKey key)
     {
-        return TryToGameBiz(key, out GameBiz gameBiz) && gameBiz.IsKnown();
+        return !IsExcluded(key) && TryToGameBiz(key, out GameBiz gameBiz) && gameBiz.IsKnown();
+    }
+
+
+    /// <summary>
+    /// 是否是本分支不提供的游戏。
+    /// <para/>
+    /// HoYoPlay 接口仍会返回这些游戏，目录必须显式跳过，
+    /// 否则它们会以「尚未适配的游戏」的身份重新出现。
+    /// </summary>
+    public static bool IsExcluded(GameKey key)
+    {
+        return key.IsProvider(ProviderId) && ExcludedGames.Contains(key.GameId);
     }
 
 
@@ -277,7 +303,7 @@ public static class HoYoGameMapping
     /// </summary>
     public static GameCapability GetCapabilities(GameKey key)
     {
-        if (!TryToGameBiz(key, out GameBiz gameBiz))
+        if (IsExcluded(key) || !TryToGameBiz(key, out GameBiz gameBiz))
         {
             return GameCapability.None;
         }

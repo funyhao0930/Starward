@@ -410,18 +410,16 @@ internal class PlayTimeService
         {
             GameBiz biz = new(GameKeyResolver.ToSettingsKey(key));
             string name = await GetGameExeNameWithoutExtensionAsync(key);
-            for (int i = 0; i < 15; i++)
+            // 经过登录外壳的游戏，进程可能几分钟后才出现，等待时间由游戏自己决定
+            TimeSpan timeout = _providerRegistry.GetGame(key)?.ProcessStartTimeout ?? TimeSpan.FromSeconds(30);
+            var waiting = Stopwatch.StartNew();
+            while (waiting.Elapsed < timeout)
             {
                 await Task.Delay(2000);
                 var processes = Process.GetProcessesByName(name);
                 if (processes.Length == 0)
                 {
-                    if (i < 5)
-                    {
-                        continue;
-                    }
-                    // 未找到游戏进程
-                    return null;
+                    continue;
                 }
                 foreach (var process in processes)
                 {
@@ -448,6 +446,9 @@ internal class PlayTimeService
                     return process;
                 }
             }
+            // 以前这里是静默返回，游玩时间不记录时完全看不出原因
+            _logger.LogWarning("Game process ({biz}, {name}) did not appear within {timeout}, play time is not recorded.",
+                               biz, name, timeout);
         }
         catch (Exception ex)
         {
