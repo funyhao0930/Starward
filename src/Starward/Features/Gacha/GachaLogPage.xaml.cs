@@ -67,23 +67,23 @@ public sealed partial class GachaLogPage : PageBase
             _ => "JSON",
         };
         LegacyImportText = string.Format(Lang.GachaLogPage_ImportFrom0, LegacyFormatName);
+        // 服务由供应商提供，本页面不认识具体是哪款游戏
+        _gachaLogService = AppConfig.GetService<GachaProviderRegistry>().GetService(CurrentGameKey)!;
+
         if (CurrentGameBiz.Game == GameBiz.hk4e)
         {
             EnableGenshinGachaItemStats = true;
-            _gachaLogService = AppConfig.GetService<GenshinGachaService>();
             Image_Emoji.Source = new BitmapImage(AppConfig.EmojiPaimon);
         }
         if (CurrentGameBiz.Game == GameBiz.hkrpg)
         {
             EnableStarRailGachaItemStats = true;
-            _gachaLogService = AppConfig.GetService<StarRailGachaService>();
             Image_Emoji.Source = new BitmapImage(AppConfig.EmojiPom);
         }
         if (CurrentGameBiz.Game == GameBiz.nap)
         {
             EnableZZZGachaItemStats = true;
             IsZZZGachaStatsCardVisible = true;
-            _gachaLogService = AppConfig.GetService<ZZZGachaService>();
             Image_Emoji.Source = new BitmapImage(AppConfig.EmojiBangboo);
             MenuFlyoutItem_CloudGame.Visibility = Visibility.Collapsed;
             if (CurrentGameBiz.Value is GameBiz.nap_cn or GameBiz.nap_bilibili)

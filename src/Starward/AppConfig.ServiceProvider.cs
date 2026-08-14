@@ -103,6 +103,10 @@ public static partial class AppConfig
             sc.AddSingleton<StarRailGachaService>();
             sc.AddSingleton<ZZZGachaService>();
             sc.AddSingleton<UIGFGachaService>();
+
+            // 抽卡记录：按供应商提供服务，页面不认识具体游戏
+            sc.AddSingleton<GachaProviderRegistry>();
+            sc.AddSingleton<IGameGachaProvider, HoYoGachaProvider>();
             sc.AddSingleton<GenshinBeyondGachaClient>();
             sc.AddSingleton<GenshinBeyondGachaService>();
 
