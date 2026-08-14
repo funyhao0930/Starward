@@ -25,7 +25,7 @@ public class NewGameProviderTests
         },
         {
             HottaGameMapping.NevernessToEvernessTaiwan,
-            @"Client\WindowsNoEditor\HT\Binaries\Win64\HTGame.exe",
+            @"NTETW\NTETWGame.exe",
             "HTGame",
             HottaGameMapping.Capabilities
         },
@@ -128,30 +128,50 @@ public class NewGameProviderTests
 
 
     /// <summary>
-    /// 异环必须指定存档目录后缀来选择区服，
-    /// 不传的话游戏会用 Saved 目录并显示国际服界面。
+    /// 异环必须经过官方登录外壳启动。
+    /// <para/>
+    /// 直接启动 HTGame.exe 能进游戏，但只会是国际服：区服由外壳通过
+    /// 共享内存握手传给游戏，游戏本体没有任何区服相关的命令行开关。
+    /// 因此启动的是外壳，而游玩时间按它拉起的游戏本体计算。
     /// </summary>
     [Fact]
-    public void Neverness_PassesTaiwanSavedDirSuffix()
+    public void Neverness_LaunchesThroughTheOfficialShell()
     {
         GameDescriptor descriptor = HottaGameMapping.GetDescriptors()[0];
-        Assert.Equal("-saveddirsuffix=GAT", descriptor.LaunchArguments);
+        Assert.Equal("NTETWGame.exe", Path.GetFileName(descriptor.ExecutableName));
+        Assert.Equal("/launcher", descriptor.LaunchArguments);
+        Assert.Equal("HTGame.exe", descriptor.ProcessName);
         Assert.Equal("tw", descriptor.Key.ChannelId);
     }
 
 
     /// <summary>
-    /// 异环必须直接启动虚幻引擎的游戏本体。
-    /// 官方 Config.ini 记录的 NTETWGame.exe /launcher 是登录外壳，
-    /// 走那条路点启动只会打开官方启动器，与替代启动器的目的相悖。
+    /// 外壳与游戏本体是两个进程，必须按进程名而不是进程 ID 记录游玩时间
     /// </summary>
     [Fact]
-    public void Neverness_LaunchesTheGameBinaryNotTheLoginShell()
+    public async Task Neverness_TracksPlayTimeByProcessName()
     {
-        GameDescriptor descriptor = HottaGameMapping.GetDescriptors()[0];
-        Assert.Equal("HTGame.exe", Path.GetFileName(descriptor.ExecutableName));
-        Assert.DoesNotContain("NTETWGame", descriptor.ExecutableName!, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("NTETWLauncher", descriptor.ExecutableName!, StringComparison.OrdinalIgnoreCase);
+        string root = Path.Combine(Path.GetTempPath(), "StarwardTests", Guid.NewGuid().ToString("N"));
+        try
+        {
+            GameDescriptor descriptor = HottaGameMapping.GetDescriptors()[0];
+            string exe = Path.Combine(root, descriptor.ExecutableName!);
+            Directory.CreateDirectory(Path.GetDirectoryName(exe)!);
+            File.WriteAllText(exe, "");
+
+            var catalog = new SimpleGameCatalogProvider(HottaGameMapping.ProviderId, HottaGameMapping.GetDescriptors);
+            var provider = new SimpleGameLaunchProvider(HottaGameMapping.ProviderId, catalog, new FakeGameLaunchSettings());
+            GameLaunchCommand command = await provider.CreateLaunchCommandAsync(
+                descriptor.Key,
+                new GameLaunchOptions { InstallPath = root },
+                TestContext.Current.CancellationToken);
+
+            Assert.True(command.TrackByProcessName);
+        }
+        finally
+        {
+            try { Directory.Delete(root, true); } catch { }
+        }
     }
 
 
@@ -292,10 +312,8 @@ public class NewGameProviderTests
                 TestContext.Current.CancellationToken);
 
             Assert.Equal(exe, command.FileName);
-            // 区服由存档目录后缀决定
-            Assert.Equal("-saveddirsuffix=GAT", command.Arguments);
-            // 启动的就是游戏本体，可以直接按进程 ID 记录游玩时间
-            Assert.False(command.TrackByProcessName);
+            Assert.Equal("/launcher", command.Arguments);
+            Assert.True(command.TrackByProcessName);
         }
         finally
         {
@@ -325,7 +343,7 @@ public class NewGameProviderTests
                 TestContext.Current.CancellationToken);
 
             // 游戏本身的参数在前，用户自定义的参数在后
-            Assert.Equal("-saveddirsuffix=GAT -custom -popupwindow", command.Arguments);
+            Assert.Equal("/launcher -custom -popupwindow", command.Arguments);
         }
         finally
         {

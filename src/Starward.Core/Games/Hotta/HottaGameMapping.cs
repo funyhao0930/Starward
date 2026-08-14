@@ -31,15 +31,14 @@ public static class HottaGameMapping
 
 
     /// <summary>
-    /// 台服的存档目录后缀。
+    /// 台服的存档目录后缀，对应游戏本体的 <c>-saveddirsuffix=</c> 开关。
     /// <para/>
-    /// 游戏本体支持 <c>-saveddirsuffix=</c>（该字符串存在于 HTGame.exe 中），
-    /// 官方登录外壳正是用它区分区服：不传时用 Saved 目录并显示国际服界面，
-    /// 传入本值时用 Saved_GAT 目录并显示台服界面。
-    /// <para/>
-    /// 游戏内部是 <c>"Saved_" + 后缀</c>：传 _GAT 会得到 Saved__GAT 这样的新目录，
-    /// 因此这里不能带前导下划线。
-    /// GAT 是台服的构建代号，可在启动器的 PDB 路径 PGP_HD_DHYH_GAT 中看到。
+    /// 注意：它只决定存档与配置目录（Saved_GAT），并不决定区服。
+    /// 实测传入本值后游戏确实使用 Saved_GAT，但界面仍是国际服。
+    /// 区服由官方登录外壳通过共享内存握手传给游戏
+    /// （启动器中可见 <c>Global\ArcGame_ShareMem_%1_%2</c> 与
+    /// <c>GameShareMemMgr::setGameStartInfo</c>），
+    /// 游戏本体没有任何区服相关的命令行开关，因此无法绕开外壳直接进入台服。
     /// </summary>
     public const string TaiwanSavedDirSuffix = "GAT";
 
@@ -78,9 +77,13 @@ public static class HottaGameMapping
                 // 直接启动虚幻引擎的游戏本体。
                 // Config.ini 记录的 NTETWGame.exe /launcher 是官方的登录外壳，
                 // 走那条路只会打开官方启动器，与本程序替代启动器的目的相悖。
-                ExecutableName = @"Client\WindowsNoEditor\HT\Binaries\Win64\HTGame.exe",
-                // 不带这个参数会进入国际服界面
-                LaunchArguments = $"-saveddirsuffix={TaiwanSavedDirSuffix}",
+                // 必须经过官方登录外壳：区服由它通过共享内存交给游戏，
+                // 直接启动 HTGame.exe 可以进入游戏，但只会是国际服。
+                // /launcher 来自官方 Config.ini 的 [UPDATE_CONFIG] LaunchCmdLine，
+                // 走这里可以跳过官方的更新器。
+                ExecutableName = @"NTETW\NTETWGame.exe",
+                LaunchArguments = "/launcher",
+                // 外壳最终拉起的才是游戏本体，游玩时间要按它计算
                 ProcessName = "HTGame.exe",
                 ScreenshotPaths =
                 [
