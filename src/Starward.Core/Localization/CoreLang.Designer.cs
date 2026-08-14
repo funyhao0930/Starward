@@ -689,5 +689,113 @@ namespace Starward.Core.Localization {
                 return ResourceManager.GetString("GameServer_TaiwanServer", resourceCulture);
             }
         }
-}
+
+        /// <summary>
+        ///   查找类似 Featured Resonator Convene 的本地化字符串。
+        /// </summary>
+        public static string GachaType_FeaturedResonatorConvene {
+            get {
+                return ResourceManager.GetString("GachaType_FeaturedResonatorConvene", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Featured Weapon Convene 的本地化字符串。
+        /// </summary>
+        public static string GachaType_FeaturedWeaponConvene {
+            get {
+                return ResourceManager.GetString("GachaType_FeaturedWeaponConvene", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Standard Resonator Convene 的本地化字符串。
+        /// </summary>
+        public static string GachaType_StandardResonatorConvene {
+            get {
+                return ResourceManager.GetString("GachaType_StandardResonatorConvene", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Standard Weapon Convene 的本地化字符串。
+        /// </summary>
+        public static string GachaType_StandardWeaponConvene {
+            get {
+                return ResourceManager.GetString("GachaType_StandardWeaponConvene", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Beginner Convene 的本地化字符串。
+        /// </summary>
+        public static string GachaType_BeginnerConvene {
+            get {
+                return ResourceManager.GetString("GachaType_BeginnerConvene", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Beginner's Choice Convene 的本地化字符串。
+        /// </summary>
+        public static string GachaType_BeginnerChoiceConvene {
+            get {
+                return ResourceManager.GetString("GachaType_BeginnerChoiceConvene", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Thank-You Convene 的本地化字符串。
+        /// </summary>
+        public static string GachaType_ThankYouConvene {
+            get {
+                return ResourceManager.GetString("GachaType_ThankYouConvene", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Special Recruitment 的本地化字符串。
+        /// </summary>
+        public static string GachaType_SpecialRecruitment {
+            get {
+                return ResourceManager.GetString("GachaType_SpecialRecruitment", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Joint Recruitment 的本地化字符串。
+        /// </summary>
+        public static string GachaType_JointRecruitment {
+            get {
+                return ResourceManager.GetString("GachaType_JointRecruitment", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Standard Recruitment 的本地化字符串。
+        /// </summary>
+        public static string GachaType_StandardRecruitment {
+            get {
+                return ResourceManager.GetString("GachaType_StandardRecruitment", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Beginner Recruitment 的本地化字符串。
+        /// </summary>
+        public static string GachaType_BeginnerRecruitment {
+            get {
+                return ResourceManager.GetString("GachaType_BeginnerRecruitment", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Weapon Recruitment 的本地化字符串。
+        /// </summary>
+        public static string GachaType_WeaponRecruitment {
+            get {
+                return ResourceManager.GetString("GachaType_WeaponRecruitment", resourceCulture);
+            }
+        }
+    }
 }

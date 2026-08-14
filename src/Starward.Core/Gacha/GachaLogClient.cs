@@ -83,7 +83,7 @@ public abstract class GachaLogClient
 
 
 
-    public async Task<long> GetUidByGachaUrlAsync(string gachaUrl)
+    public virtual async Task<long> GetUidByGachaUrlAsync(string gachaUrl)
     {
         var prefix = GetGachaUrlPrefix(gachaUrl);
         foreach (var gachaType in QueryGachaTypes)
@@ -326,12 +326,22 @@ public abstract class GachaLogClient
     }
 
 
-    protected static string? FindMatchStringFromFile(string path, ReadOnlySpan<byte> prefix)
+    /// <summary>
+    /// 读取游戏正在使用的文件。
+    /// 游戏运行时会一直占着日志与缓存文件，必须显式共享读写与删除才能读到快照。
+    /// </summary>
+    protected static byte[] ReadFileWithSharing(string path)
     {
         using var fs = File.Open(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
-        var ms = new MemoryStream();
+        using var ms = new MemoryStream();
         fs.CopyTo(ms);
-        var span = ms.ToArray().AsSpan();
+        return ms.ToArray();
+    }
+
+
+    protected static string? FindMatchStringFromFile(string path, ReadOnlySpan<byte> prefix)
+    {
+        var span = ReadFileWithSharing(path).AsSpan();
         var index = span.LastIndexOf(prefix);
         if (index >= 0)
         {

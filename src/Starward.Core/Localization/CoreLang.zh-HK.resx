@@ -316,4 +316,40 @@
   <data name="GachaType_WEngineReverberation" xml:space="preserve">
     <value>音擎迴響</value>
   </data>
+  <data name="GachaType_FeaturedResonatorConvene" xml:space="preserve">
+    <value>角色活動喚取</value>
+  </data>
+  <data name="GachaType_FeaturedWeaponConvene" xml:space="preserve">
+    <value>武器活動喚取</value>
+  </data>
+  <data name="GachaType_StandardResonatorConvene" xml:space="preserve">
+    <value>角色常駐喚取</value>
+  </data>
+  <data name="GachaType_StandardWeaponConvene" xml:space="preserve">
+    <value>武器常駐喚取</value>
+  </data>
+  <data name="GachaType_BeginnerConvene" xml:space="preserve">
+    <value>新手喚取</value>
+  </data>
+  <data name="GachaType_BeginnerChoiceConvene" xml:space="preserve">
+    <value>新手自選喚取</value>
+  </data>
+  <data name="GachaType_ThankYouConvene" xml:space="preserve">
+    <value>感恩定向喚取</value>
+  </data>
+  <data name="GachaType_SpecialRecruitment" xml:space="preserve">
+    <value>特許尋訪</value>
+  </data>
+  <data name="GachaType_JointRecruitment" xml:space="preserve">
+    <value>輝光慶典</value>
+  </data>
+  <data name="GachaType_StandardRecruitment" xml:space="preserve">
+    <value>基礎尋訪</value>
+  </data>
+  <data name="GachaType_BeginnerRecruitment" xml:space="preserve">
+    <value>啟程尋訪</value>
+  </data>
+  <data name="GachaType_WeaponRecruitment" xml:space="preserve">
+    <value>武器申領</value>
+  </data>
 </root>
