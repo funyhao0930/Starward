@@ -25,7 +25,7 @@ public class NewGameProviderTests
         },
         {
             HottaGameMapping.NevernessToEvernessTaiwan,
-            @"NTETW\NTETWGame.exe",
+            @"Client\WindowsNoEditor\HT\Binaries\Win64\HTGame.exe",
             "HTGame",
             HottaGameMapping.Capabilities
         },
@@ -116,12 +116,32 @@ public class NewGameProviderTests
 
 
     /// <summary>
-    /// 异环启动的是外壳，需要固定参数
+    /// 三款游戏都不需要额外的启动参数。
+    /// 鸣潮启动的 Wuthering Waves.exe 是游戏自己的引导程序，官方快捷方式也指向它，
+    /// 与需要登录的官方启动器不同。
     /// </summary>
     [Fact]
-    public void Neverness_HasLauncherArgument()
+    public void AllGames_NeedNoExtraLaunchArguments()
     {
-        Assert.Equal("/launcher", HottaGameMapping.GetDescriptors()[0].LaunchArguments);
+        foreach (GameDescriptor descriptor in AllDescriptors())
+        {
+            Assert.Null(descriptor.LaunchArguments);
+        }
+    }
+
+
+    /// <summary>
+    /// 异环必须直接启动虚幻引擎的游戏本体。
+    /// 官方 Config.ini 记录的 NTETWGame.exe /launcher 是登录外壳，
+    /// 走那条路点启动只会打开官方启动器，与替代启动器的目的相悖。
+    /// </summary>
+    [Fact]
+    public void Neverness_LaunchesTheGameBinaryNotTheLoginShell()
+    {
+        GameDescriptor descriptor = HottaGameMapping.GetDescriptors()[0];
+        Assert.Equal("HTGame.exe", Path.GetFileName(descriptor.ExecutableName));
+        Assert.DoesNotContain("NTETWGame", descriptor.ExecutableName!, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("NTETWLauncher", descriptor.ExecutableName!, StringComparison.OrdinalIgnoreCase);
     }
 
 
@@ -243,9 +263,9 @@ public class NewGameProviderTests
                 TestContext.Current.CancellationToken);
 
             Assert.Equal(exe, command.FileName);
-            Assert.Equal("/launcher", command.Arguments);
-            // 启动的文件不是游戏进程本身，必须按进程名记录游玩时间
-            Assert.True(command.TrackByProcessName);
+            Assert.Null(command.Arguments);
+            // 启动的就是游戏本体，可以直接按进程 ID 记录游玩时间
+            Assert.False(command.TrackByProcessName);
         }
         finally
         {
@@ -274,7 +294,7 @@ public class NewGameProviderTests
                 new GameLaunchOptions { InstallPath = root },
                 TestContext.Current.CancellationToken);
 
-            Assert.Equal("/launcher -custom -popupwindow", command.Arguments);
+            Assert.Equal("-custom -popupwindow", command.Arguments);
         }
         finally
         {

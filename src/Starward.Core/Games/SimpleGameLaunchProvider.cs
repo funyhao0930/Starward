@@ -103,10 +103,13 @@ public class SimpleGameLaunchProvider : IGameLaunchProvider
             WorkingDirectory = Path.GetDirectoryName(exe),
             Verb = verb,
             UseShellExecute = true,
-            // 启动的文件不是游戏进程本身时，需要按进程名查找
+            // 启动的文件不是游戏进程本身时，需要按进程名查找。
+            // ExecutableName 可能带有相对目录，只比较文件名。
             TrackByProcessName = thirdPartyTool
                               || useCommandPrompt
-                              || !string.Equals(descriptor.ProcessName ?? exeName, exeName, StringComparison.OrdinalIgnoreCase),
+                              || !string.Equals(descriptor.ProcessName ?? exeName,
+                                                Path.GetFileName(exeName),
+                                                StringComparison.OrdinalIgnoreCase),
         });
     }
 

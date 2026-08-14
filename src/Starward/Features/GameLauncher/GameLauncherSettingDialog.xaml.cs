@@ -248,7 +248,7 @@ public sealed partial class GameLauncherSettingDialog : ContentDialog
     {
         try
         {
-            if (HoYoGameMapping.TryFromGameBiz(CurrentGameId.GameBiz, out GameKey gameKey)
+            if (GameKeyResolver.Resolve(CurrentGameId.GameBiz.Value) is GameKey gameKey
                 && _providerRegistry.GetGame(gameKey) is GameDescriptor descriptor)
             {
                 CurrentGameBizIcon = new GameBizIcon(descriptor);
@@ -286,10 +286,31 @@ public sealed partial class GameLauncherSettingDialog : ContentDialog
 
 
 
+
+    /// <summary>
+    /// 该游戏是否有 HoYoPlay 那样的在线安装包接口。
+    /// 只支持启动的游戏没有，音频语言与游戏资源等区块对它们没有意义。
+    /// </summary>
+    private bool SupportsPackageApi
+    {
+        get
+        {
+            if (GameKeyResolver.Resolve(CurrentGameId?.GameBiz.Value) is not GameKey key)
+            {
+                return true;
+            }
+            return _providerRegistry.GetGame(key)?.HasCapability(GameCapability.Install) ?? true;
+        }
+    }
+
     private async Task InitializeAudioLanguageAsync()
     {
         try
         {
+            if (!SupportsPackageApi)
+            {
+                return;
+            }
             GameConfig? config = await _hoyoPlayService.GetGameConfigAsync(CurrentGameId);
             if (config is not null)
             {
@@ -994,6 +1015,10 @@ public sealed partial class GameLauncherSettingDialog : ContentDialog
     {
         try
         {
+            if (!SupportsPackageApi)
+            {
+                return;
+            }
             var gamePackage = await _hoyoPlayService.GetGamePackageAsync(CurrentGameId);
             LatestVersion = gamePackage.Main.Major!.Version;
             var list = GetGameResourcePackageGroups(gamePackage.Main);

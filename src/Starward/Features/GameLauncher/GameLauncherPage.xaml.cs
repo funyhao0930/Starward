@@ -173,10 +173,30 @@ public sealed partial class GameLauncherPage : PageBase
     /// 初始化区服选项，仅崩坏三国际服使用
     /// </summary>
     /// <returns></returns>
+
+    /// <summary>
+    /// 该游戏是否有 HoYoPlay 那样的在线接口。只支持启动的游戏没有。
+    /// </summary>
+    private bool SupportsPackageApi
+    {
+        get
+        {
+            if (GameKeyResolver.Resolve(CurrentGameBiz.Value) is not GameKey key)
+            {
+                return true;
+            }
+            return _providerRegistry.GetGame(key)?.HasCapability(GameCapability.Install) ?? true;
+        }
+    }
+
     private async Task InitializeGameServerAsync()
     {
         try
         {
+            if (!SupportsPackageApi)
+            {
+                return;
+            }
             GameInfo? gameInfo;
             if (CurrentGameBiz == GameBiz.bh3_global)
             {
@@ -345,6 +365,10 @@ public sealed partial class GameLauncherPage : PageBase
     {
         try
         {
+            if (!SupportsPackageApi)
+            {
+                return;
+            }
             EnableDX12 = AppConfig.GetEnableDX12(CurrentGameBiz);
             if (EnableDX12)
             {

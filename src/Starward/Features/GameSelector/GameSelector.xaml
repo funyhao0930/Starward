@@ -2,6 +2,7 @@
 <UserControl x:Class="Starward.Features.GameSelector.GameSelector"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:cc="using:CommunityToolkit.WinUI.Controls"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:lang="using:Starward.Language"
              xmlns:local="using:Starward.Features.GameSelector"
@@ -104,11 +105,13 @@
             <ScrollViewer>
                 <StackPanel Margin="0,0,12,12" Spacing="40">
 
-                    <!--  游戏展示和选择  -->
+                    <!--  游戏展示和选择，游戏较多时自动换行，避免超出窗口后无法查看  -->
                     <ItemsControl ItemsSource="{x:Bind GameBizDisplays}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
-                                <StackPanel Orientation="Horizontal" Spacing="16" />
+                                <cc:WrapPanel HorizontalSpacing="16"
+                                              Orientation="Horizontal"
+                                              VerticalSpacing="16" />
                             </ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>

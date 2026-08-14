@@ -61,10 +61,10 @@ public static class HottaGameMapping
                 ChannelName = CoreLang.GameServer_TaiwanServer,
                 IconUri = "ms-appx:///Assets/Image/Transparent.png",
                 ChannelIconUri = "ms-appx:///Assets/Image/Transparent.png",
-                // Config.ini 的 [UPDATE_CONFIG] LaunchFilePath 与 LaunchCmdLine
-                ExecutableName = @"NTETW\NTETWGame.exe",
-                LaunchArguments = "/launcher",
-                // 启动的是外壳，游戏本体是虚幻引擎的 HTGame.exe
+                // 直接启动虚幻引擎的游戏本体。
+                // Config.ini 记录的 NTETWGame.exe /launcher 是官方的登录外壳，
+                // 走那条路只会打开官方启动器，与本程序替代启动器的目的相悖。
+                ExecutableName = @"Client\WindowsNoEditor\HT\Binaries\Win64\HTGame.exe",
                 ProcessName = "HTGame.exe",
                 ScreenshotPaths =
                 [
