@@ -135,7 +135,7 @@ public class NewGameProviderTests
     public void Neverness_PassesTaiwanSavedDirSuffix()
     {
         GameDescriptor descriptor = HottaGameMapping.GetDescriptors()[0];
-        Assert.Equal("-saveddirsuffix=_GAT", descriptor.LaunchArguments);
+        Assert.Equal("-saveddirsuffix=GAT", descriptor.LaunchArguments);
         Assert.Equal("tw", descriptor.Key.ChannelId);
     }
 
@@ -183,6 +183,25 @@ public class NewGameProviderTests
             GameDescriptor descriptor = new HoYoCatalogProvider().GetGame(key)!;
             Assert.Equal(HoYoGameMapping.ToGameBiz(key).Value, descriptor.SettingsKey);
             Assert.DoesNotContain(":", descriptor.SettingsKey, StringComparison.Ordinal);
+        }
+    }
+
+
+    /// <summary>
+    /// 拿不到描述对象的地方（例如读写启动设置）必须算出与描述对象相同的键，
+    /// 否则非米哈游游戏的自定义启动参数等设置会被静默忽略。
+    /// </summary>
+    [Fact]
+    public void ToSettingsKey_MatchesDescriptorSettingsKey()
+    {
+        foreach (GameDescriptor descriptor in AllDescriptors())
+        {
+            Assert.Equal(descriptor.SettingsKey, GameKeyResolver.ToSettingsKey(descriptor.Key));
+        }
+        foreach (GameKey key in HoYoGameMapping.SupportedGameKeys)
+        {
+            GameDescriptor descriptor = new HoYoCatalogProvider().GetGame(key)!;
+            Assert.Equal(descriptor.SettingsKey, GameKeyResolver.ToSettingsKey(key));
         }
     }
 
@@ -274,7 +293,7 @@ public class NewGameProviderTests
 
             Assert.Equal(exe, command.FileName);
             // 区服由存档目录后缀决定
-            Assert.Equal("-saveddirsuffix=_GAT", command.Arguments);
+            Assert.Equal("-saveddirsuffix=GAT", command.Arguments);
             // 启动的就是游戏本体，可以直接按进程 ID 记录游玩时间
             Assert.False(command.TrackByProcessName);
         }
@@ -306,7 +325,7 @@ public class NewGameProviderTests
                 TestContext.Current.CancellationToken);
 
             // 游戏本身的参数在前，用户自定义的参数在后
-            Assert.Equal("-saveddirsuffix=_GAT -custom -popupwindow", command.Arguments);
+            Assert.Equal("-saveddirsuffix=GAT -custom -popupwindow", command.Arguments);
         }
         finally
         {

@@ -105,7 +105,7 @@ public sealed record GameDescriptor
     /// 其他供应商使用 <see cref="GameKey"/> 的正规字符串（例如 kuro:wuwa:global）。
     /// 两种格式都是纯字符串，因此不需要更改数据库结构。
     /// </summary>
-    public string SettingsKey => LegacyGameBiz ?? Key.ToString();
+    public string SettingsKey => LegacyGameBiz ?? GameKeyResolver.ToSettingsKey(Key);
 
 
     /// <summary>

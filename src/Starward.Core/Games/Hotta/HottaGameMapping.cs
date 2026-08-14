@@ -36,9 +36,12 @@ public static class HottaGameMapping
     /// 游戏本体支持 <c>-saveddirsuffix=</c>（该字符串存在于 HTGame.exe 中），
     /// 官方登录外壳正是用它区分区服：不传时用 Saved 目录并显示国际服界面，
     /// 传入本值时用 Saved_GAT 目录并显示台服界面。
+    /// <para/>
+    /// 游戏内部是 <c>"Saved_" + 后缀</c>：传 _GAT 会得到 Saved__GAT 这样的新目录，
+    /// 因此这里不能带前导下划线。
     /// GAT 是台服的构建代号，可在启动器的 PDB 路径 PGP_HD_DHYH_GAT 中看到。
     /// </summary>
-    public const string TaiwanSavedDirSuffix = "_GAT";
+    public const string TaiwanSavedDirSuffix = "GAT";
 
 
     /// <summary>

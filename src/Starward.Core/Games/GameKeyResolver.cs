@@ -35,4 +35,17 @@ public static class GameKeyResolver
         return TryResolve(settingsKey, out GameKey key) ? key : null;
     }
 
+
+    /// <summary>
+    /// 由 <see cref="GameKey"/> 得到应用配置与数据库使用的键。
+    /// 这是 <see cref="GameDescriptor.SettingsKey"/> 的唯一定义，
+    /// 拿不到描述对象的地方（例如读写启动设置时）也必须用它，
+    /// 否则非米哈游游戏会算出不同的键，导致设置读不到。
+    /// </summary>
+    public static string ToSettingsKey(GameKey key)
+    {
+        // 米哈游游戏沿用旧的 GameBiz 字符串，保证既有数据不失效
+        return HoYoGameMapping.TryToGameBiz(key, out GameBiz gameBiz) ? gameBiz.Value : key.ToString();
+    }
+
 }
