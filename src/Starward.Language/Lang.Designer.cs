@@ -7867,5 +7867,23 @@ namespace Starward.Language {
                 return ResourceManager.GetString("ZZZGachaService_ImportSignalSearchRecordsSuccessfully", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   查找类似 Convene Records 的本地化字符串。
+        /// </summary>
+        public static string GachaLogService_ConveneRecords {
+            get {
+                return ResourceManager.GetString("GachaLogService_ConveneRecords", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Recruitment Records 的本地化字符串。
+        /// </summary>
+        public static string GachaLogService_RecruitmentRecords {
+            get {
+                return ResourceManager.GetString("GachaLogService_RecruitmentRecords", resourceCulture);
+            }
+        }
     }
 }

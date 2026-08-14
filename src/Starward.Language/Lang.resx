@@ -2753,4 +2753,10 @@ You are welcome to submit the exported data to the following repository:</value>
   <data name="DeadlyAssaultPage_AdversityMode" xml:space="preserve">
     <value>Adversity Mode</value>
   </data>
+  <data name="GachaLogService_ConveneRecords" xml:space="preserve">
+    <value>Convene Records</value>
+  </data>
+  <data name="GachaLogService_RecruitmentRecords" xml:space="preserve">
+    <value>Recruitment Records</value>
+  </data>
 </root>

@@ -2753,4 +2753,10 @@
   <data name="DeadlyAssaultPage_AdversityMode" xml:space="preserve">
     <value>绝境模式</value>
   </data>
+  <data name="GachaLogService_ConveneRecords" xml:space="preserve">
+    <value>唤取记录</value>
+  </data>
+  <data name="GachaLogService_RecruitmentRecords" xml:space="preserve">
+    <value>寻访记录</value>
+  </data>
 </root>

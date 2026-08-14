@@ -7,6 +7,8 @@ using Microsoft.UI.Xaml.Media.Animation;
 using NuGet.Versioning;
 using Starward.Core;
 using Starward.Core.Games;
+using Starward.Core.Games.Gryphline;
+using Starward.Core.Games.Kuro;
 using Starward.Core.HoYoPlay;
 using Starward.Features.Gacha;
 using Starward.Features.GameLauncher;
@@ -128,12 +130,14 @@ public sealed partial class MainView : UserControl
         NavigationViewItem_SelfQuery.Visibility = CurrentGameFeatureConfig.SupportedPages.Contains(nameof(SelfQueryPage)).ToVisibility();
         NavigationViewItem_GenshinBeyondGacha.Visibility = CurrentGameFeatureConfig.SupportedPages.Contains(nameof(GenshinBeyondGachaPage)).ToVisibility();
 
-        // 抽卡记录名称
-        string gachalogText = CurrentGameKey.GameId switch
+        // 抽卡记录名称，每款游戏叫法都不同
+        TextBlock_GachaLog.Text = CurrentGameKey.GameId switch
         {
             GameBiz.hk4e => Lang.GachaLogService_WishRecords,
             GameBiz.hkrpg => Lang.GachaLogService_WarpRecords,
             GameBiz.nap => Lang.GachaLogService_SignalSearchRecords,
+            KuroGameMapping.WutheringWaves => Lang.GachaLogService_ConveneRecords,
+            GryphlineGameMapping.Endfield => Lang.GachaLogService_RecruitmentRecords,
             _ => "",
         };
 

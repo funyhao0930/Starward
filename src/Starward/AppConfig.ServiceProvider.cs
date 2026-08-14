@@ -3,6 +3,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Serilog;
 using Starward.Core.Gacha.Genshin;
+using Starward.Core.Gacha.Gryphline;
+using Starward.Core.Gacha.Kuro;
 using Starward.Core.Gacha.StarRail;
 using Starward.Core.Gacha.ZZZ;
 using Starward.Core.GameNotice;
@@ -107,6 +109,12 @@ public static partial class AppConfig
             // 抽卡记录：按供应商提供服务，页面不认识具体游戏
             sc.AddSingleton<GachaProviderRegistry>();
             sc.AddSingleton<IGameGachaProvider, HoYoGachaProvider>();
+            sc.AddSingleton<KuroGachaClient>();
+            sc.AddSingleton<WuwaGachaService>();
+            sc.AddSingleton<IGameGachaProvider, KuroGachaProvider>();
+            sc.AddSingleton<GryphlineGachaClient>();
+            sc.AddSingleton<EndfieldGachaService>();
+            sc.AddSingleton<IGameGachaProvider, GryphlineGachaProvider>();
             sc.AddSingleton<GenshinBeyondGachaClient>();
             sc.AddSingleton<GenshinBeyondGachaService>();
 

@@ -52,7 +52,8 @@ public static class KuroGameMapping
                                              | GameCapability.Discovery
                                              | GameCapability.VersionCheck
                                              | GameCapability.Screenshot
-                                             | GameCapability.PlayTime;
+                                             | GameCapability.PlayTime
+                                             | GameCapability.Gacha;
 
 
     public static IReadOnlyList<GameDescriptor> GetDescriptors()

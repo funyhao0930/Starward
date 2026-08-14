@@ -102,21 +102,26 @@ public class KuroGachaClient : GachaLogClient
         {
             return files;
         }
-        string clientLog = Path.Join(installPath, @"Client\Saved\Logs\Client.log");
-        if (File.Exists(clientLog))
+        // Starward 记的是启动器安装目录，游戏本体在它下面一层；
+        // 直接给到游戏目录时也要认得，所以两个根都试一次
+        foreach (string root in new[] { Path.Join(installPath, Games.Kuro.KuroGameMapping.GameFolderName), installPath })
         {
-            files.Add(clientLog);
-        }
-        // 内嵌浏览器的日志，国服与国际服放在不同的 KrPcSdk_* 目录下，枚举一遍免得写死
-        string thirdParty = Path.Join(installPath, @"Client\Binaries\Win64\ThirdParty");
-        if (Directory.Exists(thirdParty))
-        {
-            foreach (string sdk in Directory.EnumerateDirectories(thirdParty))
+            string clientLog = Path.Join(root, @"Client\Saved\Logs\Client.log");
+            if (File.Exists(clientLog))
             {
-                string debugLog = Path.Join(sdk, @"KRSDKRes\KRSDKWebView\debug.log");
-                if (File.Exists(debugLog))
+                files.Add(clientLog);
+            }
+            // 内嵌浏览器的日志，国服与国际服放在不同的 KrPcSdk_* 目录下，枚举一遍免得写死
+            string thirdParty = Path.Join(root, @"Client\Binaries\Win64\ThirdParty");
+            if (Directory.Exists(thirdParty))
+            {
+                foreach (string sdk in Directory.EnumerateDirectories(thirdParty))
                 {
-                    files.Add(debugLog);
+                    string debugLog = Path.Join(sdk, @"KRSDKRes\KRSDKWebView\debug.log");
+                    if (File.Exists(debugLog))
+                    {
+                        files.Add(debugLog);
+                    }
                 }
             }
         }

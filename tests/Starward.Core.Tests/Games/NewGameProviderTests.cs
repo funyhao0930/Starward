@@ -71,10 +71,22 @@ public class NewGameProviderTests
         Assert.False(descriptor.HasCapability(GameCapability.Install));
         Assert.False(descriptor.HasCapability(GameCapability.Update));
         Assert.False(descriptor.HasCapability(GameCapability.Repair));
-        // 抽卡、游戏记录等米哈游专属功能也不能声明
-        Assert.False(descriptor.HasCapability(GameCapability.Gacha));
+        // 游戏记录与云游戏都依赖米哈游的账号体系，任何一款都不能声明
         Assert.False(descriptor.HasCapability(GameCapability.GameRecord));
         Assert.False(descriptor.HasCapability(GameCapability.CloudGame));
+    }
+
+
+    /// <summary>
+    /// 抽卡记录只在实现了对应协议的游戏上声明。
+    /// 异环还没有实现，因此不能因为「它也是新游戏」就跟着一起打开。
+    /// </summary>
+    [Fact]
+    public void OnlyGamesWithAGachaImplementationClaimTheCapability()
+    {
+        Assert.True(AllDescriptors().First(x => x.Key == KuroGameMapping.WutheringWavesGlobal).HasCapability(GameCapability.Gacha));
+        Assert.True(AllDescriptors().First(x => x.Key == GryphlineGameMapping.EndfieldDefault).HasCapability(GameCapability.Gacha));
+        Assert.False(AllDescriptors().First(x => x.Key == HottaGameMapping.NevernessToEvernessTaiwan).HasCapability(GameCapability.Gacha));
     }
 
 

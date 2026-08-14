@@ -257,7 +257,8 @@ internal static class DatabaseService
         Sql_v17,
         Sql_v18,
         Sql_v19,
-        Sql_v20
+        Sql_v20,
+        Sql_v21
     ];
 
 
@@ -1033,6 +1034,53 @@ internal static class DatabaseService
         ALTER TABLE ZZZDeadlyAssaultInfo ADD COLUMN HardTotalStar INTEGER DEFAULT 0 NOT NULL;
 
         PRAGMA USER_VERSION = 20;
+        COMMIT TRANSACTION;
+        """;
+
+    /// <summary>
+    /// 鸣潮与终末地的抽卡记录。
+    /// 结构与米哈游的记录表一致，只是新增两张表，不动既有数据。
+    /// </summary>
+    private const string Sql_v21 = """
+        BEGIN TRANSACTION;
+
+        CREATE TABLE IF NOT EXISTS WuwaGachaItem
+        (
+            Uid       INTEGER NOT NULL,
+            Id        INTEGER NOT NULL,
+            Name      TEXT    NOT NULL,
+            Time      TEXT    NOT NULL,
+            ItemId    INTEGER NOT NULL,
+            ItemType  TEXT    NOT NULL,
+            RankType  INTEGER NOT NULL,
+            GachaType INTEGER NOT NULL,
+            Count     INTEGER NOT NULL,
+            Lang      TEXT,
+            PRIMARY KEY (Uid, Id)
+        );
+        CREATE INDEX IF NOT EXISTS IX_WuwaGachaItem_Id ON WuwaGachaItem (Id);
+        CREATE INDEX IF NOT EXISTS IX_WuwaGachaItem_RankType ON WuwaGachaItem (RankType);
+        CREATE INDEX IF NOT EXISTS IX_WuwaGachaItem_GachaType ON WuwaGachaItem (GachaType);
+
+        CREATE TABLE IF NOT EXISTS EndfieldGachaItem
+        (
+            Uid       INTEGER NOT NULL,
+            Id        INTEGER NOT NULL,
+            Name      TEXT    NOT NULL,
+            Time      TEXT    NOT NULL,
+            ItemId    INTEGER NOT NULL,
+            ItemType  TEXT    NOT NULL,
+            RankType  INTEGER NOT NULL,
+            GachaType INTEGER NOT NULL,
+            Count     INTEGER NOT NULL,
+            Lang      TEXT,
+            PRIMARY KEY (Uid, Id)
+        );
+        CREATE INDEX IF NOT EXISTS IX_EndfieldGachaItem_Id ON EndfieldGachaItem (Id);
+        CREATE INDEX IF NOT EXISTS IX_EndfieldGachaItem_RankType ON EndfieldGachaItem (RankType);
+        CREATE INDEX IF NOT EXISTS IX_EndfieldGachaItem_GachaType ON EndfieldGachaItem (GachaType);
+
+        PRAGMA USER_VERSION = 21;
         COMMIT TRANSACTION;
         """;
 

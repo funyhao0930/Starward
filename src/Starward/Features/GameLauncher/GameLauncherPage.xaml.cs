@@ -322,9 +322,10 @@ public sealed partial class GameLauncherPage : PageBase
                 return;
             }
             await CheckGameRunningAsync();
-            if (!supportsVersionCheck)
+            if (!SupportsPackageApi)
             {
-                // 没有版本与下载接口，到此为止
+                // VersionCheck 说的是「读得到本地版本号」，上面已经用过了；
+                // 下面要问的是官方的最新版本，那是下载接口的一部分，没有下载器就到此为止
                 return;
             }
             (latestGameVersion, predownloadGameVersion) = await _gameLauncherService.GetLatestGameVersionAsync(RequiredGameId);

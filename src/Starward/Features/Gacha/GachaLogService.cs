@@ -43,6 +43,25 @@ internal abstract class GachaLogService
     public IReadOnlyCollection<IGachaType> QueryGachaTypes => _client.QueryGachaTypes;
 
 
+    /// <summary>
+    /// 最高稀有度，也就是「保底」在数的那一档。
+    /// <para/>
+    /// 米哈游三款是 5 星，终末地是 6 星，绝区零内部存 4（S 级）。
+    /// 统计与保底计算都读这三个属性，而不是写死 5/4/3。
+    /// </summary>
+    protected virtual int TopRankType => 5;
+
+    /// <summary>
+    /// 次高稀有度，界面上的第二排
+    /// </summary>
+    protected virtual int SecondRankType => TopRankType - 1;
+
+    /// <summary>
+    /// 第三档稀有度
+    /// </summary>
+    protected virtual int ThirdRankType => TopRankType - 2;
+
+
 
     public static string GetGachaLogText(GameBiz biz)
     {
@@ -78,7 +97,7 @@ internal abstract class GachaLogService
             {
                 item.Index = ++index;
                 item.Pity = ++pity;
-                if (item.RankType == 5)
+                if (item.RankType == TopRankType)
                 {
                     pity = 0;
                 }
@@ -186,25 +205,25 @@ internal abstract class GachaLogService
                     GachaType = type.Value,
                     GachaTypeText = type.ToLocalization(),
                     Count = list.Count,
-                    Count_5_Up = list.Count(x => x.RankType == 5 && x.IsUp),
-                    Count_5 = list.Count(x => x.RankType == 5),
-                    Count_4 = list.Count(x => x.RankType == 4),
-                    Count_3 = list.Count(x => x.RankType == 3),
+                    Count_5_Up = list.Count(x => x.RankType == TopRankType && x.IsUp),
+                    Count_5 = list.Count(x => x.RankType == TopRankType),
+                    Count_4 = list.Count(x => x.RankType == SecondRankType),
+                    Count_3 = list.Count(x => x.RankType == ThirdRankType),
                     StartTime = list.First().Time,
                     EndTime = list.Last().Time
                 };
                 stats.Ratio_5 = (double)stats.Count_5 / stats.Count;
                 stats.Ratio_4 = (double)stats.Count_4 / stats.Count;
                 stats.Ratio_3 = (double)stats.Count_3 / stats.Count;
-                stats.List_5 = list.Where(x => x.RankType == 5).Reverse().ToList();
-                stats.List_4 = list.Where(x => x.RankType == 4).Reverse().ToList();
+                stats.List_5 = list.Where(x => x.RankType == TopRankType).Reverse().ToList();
+                stats.List_4 = list.Where(x => x.RankType == SecondRankType).Reverse().ToList();
                 stats.Pity_5 = list.Last().Pity;
-                if (list.Last().RankType == 5)
+                if (list.Last().RankType == TopRankType)
                 {
                     stats.Pity_5 = 0;
                 }
                 stats.Average_5 = (double)(stats.Count - stats.Pity_5) / stats.Count_5;
-                stats.Pity_4 = list.Count - 1 - list.FindLastIndex(x => x.RankType == 4);
+                stats.Pity_4 = list.Count - 1 - list.FindLastIndex(x => x.RankType == SecondRankType);
 
                 if (stats.Count_5_Up > 0)
                 {
@@ -216,7 +235,7 @@ internal abstract class GachaLogService
                 foreach (var item in list)
                 {
                     pity_4++;
-                    if (item.RankType == 4)
+                    if (item.RankType == SecondRankType)
                     {
                         item.Pity = pity_4;
                         pity_4 = 0;

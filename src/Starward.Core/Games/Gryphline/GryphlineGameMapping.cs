@@ -44,7 +44,8 @@ public static class GryphlineGameMapping
     public const GameCapability Capabilities = GameCapability.Launch
                                              | GameCapability.Discovery
                                              | GameCapability.Screenshot
-                                             | GameCapability.PlayTime;
+                                             | GameCapability.PlayTime
+                                             | GameCapability.Gacha;
 
 
     public static IReadOnlyList<GameDescriptor> GetDescriptors()

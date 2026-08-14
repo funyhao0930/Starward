@@ -11,6 +11,9 @@ using Microsoft.UI.Xaml.Navigation;
 using Starward.Core;
 using Starward.Core.Gacha;
 using Starward.Core.GameRecord;
+using Starward.Core.Games.Gryphline;
+using Starward.Core.Games.HoYo;
+using Starward.Core.Games.Kuro;
 using Starward.Features.Gacha.UIGF;
 using Starward.Features.GameLauncher;
 using Starward.Features.GameRecord;
@@ -100,6 +103,20 @@ public sealed partial class GachaLogPage : PageBase
         if (CurrentGameBiz.IsGlobalServer())
         {
             MenuFlyoutItem_CloudGame.Visibility = Visibility.Collapsed;
+        }
+        if (!CurrentGameKey.IsProvider(HoYoGameMapping.ProviderId))
+        {
+            // 云游戏、米游社同步与 UIGF 都是米哈游生态的东西，其他游戏没有对应的概念
+            MenuFlyoutItem_CloudGame.Visibility = Visibility.Collapsed;
+            Button_Export_Excel.Visibility = Visibility.Collapsed;
+            Button_Import.Visibility = Visibility.Collapsed;
+            Button_UIGF4.Visibility = Visibility.Collapsed;
+            GachaTypeText = CurrentGameKey.ProviderId switch
+            {
+                KuroGameMapping.ProviderId => Lang.GachaLogService_ConveneRecords,
+                GryphlineGameMapping.ProviderId => Lang.GachaLogService_RecruitmentRecords,
+                _ => GachaTypeText,
+            };
         }
     }
 
@@ -949,6 +966,11 @@ public sealed partial class GachaLogPage : PageBase
     {
         try
         {
+            // webCaches 是米哈游游戏的目录结构，其他游戏的授权 URL 不在那里
+            if (!CurrentGameKey.IsProvider(HoYoGameMapping.ProviderId))
+            {
+                return;
+            }
             var installPath = GameLauncherService.GetGameInstallPath(CurrentGameKey);
             if (Directory.Exists(installPath))
             {
@@ -974,6 +996,10 @@ public sealed partial class GachaLogPage : PageBase
     {
         try
         {
+            if (!CurrentGameKey.IsProvider(HoYoGameMapping.ProviderId))
+            {
+                return false;
+            }
             var installPath = GameLauncherService.GetGameInstallPath(CurrentGameKey);
             if (Directory.Exists(installPath))
             {
