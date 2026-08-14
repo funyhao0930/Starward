@@ -116,17 +116,27 @@ public class NewGameProviderTests
 
 
     /// <summary>
-    /// 三款游戏都不需要额外的启动参数。
-    /// 鸣潮启动的 Wuthering Waves.exe 是游戏自己的引导程序，官方快捷方式也指向它，
-    /// 与需要登录的官方启动器不同。
+    /// 鸣潮与终末地不需要额外的启动参数。
+    /// 鸣潮启动的 Wuthering Waves.exe 是游戏自己的引导程序，官方快捷方式也指向它。
     /// </summary>
     [Fact]
-    public void AllGames_NeedNoExtraLaunchArguments()
+    public void WutheringWavesAndEndfield_NeedNoExtraLaunchArguments()
     {
-        foreach (GameDescriptor descriptor in AllDescriptors())
-        {
-            Assert.Null(descriptor.LaunchArguments);
-        }
+        Assert.Null(KuroGameMapping.GetDescriptors()[0].LaunchArguments);
+        Assert.Null(GryphlineGameMapping.GetDescriptors()[0].LaunchArguments);
+    }
+
+
+    /// <summary>
+    /// 异环必须指定存档目录后缀来选择区服，
+    /// 不传的话游戏会用 Saved 目录并显示国际服界面。
+    /// </summary>
+    [Fact]
+    public void Neverness_PassesTaiwanSavedDirSuffix()
+    {
+        GameDescriptor descriptor = HottaGameMapping.GetDescriptors()[0];
+        Assert.Equal("-saveddirsuffix=_GAT", descriptor.LaunchArguments);
+        Assert.Equal("tw", descriptor.Key.ChannelId);
     }
 
 
@@ -263,7 +273,8 @@ public class NewGameProviderTests
                 TestContext.Current.CancellationToken);
 
             Assert.Equal(exe, command.FileName);
-            Assert.Null(command.Arguments);
+            // 区服由存档目录后缀决定
+            Assert.Equal("-saveddirsuffix=_GAT", command.Arguments);
             // 启动的就是游戏本体，可以直接按进程 ID 记录游玩时间
             Assert.False(command.TrackByProcessName);
         }
@@ -294,7 +305,8 @@ public class NewGameProviderTests
                 new GameLaunchOptions { InstallPath = root },
                 TestContext.Current.CancellationToken);
 
-            Assert.Equal("-custom -popupwindow", command.Arguments);
+            // 游戏本身的参数在前，用户自定义的参数在后
+            Assert.Equal("-saveddirsuffix=_GAT -custom -popupwindow", command.Arguments);
         }
         finally
         {
