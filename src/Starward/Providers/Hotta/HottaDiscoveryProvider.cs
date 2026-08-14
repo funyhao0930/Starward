@@ -38,7 +38,7 @@ internal partial class HottaDiscoveryProvider : UninstallRegistryDiscoveryProvid
     /// <summary>
     /// 异环把本地版本号记录在官方启动器的 Config.ini 中：[VERSION] Version=1.0.8.0727
     /// </summary>
-    public async ValueTask<Version?> GetLocalVersionAsync(GameKey key, string installPath, CancellationToken cancellationToken = default)
+    public override async ValueTask<Version?> GetLocalVersionAsync(GameKey key, string installPath, CancellationToken cancellationToken = default)
     {
         try
         {

@@ -28,6 +28,7 @@ using Starward.Features.RPC;
 using Starward.Features.Screenshot;
 using Starward.Features.SelfQuery;
 using Starward.Features.Update;
+using Starward.Providers;
 using Starward.Providers.Gryphline;
 using Starward.Providers.HoYo;
 using Starward.Providers.Hotta;
@@ -137,7 +138,10 @@ public static partial class AppConfig
     /// </summary>
     private static void AddSimpleGameProvider(IServiceCollection sc, string providerId, Func<IReadOnlyList<GameDescriptor>> descriptorFactory)
     {
-        sc.AddSingleton<IGameCatalogProvider>(_ => new SimpleGameCatalogProvider(providerId, descriptorFactory));
+        // 图标从已安装游戏的可执行文件中提取，不把美术资源复制进代码仓库
+        sc.AddSingleton<IGameCatalogProvider>(sp => new LocalIconGameCatalogProvider(
+            new SimpleGameCatalogProvider(providerId, descriptorFactory),
+            sp.GetRequiredService<ILogger<LocalIconGameCatalogProvider>>()));
         sc.AddSingleton<IGameLaunchProvider>(sp => new SimpleGameLaunchProvider(
             providerId,
             new SimpleGameCatalogProvider(providerId, descriptorFactory),

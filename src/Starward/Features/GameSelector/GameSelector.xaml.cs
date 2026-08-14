@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
+using Microsoft.Extensions.Logging;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
@@ -37,6 +38,9 @@ public sealed partial class GameSelector : UserControl
 
 
     public event EventHandler<(GameId, bool DoubleTapped)>? CurrentGameChanged;
+
+
+    private readonly ILogger<GameSelector> _logger = AppConfig.GetLogger<GameSelector>();
 
 
     private readonly IGameProviderRegistry _providerRegistry = AppConfig.GetService<IGameProviderRegistry>();
@@ -82,6 +86,8 @@ public sealed partial class GameSelector : UserControl
     public void InitializeGameSelector()
     {
         IReadOnlyList<GameDescriptor> games = _providerRegistry.GetAllGames();
+        _logger.LogInformation("Game catalog: {count} game(s) from {providers} provider(s).",
+                               games.Count, _providerRegistry.CatalogProviders.Count);
         InitializeGameIconsArea(games);
         InitializeGameServerArea(games);
         InitializeInstalledGamesCommand.Execute(null);
@@ -219,7 +225,10 @@ public sealed partial class GameSelector : UserControl
 
             GameBizIcons.CollectionChanged += GameBizIcons_CollectionChanged;
         }
-        catch { }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Initialize game icons area");
+        }
         if (GameBizIcons.Count == 0 && CurrentGameBizIcon is null)
         {
             TeachTip_SelectGame.IsOpen = true;
@@ -578,12 +587,14 @@ public sealed partial class GameSelector : UserControl
             {
                 List<GameDescriptor> channels = group.OrderBy(x => GetChannelRank(x.Key.ChannelId)).ToList();
 
-                // 用于展示的渠道，找不到首选渠道时退回第一个有图片的渠道
+                // 用于展示的渠道：优先取有缩略图的首选渠道，
+                // 没有缩略图的游戏（例如只支持启动的第三方游戏）也要显示，用图标顶替
                 GameDescriptor? display = channels.FirstOrDefault(x => x.Key.ChannelId == preferredChannel && !string.IsNullOrWhiteSpace(x.ThumbnailUri))
-                                       ?? channels.FirstOrDefault(x => !string.IsNullOrWhiteSpace(x.ThumbnailUri));
+                                       ?? channels.FirstOrDefault(x => !string.IsNullOrWhiteSpace(x.ThumbnailUri))
+                                       ?? channels.FirstOrDefault(x => x.Key.ChannelId == preferredChannel)
+                                       ?? channels.FirstOrDefault();
                 if (display is null)
                 {
-                    // 与重构前一致：没有取得展示图片的游戏不显示在选择区域
                     continue;
                 }
 
@@ -591,7 +602,7 @@ public sealed partial class GameSelector : UserControl
                 {
                     GameKey = display.Key,
                     ThumbnailUri = display.ThumbnailUri,
-                    LogoUri = display.LogoUri,
+                    LogoUri = display.LogoUri ?? display.IconUri,
                     IconUri = display.IconUri,
                 };
                 foreach (GameDescriptor channel in channels)
@@ -604,8 +615,12 @@ public sealed partial class GameSelector : UserControl
                 list.Add(item);
             }
             GameBizDisplays = new(list);
+            _logger.LogInformation("Game selector shows {count} game(s).", list.Count);
         }
-        catch { }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Initialize game server area");
+        }
     }
 
 
@@ -876,20 +891,34 @@ public sealed partial class GameSelector : UserControl
     {
         try
         {
-            var sb = new StringBuilder();
+            var keys = new List<string>();
             foreach (IGameDiscoveryProvider provider in _providerRegistry.DiscoveryProviders)
             {
-                foreach (GameInstallation installation in await provider.DiscoverAsync())
+                // 单个供应商失败不能影响其他供应商
+                try
                 {
-                    // 配置文件中保存的仍是 GameBiz 字符串
-                    if (_providerRegistry.GetGame(installation.Key)?.SettingsKey is string biz && !string.IsNullOrWhiteSpace(biz))
+                    IReadOnlyList<GameInstallation> installations = await provider.DiscoverAsync();
+                    _logger.LogInformation("Provider {provider} found {count} installed game(s).", provider.ProviderId, installations.Count);
+                    foreach (GameInstallation installation in installations)
                     {
-                        sb.Append(biz);
-                        sb.Append(',');
+                        // 配置文件中保存的仍是字符串键
+                        if (_providerRegistry.GetGame(installation.Key)?.SettingsKey is string key && !string.IsNullOrWhiteSpace(key))
+                        {
+                            keys.Add(key);
+                            _logger.LogInformation("Found installed game {key} at {path}", key, installation.InstallPath);
+                        }
+                        else
+                        {
+                            _logger.LogWarning("No descriptor for discovered game {key}", installation.Key);
+                        }
                     }
                 }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Auto search failed for provider {provider}", provider.ProviderId);
+                }
             }
-            AppConfig.SelectedGameBizs = sb.ToString().TrimEnd(',');
+            AppConfig.SelectedGameBizs = string.Join(',', keys.Distinct());
             InitializeGameSelector();
             if (!IsPinned)
             {
@@ -898,7 +927,7 @@ public sealed partial class GameSelector : UserControl
         }
         catch (Exception ex)
         {
-            Debug.WriteLine(ex);
+            _logger.LogError(ex, "Auto search installed games");
         }
     }
 

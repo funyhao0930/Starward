@@ -64,6 +64,18 @@ internal abstract class UninstallRegistryDiscoveryProvider : IGameDiscoveryProvi
     protected virtual string? ResolveGameFolder(GameKey key, string installLocation) => installLocation;
 
 
+    /// <summary>
+    /// 读取本地已安装的版本号，默认无法确定。
+    /// <para/>
+    /// 必须在这里声明为 virtual：接口的默认实现在本基类就完成了映射，
+    /// 派生类另外写一个同名方法并不会重新映射，通过接口调用时仍然会走默认实现。
+    /// </summary>
+    public virtual ValueTask<Version?> GetLocalVersionAsync(GameKey key, string installPath, CancellationToken cancellationToken = default)
+    {
+        return ValueTask.FromResult<Version?>(null);
+    }
+
+
 
     public ValueTask<GameInstallation?> GetInstallationAsync(GameKey key, CancellationToken cancellationToken = default)
     {
