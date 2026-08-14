@@ -134,9 +134,11 @@ internal partial class GameFeatureConfig
         {
             return None;
         }
-        // 无法识别的 GameBiz，与重构前一致，只允许启动
-        if (!HoYoGameMapping.TryFromGameBiz(gameId.GameBiz, out GameKey key))
+        // 必须用 GameKeyResolver：非米哈游游戏的键是 GameKey 的正规字符串，
+        // 用 HoYo 的映射会解析失败，导致这些游戏只剩启动页
+        if (GameKeyResolver.Resolve(gameId.GameBiz.Value) is not GameKey key)
         {
+            // 无法识别的键，与重构前一致，只允许启动
             return FromCapabilities(GameCapability.Launch);
         }
         GameDescriptor? descriptor = AppConfig.GetService<IGameProviderRegistry>().GetGame(key);

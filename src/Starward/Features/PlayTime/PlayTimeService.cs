@@ -506,7 +506,10 @@ internal class PlayTimeService
     /// <returns></returns>
     public async Task<string> GetGameExeNameWithoutExtensionAsync(GameId gameId)
     {
-        GameKey key = HoYoGameMapping.FromGameBiz(gameId.GameBiz);
+        // 必须用 GameKeyResolver：非米哈游游戏的键是 GameKey 的正规字符串，
+        // 用 HoYo 的映射会直接抛出，导致这些游戏完全记录不到游玩时间
+        GameKey key = GameKeyResolver.Resolve(gameId.GameBiz.Value)
+            ?? throw new ArgumentOutOfRangeException(nameof(gameId), gameId.GameBiz.Value, "Cannot resolve the game key.");
         // 部分游戏启动的是一层外壳，记录游玩时间要找的是真正的游戏进程
         if (_providerRegistry.GetGame(key)?.ProcessNameWithoutExtension is string processName)
         {

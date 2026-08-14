@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.UI.Xaml;
+using Starward.Core.Games;
 using Starward.Core.HoYoPlay;
 using Starward.Features.HoYoPlay;
 using Starward.Helpers;
@@ -28,11 +29,18 @@ public class BackgroundService
 
 
 
-    public BackgroundService(ILogger<BackgroundService> logger, HoYoPlayService hoYoPlayService, HttpClient httpClient)
+    private readonly IGameProviderRegistry _providerRegistry;
+
+
+    public BackgroundService(ILogger<BackgroundService> logger,
+                             HoYoPlayService hoYoPlayService,
+                             HttpClient httpClient,
+                             IGameProviderRegistry providerRegistry)
     {
         _logger = logger;
         _hoYoPlayService = hoYoPlayService;
         _httpClient = httpClient;
+        _providerRegistry = providerRegistry;
     }
 
 
@@ -110,6 +118,25 @@ public class BackgroundService
 
 
 
+
+    /// <summary>
+    /// 该游戏是否有 HoYoPlay 那样的在线背景图接口。
+    /// 只支持启动的游戏没有，对它们调用会抛出 Unknown launcher id。
+    /// </summary>
+    private bool SupportsOnlineBackground(GameId? gameId)
+    {
+        if (gameId is null)
+        {
+            return false;
+        }
+        if (GameKeyResolver.Resolve(gameId.GameBiz.Value) is not GameKey key)
+        {
+            return true;
+        }
+        return _providerRegistry.GetGame(key)?.HasCapability(GameCapability.Install) ?? true;
+    }
+
+
     /// <summary>
     /// 背景图和版本海报链接
     /// </summary>
@@ -118,6 +145,17 @@ public class BackgroundService
     /// <returns></returns>
     public async Task<List<GameBackground>> GetGameBackgroundsAsync(GameId gameId, CancellationToken cancellationToken = default)
     {
+        // 只支持启动的游戏没有 HoYoPlay 那样的在线背景图接口，
+        // 在这里统一拦下，调用方不必各自判断
+        if (!SupportsOnlineBackground(gameId))
+        {
+            List<GameBackground> local = [];
+            if (TryGetCustomBgFilePath(gameId, out string? customPath))
+            {
+                local.Add(GameBackground.FromCustomFile(customPath));
+            }
+            return local;
+        }
         GameBackgroundInfo backgroundInfo = await _hoYoPlayService.GetGameBackgroundAsync(gameId, cancellationToken);
         List<GameBackground> backgrounds = backgroundInfo?.Backgrounds?.ToList() ?? [];
         GameInfo gameInfo = await _hoYoPlayService.GetGameInfoAsync(gameId, cancellationToken);
