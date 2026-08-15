@@ -2759,4 +2759,10 @@ You are welcome to submit the exported data to the following repository:</value>
   <data name="GachaLogService_RecruitmentRecords" xml:space="preserve">
     <value>Recruitment Records</value>
   </data>
+  <data name="GachaLogService_ScarboroughFair" xml:space="preserve">
+    <value>Scarborough Fair</value>
+  </data>
+  <data name="GachaLogPage_NotImplementedYet" xml:space="preserve">
+    <value>Not implemented yet</value>
+  </data>
 </root>

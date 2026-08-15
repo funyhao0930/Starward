@@ -11,9 +11,7 @@ using Microsoft.UI.Xaml.Navigation;
 using Starward.Core;
 using Starward.Core.Gacha;
 using Starward.Core.GameRecord;
-using Starward.Core.Games.Gryphline;
 using Starward.Core.Games.HoYo;
-using Starward.Core.Games.Kuro;
 using Starward.Features.Gacha.UIGF;
 using Starward.Features.GameLauncher;
 using Starward.Features.GameRecord;
@@ -60,7 +58,7 @@ public sealed partial class GachaLogPage : PageBase
     protected override void OnNavigatedTo(NavigationEventArgs e)
     {
         base.OnNavigatedTo(e);
-        GachaTypeText = GachaLogService.GetGachaLogText(CurrentGameBiz);
+        GachaTypeText = GachaLogService.GetGachaLogText(CurrentGameKey);
         // 旧版导出对应的标准：原神是 UIGF v3.0，星铁是 SRGF v1.0，
         // 绝区零没有对应标准，Starward 只是套用了同样的结构，故仍标为 JSON
         LegacyFormatName = CurrentGameBiz.Game switch
@@ -111,12 +109,6 @@ public sealed partial class GachaLogPage : PageBase
             Button_Export_Excel.Visibility = Visibility.Collapsed;
             Button_Import.Visibility = Visibility.Collapsed;
             Button_UIGF4.Visibility = Visibility.Collapsed;
-            GachaTypeText = CurrentGameKey.ProviderId switch
-            {
-                KuroGameMapping.ProviderId => Lang.GachaLogService_ConveneRecords,
-                GryphlineGameMapping.ProviderId => Lang.GachaLogService_RecruitmentRecords,
-                _ => GachaTypeText,
-            };
         }
     }
 

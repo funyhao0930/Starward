@@ -2749,4 +2749,10 @@
   <data name="GachaLogService_RecruitmentRecords" xml:space="preserve">
     <value>尋訪記錄</value>
   </data>
+  <data name="GachaLogService_ScarboroughFair" xml:space="preserve">
+    <value>斯卡布羅集市</value>
+  </data>
+  <data name="GachaLogPage_NotImplementedYet" xml:space="preserve">
+    <value>尚待開發</value>
+  </data>
 </root>

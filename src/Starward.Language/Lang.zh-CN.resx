@@ -2759,4 +2759,10 @@
   <data name="GachaLogService_RecruitmentRecords" xml:space="preserve">
     <value>寻访记录</value>
   </data>
+  <data name="GachaLogService_ScarboroughFair" xml:space="preserve">
+    <value>斯卡布罗集市</value>
+  </data>
+  <data name="GachaLogPage_NotImplementedYet" xml:space="preserve">
+    <value>尚待开发</value>
+  </data>
 </root>

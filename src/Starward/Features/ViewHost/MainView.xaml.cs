@@ -7,8 +7,6 @@ using Microsoft.UI.Xaml.Media.Animation;
 using NuGet.Versioning;
 using Starward.Core;
 using Starward.Core.Games;
-using Starward.Core.Games.Gryphline;
-using Starward.Core.Games.Kuro;
 using Starward.Core.HoYoPlay;
 using Starward.Features.Gacha;
 using Starward.Features.GameLauncher;
@@ -131,15 +129,7 @@ public sealed partial class MainView : UserControl
         NavigationViewItem_GenshinBeyondGacha.Visibility = CurrentGameFeatureConfig.SupportedPages.Contains(nameof(GenshinBeyondGachaPage)).ToVisibility();
 
         // 抽卡记录名称，每款游戏叫法都不同
-        TextBlock_GachaLog.Text = CurrentGameKey.GameId switch
-        {
-            GameBiz.hk4e => Lang.GachaLogService_WishRecords,
-            GameBiz.hkrpg => Lang.GachaLogService_WarpRecords,
-            GameBiz.nap => Lang.GachaLogService_SignalSearchRecords,
-            KuroGameMapping.WutheringWaves => Lang.GachaLogService_ConveneRecords,
-            GryphlineGameMapping.Endfield => Lang.GachaLogService_RecruitmentRecords,
-            _ => "",
-        };
+        TextBlock_GachaLog.Text = GachaLogService.GetGachaLogText(CurrentGameKey);
 
         if (CurrentGameKey.ChannelId is GameChannelIds.China)
         {
@@ -203,6 +193,12 @@ public sealed partial class MainView : UserControl
     private void NavigateTo(Type? page, object? param = null, NavigationTransitionInfo? infoOverride = null)
     {
         page ??= typeof(GameLauncherPage);
+        // 占位页不是一个独立的功能，能力检查要按它代替的页面来做，
+        // 否则从占位页切到已实现的游戏会被判成不支持而退回启动器页
+        if (page.Name is nameof(GachaLogPlaceholderPage))
+        {
+            page = typeof(GachaLogPage);
+        }
         if (page.Name is nameof(BlankPage) && !CurrentGameKey.IsValid)
         {
 
@@ -210,6 +206,11 @@ public sealed partial class MainView : UserControl
         else if (page.Name is not nameof(SettingPage) && !CurrentGameFeatureConfig.SupportedPages.Contains(page.Name))
         {
             page = typeof(GameLauncherPage);
+        }
+        // 声明了抽卡能力但还没有实现协议的游戏（异环），显示尚待开发
+        if (page.Name is nameof(GachaLogPage) && AppConfig.GetService<GachaProviderRegistry>().GetService(CurrentGameKey) is null)
+        {
+            page = typeof(GachaLogPlaceholderPage);
         }
         if (page.Name is nameof(GameLauncherPage))
         {

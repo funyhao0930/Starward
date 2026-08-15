@@ -5,6 +5,10 @@ using Starward.Core;
 using Starward.Core.Gacha;
 using Starward.Core.Gacha.Genshin;
 using Starward.Core.Gacha.StarRail;
+using Starward.Core.Games;
+using Starward.Core.Games.Gryphline;
+using Starward.Core.Games.Hotta;
+using Starward.Core.Games.Kuro;
 using Starward.Features.Database;
 using System;
 using System.Collections.Generic;
@@ -63,13 +67,21 @@ internal abstract class GachaLogService
 
 
 
-    public static string GetGachaLogText(GameBiz biz)
+    /// <summary>
+    /// 这款游戏自己对抽卡的叫法。
+    /// <para/>
+    /// 导航栏、抽卡页与占位页都显示它，因此只在这里写一份。
+    /// </summary>
+    public static string GetGachaLogText(GameKey key)
     {
-        return biz.ToGame().Value switch
+        return key.GameId switch
         {
             GameBiz.hk4e => Lang.GachaLogService_WishRecords,
             GameBiz.hkrpg => Lang.GachaLogService_WarpRecords,
             GameBiz.nap => Lang.GachaLogService_SignalSearchRecords,
+            KuroGameMapping.WutheringWaves => Lang.GachaLogService_ConveneRecords,
+            GryphlineGameMapping.Endfield => Lang.GachaLogService_RecruitmentRecords,
+            HottaGameMapping.NevernessToEverness => Lang.GachaLogService_ScarboroughFair,
             _ => ""
         };
     }

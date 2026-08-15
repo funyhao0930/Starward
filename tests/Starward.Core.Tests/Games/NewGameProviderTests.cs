@@ -78,15 +78,20 @@ public class NewGameProviderTests
 
 
     /// <summary>
-    /// 抽卡记录只在实现了对应协议的游戏上声明。
-    /// 异环还没有实现，因此不能因为「它也是新游戏」就跟着一起打开。
+    /// 三款游戏都有抽卡记录，因此都声明这个能力。
+    /// <para/>
+    /// 能力说的是「这款游戏有抽卡」，不是「Starward 已经抓得到」：
+    /// 异环的协议还没有研究，启动器会在抽卡页的位置显示尚待开发。
+    /// 有没有实现由应用层的抽卡供应商注册表决定，本项目看不到。
     /// </summary>
-    [Fact]
-    public void OnlyGamesWithAGachaImplementationClaimTheCapability()
+    [Theory]
+    [MemberData(nameof(Games))]
+    public void Descriptor_ClaimsGachaBecauseTheGameHasIt(GameKey key, string exe, string processName, GameCapability capabilities)
     {
-        Assert.True(AllDescriptors().First(x => x.Key == KuroGameMapping.WutheringWavesGlobal).HasCapability(GameCapability.Gacha));
-        Assert.True(AllDescriptors().First(x => x.Key == GryphlineGameMapping.EndfieldDefault).HasCapability(GameCapability.Gacha));
-        Assert.False(AllDescriptors().First(x => x.Key == HottaGameMapping.NevernessToEvernessTaiwan).HasCapability(GameCapability.Gacha));
+        _ = exe;
+        _ = processName;
+        _ = capabilities;
+        Assert.True(AllDescriptors().First(x => x.Key == key).HasCapability(GameCapability.Gacha));
     }
 
 

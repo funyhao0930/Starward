@@ -55,12 +55,17 @@ public static class HottaGameMapping
 
     /// <summary>
     /// 本供应商支持的功能。没有实现下载器，因此不包含 Install、Update、Repair。
+    /// <para/>
+    /// 声明 <see cref="GameCapability.Gacha"/> 说的是「这款游戏有抽卡记录」，
+    /// 不是「Starward 已经抓得到」。异环的协议还没有研究，
+    /// 启动器会在抽卡页的位置显示尚待开发。
     /// </summary>
     public const GameCapability Capabilities = GameCapability.Launch
                                              | GameCapability.Discovery
                                              | GameCapability.VersionCheck
                                              | GameCapability.Screenshot
-                                             | GameCapability.PlayTime;
+                                             | GameCapability.PlayTime
+                                             | GameCapability.Gacha;
 
 
     public static IReadOnlyList<GameDescriptor> GetDescriptors()

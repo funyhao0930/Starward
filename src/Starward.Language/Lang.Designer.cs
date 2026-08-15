@@ -7885,5 +7885,23 @@ namespace Starward.Language {
                 return ResourceManager.GetString("GachaLogService_RecruitmentRecords", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   查找类似 Scarborough Fair 的本地化字符串。
+        /// </summary>
+        public static string GachaLogService_ScarboroughFair {
+            get {
+                return ResourceManager.GetString("GachaLogService_ScarboroughFair", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Not implemented yet 的本地化字符串。
+        /// </summary>
+        public static string GachaLogPage_NotImplementedYet {
+            get {
+                return ResourceManager.GetString("GachaLogPage_NotImplementedYet", resourceCulture);
+            }
+        }
     }
 }
