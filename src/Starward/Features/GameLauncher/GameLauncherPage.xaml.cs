@@ -325,7 +325,9 @@ public sealed partial class GameLauncherPage : PageBase
             if (!SupportsPackageApi)
             {
                 // VersionCheck 说的是「读得到本地版本号」，上面已经用过了；
-                // 下面要问的是官方的最新版本，那是下载接口的一部分，没有下载器就到此为止
+                // 下面要问的是官方的最新版本，那是下载接口的一部分，没有下载器就到此为止。
+                // 但有些游戏自己公布了版本号，能提醒一句「该去官方启动器更新了」
+                await CheckOfficialLauncherUpdateAsync();
                 return;
             }
             (latestGameVersion, predownloadGameVersion) = await _gameLauncherService.GetLatestGameVersionAsync(RequiredGameId);
@@ -346,6 +348,51 @@ public sealed partial class GameLauncherPage : PageBase
             _logger.LogError(ex, "Check game version");
         }
     }
+
+
+
+    /// <summary>
+    /// 官方启动器有没有新版本。
+    /// <para/>
+    /// 只是提醒，不改 <see cref="GameState"/>：更新状态会把按钮接到下载器上，
+    /// 而这些游戏没有下载器，更新要回官方启动器做。
+    /// </summary>
+    private async Task CheckOfficialLauncherUpdateAsync()
+    {
+        try
+        {
+            OfficialLauncherUpdateText = null;
+            if (string.IsNullOrWhiteSpace(GameInstallPath) || localGameVersion is null)
+            {
+                return;
+            }
+            IGameDiscoveryProvider? discovery = _providerRegistry.GetDiscoveryProvider(CurrentGameKey.ProviderId);
+            if (discovery is null)
+            {
+                return;
+            }
+            Version? latest = await discovery.GetLatestVersionAsync(CurrentGameKey, GameInstallPath);
+            if (latest is null)
+            {
+                return;
+            }
+            _logger.LogInformation("Official launcher version of ({key}): local {local}, latest {latest}.", CurrentGameKey, localGameVersion, latest);
+            if (latest > localGameVersion)
+            {
+                OfficialLauncherUpdateText = string.Format(Lang.GameLauncherPage_OfficialLauncherUpdateAvailable, latest);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Check official launcher update ({key})", CurrentGameKey);
+        }
+    }
+
+
+    /// <summary>
+    /// 官方启动器有新版本时的提示文字，没有时为 null
+    /// </summary>
+    public string? OfficialLauncherUpdateText { get; set => SetProperty(ref field, value); }
 
 
 

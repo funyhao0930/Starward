@@ -1,3 +1,5 @@
+using System.Text.RegularExpressions;
+
 namespace Starward.Core.Games.Hotta;
 
 /// <summary>
@@ -48,6 +50,57 @@ public static class HottaGameMapping
     /// 其中的 [VERSION] Version 是本地版本号。
     /// </summary>
     public const string ConfigFileRelativePath = @"NTETW\Config\Config.ini";
+
+
+    /// <summary>
+    /// <c>[VERSION] Version=1.0.8.0727</c>，本机与官方公布的版本文件都是这个写法
+    /// </summary>
+    private static readonly Regex VersionRegex = new(@"(?m)^[ \t]*Version[ \t]*=[ \t]*(.+)$", RegexOptions.Compiled);
+
+
+    /// <summary>
+    /// 官方公布版本号的地址，由游戏自己的 Config.ini 给出：
+    /// <c>[VERSION] VersionInfoFileURL</c> 与 <c>[UPDATE_CONFIG] BackupVersionURL</c>。
+    /// </summary>
+    private static readonly Regex VersionInfoUrlRegex = new(@"(?m)^[ \t]*(?:VersionInfoFileURL|BackupVersionURL)[ \t]*=[ \t]*(https://\S+)[ \t]*$", RegexOptions.Compiled);
+
+
+    /// <summary>
+    /// 从 ini 文本中读出版本号，读不到返回 null
+    /// </summary>
+    public static Version? ParseVersion(string? iniText)
+    {
+        if (string.IsNullOrEmpty(iniText))
+        {
+            return null;
+        }
+        Match match = VersionRegex.Match(iniText);
+        return match.Success && Version.TryParse(match.Groups[1].Value.Trim(), out Version? version) ? version : null;
+    }
+
+
+    /// <summary>
+    /// 从游戏的 Config.ini 中读出官方版本文件的地址，主站在前、备援在后。
+    /// <para/>
+    /// 地址不写死在代码里：它是游戏自己配置的，换了代理商或域名也不必改这里。
+    /// </summary>
+    public static IReadOnlyList<string> ParseVersionInfoUrls(string? configText)
+    {
+        var urls = new List<string>();
+        if (string.IsNullOrEmpty(configText))
+        {
+            return urls.AsReadOnly();
+        }
+        foreach (Match match in VersionInfoUrlRegex.Matches(configText))
+        {
+            string url = match.Groups[1].Value.Trim();
+            if (!urls.Contains(url, StringComparer.OrdinalIgnoreCase))
+            {
+                urls.Add(url);
+            }
+        }
+        return urls.AsReadOnly();
+    }
 
 
     public static IReadOnlyList<GameKey> SupportedGameKeys { get; } = new[] { NevernessToEvernessTaiwan }.AsReadOnly();

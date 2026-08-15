@@ -28,4 +28,17 @@ public interface IGameDiscoveryProvider : IGameProvider
         return ValueTask.FromResult<Version?>(null);
     }
 
+
+    /// <summary>
+    /// 查询厂商公布的最新版本号，返回 null 表示这款游戏没有可用的版本来源。
+    /// <para/>
+    /// 与安装、更新无关：有下载器的游戏走各自的下载接口，这里是给
+    /// 只支持启动的游戏用的，只为了告诉玩家「该去官方启动器更新了」。
+    /// 有没有这个来源由实现与否决定，不另设能力标志。
+    /// </summary>
+    ValueTask<Version?> GetLatestVersionAsync(GameKey key, string installPath, CancellationToken cancellationToken = default)
+    {
+        return ValueTask.FromResult<Version?>(null);
+    }
+
 }

@@ -576,6 +576,17 @@
                 </Hyperlink>
             </TextBlock>
 
+            <!--  官方启动器有新版本，这些游戏没有下载器，更新要回官方启动器做  -->
+            <TextBlock Grid.Row="1"
+                       Grid.Column="2"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       cu:Effects.Shadow="{StaticResource TextShadow}"
+                       FontSize="12"
+                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                       Text="{x:Bind OfficialLauncherUpdateText}"
+                       Visibility="{x:Bind OfficialLauncherUpdateText, Converter={StaticResource ObjectToVisibilityConverter}}" />
+
             <!--  可移动存储设备未连接  -->
             <TextBlock Grid.Row="1"
                        Grid.Column="2"

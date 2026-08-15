@@ -7903,5 +7903,14 @@ namespace Starward.Language {
                 return ResourceManager.GetString("GachaLogPage_NotImplementedYet", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   查找类似 Official launcher update available ({0}) 的本地化字符串。
+        /// </summary>
+        public static string GameLauncherPage_OfficialLauncherUpdateAvailable {
+            get {
+                return ResourceManager.GetString("GameLauncherPage_OfficialLauncherUpdateAvailable", resourceCulture);
+            }
+        }
     }
 }

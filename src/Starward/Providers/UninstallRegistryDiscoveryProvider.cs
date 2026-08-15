@@ -76,6 +76,16 @@ internal abstract class UninstallRegistryDiscoveryProvider : IGameDiscoveryProvi
     }
 
 
+    /// <summary>
+    /// 查询厂商公布的最新版本号，默认没有这个来源。
+    /// 与 <see cref="GetLocalVersionAsync"/> 同样的理由，必须在这里声明为 virtual。
+    /// </summary>
+    public virtual ValueTask<Version?> GetLatestVersionAsync(GameKey key, string installPath, CancellationToken cancellationToken = default)
+    {
+        return ValueTask.FromResult<Version?>(null);
+    }
+
+
 
     public ValueTask<GameInstallation?> GetInstallationAsync(GameKey key, CancellationToken cancellationToken = default)
     {

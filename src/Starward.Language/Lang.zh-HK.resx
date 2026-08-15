@@ -2755,4 +2755,7 @@
   <data name="GachaLogPage_NotImplementedYet" xml:space="preserve">
     <value>尚待開發</value>
   </data>
+  <data name="GameLauncherPage_OfficialLauncherUpdateAvailable" xml:space="preserve">
+    <value>官方啟動器有新版本（{0}）</value>
+  </data>
 </root>
