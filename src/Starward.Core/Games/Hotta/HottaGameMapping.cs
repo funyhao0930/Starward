@@ -96,6 +96,9 @@ public static class HottaGameMapping
                 [
                     Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), "NevernessToEverness"),
                 ],
+                // 官方启动器自带的背景图放在这里（bgimgs\bg_0.jpg），
+                // 中间一层是 Config.ini 的 GameID，随版本可能变，因此只给到上层目录
+                BackgroundPaths = [@"NTETW\ResFilesM"],
                 Capabilities = Capabilities,
             },
         }.AsReadOnly();

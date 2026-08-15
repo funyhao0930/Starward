@@ -3,6 +3,7 @@ using Microsoft.UI.Xaml;
 using Starward.Core;
 using Starward.Core.Games;
 using Starward.Core.HoYoPlay;
+using Starward.Features.GameLauncher;
 using Starward.Features.HoYoPlay;
 using Starward.Helpers;
 using Starward.Providers.HoYo;
@@ -136,6 +137,48 @@ public class BackgroundService
 
 
     /// <summary>
+    /// 每次切换游戏都扫一遍目录太浪费，一个工作阶段内只找一次
+    /// </summary>
+    private readonly Dictionary<GameKey, string?> _localArtworkCache = [];
+
+
+    /// <summary>
+    /// 该游戏在本机的背景图：游戏自带的启动器美术，或玩家自己的截图。
+    /// 只在没有在线背景图接口时才有意义。
+    /// </summary>
+    public string? GetLocalArtworkFile(GameKey key)
+    {
+        if (!key.IsValid)
+        {
+            return null;
+        }
+        lock (_localArtworkCache)
+        {
+            if (_localArtworkCache.TryGetValue(key, out string? cached))
+            {
+                return File.Exists(cached) ? cached : null;
+            }
+        }
+        string? file = null;
+        try
+        {
+            GameDescriptor? descriptor = _providerRegistry.GetGame(key);
+            string? installPath = GameLauncherService.GetGameInstallPath(key);
+            file = LocalGameArtwork.FindBackgroundImage(descriptor, installPath);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Find local artwork ({key})", key);
+        }
+        lock (_localArtworkCache)
+        {
+            _localArtworkCache[key] = file;
+        }
+        return file;
+    }
+
+
+    /// <summary>
     /// 背景图和版本海报链接
     /// </summary>
     /// <param name="gameId"></param>
@@ -151,6 +194,12 @@ public class BackgroundService
             if (TryGetCustomBgFilePath(key, out string? customPath))
             {
                 local.Add(GameBackground.FromCustomFile(customPath));
+            }
+            else if (GetLocalArtworkFile(key) is string artwork)
+            {
+                // 与自定义背景同样是本机文件，走同一条分支即可，
+                // 也因此不会被记进 AppConfig 的背景图缓存名
+                local.Add(GameBackground.FromCustomFile(artwork));
             }
             return local;
         }

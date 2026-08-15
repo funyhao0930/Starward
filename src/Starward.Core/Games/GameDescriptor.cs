@@ -79,6 +79,16 @@ public sealed record GameDescriptor
 
 
     /// <summary>
+    /// 游戏自带的启动器美术目录，用作启动页背景。
+    /// 路径规则与 <see cref="ScreenshotPaths"/> 相同。
+    /// <para/>
+    /// 只支持启动的游戏没有在线背景图接口，有些游戏的官方启动器把背景图
+    /// 放在安装目录里，能直接拿来用；没有的游戏另外退回玩家自己的截图。
+    /// </summary>
+    public IReadOnlyList<string> BackgroundPaths { get; init; } = [];
+
+
+    /// <summary>
     /// 游戏本身需要的固定启动参数，与用户自定义的参数无关。
     /// </summary>
     public string? LaunchArguments { get; init; }
@@ -136,8 +146,24 @@ public sealed record GameDescriptor
     /// <param name="installPath">游戏安装目录，用于解析相对路径</param>
     public IReadOnlyList<string> ResolveScreenshotPaths(string? installPath)
     {
+        return ResolvePaths(ScreenshotPaths, installPath);
+    }
+
+
+    /// <summary>
+    /// 解析启动器美术目录为完整路径，跳过不存在的目录
+    /// </summary>
+    /// <param name="installPath">游戏安装目录，用于解析相对路径</param>
+    public IReadOnlyList<string> ResolveBackgroundPaths(string? installPath)
+    {
+        return ResolvePaths(BackgroundPaths, installPath);
+    }
+
+
+    private static IReadOnlyList<string> ResolvePaths(IReadOnlyList<string> relativeOrFullPaths, string? installPath)
+    {
         var paths = new List<string>();
-        foreach (string path in ScreenshotPaths)
+        foreach (string path in relativeOrFullPaths)
         {
             if (string.IsNullOrWhiteSpace(path))
             {

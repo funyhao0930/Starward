@@ -122,7 +122,9 @@ public sealed partial class AppBackground : UserControl
     {
         try
         {
-            var file = BackgroundService.GetCachedBackgroundFile(CurrentGameKey);
+            // 没有缓存过的背景图时，看看本机有没有可用的美术或截图，
+            // 免得启动瞬间先闪一下应用的全局默认图
+            var file = BackgroundService.GetCachedBackgroundFile(CurrentGameKey) ?? _backgroundService.GetLocalArtworkFile(CurrentGameKey);
             if (file != null)
             {
                 if (!BackgroundService.FileIsSupportedVideo(file))
