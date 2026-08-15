@@ -103,6 +103,21 @@ public static class HottaGameMapping
     }
 
 
+    /// <summary>
+    /// 虚幻引擎的画面设置。异环不写在游戏目录里，而在用户目录下，
+    /// 中间那层与 <see cref="TaiwanSavedDirSuffix"/> 对应（台服是 Saved_GAT）。
+    /// </summary>
+    public static string GetGameUserSettingsPath(GameKey key)
+    {
+        if (key != NevernessToEvernessTaiwan)
+        {
+            return "";
+        }
+        string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        return Path.Combine(localAppData, "HT", $"Saved_{TaiwanSavedDirSuffix}", @"Config\Windows\GameUserSettings.ini");
+    }
+
+
     public static IReadOnlyList<GameKey> SupportedGameKeys { get; } = new[] { NevernessToEvernessTaiwan }.AsReadOnly();
 
 
@@ -118,7 +133,8 @@ public static class HottaGameMapping
                                              | GameCapability.VersionCheck
                                              | GameCapability.Screenshot
                                              | GameCapability.PlayTime
-                                             | GameCapability.Gacha;
+                                             | GameCapability.Gacha
+                                             | GameCapability.GameSetting;
 
 
     public static IReadOnlyList<GameDescriptor> GetDescriptors()

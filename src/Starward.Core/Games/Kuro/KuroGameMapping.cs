@@ -42,6 +42,12 @@ public static class KuroGameMapping
     public const string VersionFileName = "launcherDownloadConfig.json";
 
 
+    /// <summary>
+    /// 虚幻引擎的画面设置，相对于启动器安装根目录
+    /// </summary>
+    public static readonly string GameUserSettingsRelativePath = Path.Combine(GameFolderName, @"Client\Saved\Config\WindowsNoEditor\GameUserSettings.ini");
+
+
     public static IReadOnlyList<GameKey> SupportedGameKeys { get; } = new[] { WutheringWavesGlobal }.AsReadOnly();
 
 
@@ -53,7 +59,8 @@ public static class KuroGameMapping
                                              | GameCapability.VersionCheck
                                              | GameCapability.Screenshot
                                              | GameCapability.PlayTime
-                                             | GameCapability.Gacha;
+                                             | GameCapability.Gacha
+                                             | GameCapability.GameSetting;
 
 
     public static IReadOnlyList<GameDescriptor> GetDescriptors()

@@ -8,6 +8,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.UI.Xaml.Navigation;
 using Starward.Core;
+using Starward.Core.Games;
 using Starward.Features.GameLauncher;
 using Starward.Features.GameSelector;
 using Starward.Frameworks;
@@ -27,6 +28,8 @@ public sealed partial class GameSettingPage : PageBase
     private readonly ILogger<GameSettingPage> _logger = AppConfig.GetLogger<GameSettingPage>();
 
     private readonly GameLauncherService _gameLauncherService = AppConfig.GetService<GameLauncherService>();
+
+    private readonly GameSettingProviderRegistry _settingProviderRegistry = AppConfig.GetService<GameSettingProviderRegistry>();
 
 
 
@@ -49,7 +52,8 @@ public sealed partial class GameSettingPage : PageBase
             GameBiz.nap => new BitmapImage(AppConfig.EmojiBangboo),
             _ => null,
         };
-        if (RequiredGameId.GameBiz == GameBiz.bh3_global)
+        // 崩坏三国际服要细分区服，其他供应商没有 HoYoPlay 的游戏标识
+        if (CurrentGameId?.GameBiz == GameBiz.bh3_global)
         {
             CurrentGameBiz = RequiredGameId.Id switch
             {
@@ -212,8 +216,11 @@ public sealed partial class GameSettingPage : PageBase
     {
         try
         {
-            var localVersion = await _gameLauncherService.GetLocalGameVersionAsync(CurrentGameKey);
-            if (localVersion is null)
+            // 有的游戏读不到版本号（没有实现版本检查），那就看游戏本体在不在，
+            // 否则它们的设置页会永远显示「游戏未安装」
+            bool installed = await _gameLauncherService.GetLocalGameVersionAsync(CurrentGameKey) is not null
+                          || await _gameLauncherService.IsGameExeExistsAsync(CurrentGameKey);
+            if (!installed)
             {
                 StackPanel_Emoji.Visibility = Visibility.Visible;
                 return;
@@ -240,14 +247,14 @@ public sealed partial class GameSettingPage : PageBase
             }
             StartArgument = AppConfig.GetStartArgument(CurrentGameBiz);
             UsePopupWindow = AppConfig.GetUsePopupWindow(CurrentGameBiz);
-            var resolutionSetting = GameSettingService.GetGameResolutionSetting(CurrentGameBiz);
-            if (resolutionSetting != null)
+            GameResolutionSetting? resolutionSetting = _settingProviderRegistry.GetProvider(CurrentGameKey)?.GetResolution(CurrentGameKey);
+            if (resolutionSetting is not null)
             {
-                EnableFullScreen = resolutionSetting.IsFullScreen;
-                if (resolutionSetting.Width * resolutionSetting.Height > 0)
+                EnableFullScreen = resolutionSetting.Value.FullScreen;
+                if (resolutionSetting.Value.Width * resolutionSetting.Value.Height > 0)
                 {
-                    ResolutionWidth = resolutionSetting.Width;
-                    ResolutionHeight = resolutionSetting.Height;
+                    ResolutionWidth = resolutionSetting.Value.Width;
+                    ResolutionHeight = resolutionSetting.Value.Height;
                     EnableCustomResolution = !UpdateResolutionComboBoxSelection(ResolutionWidth, ResolutionHeight);
                 }
                 else
@@ -411,13 +418,8 @@ public sealed partial class GameSettingPage : PageBase
                     ErrorMessage = Lang.GameSettingPage_ResolutionMustBeGreaterThan0;
                     return;
                 }
-                var model = new GraphicsSettings_PCResolution_h431323223
-                {
-                    IsFullScreen = EnableFullScreen,
-                    Width = ResolutionWidth,
-                    Height = ResolutionHeight,
-                };
-                GameSettingService.SetGameResolutionSetting(CurrentGameBiz, model);
+                _settingProviderRegistry.GetProvider(CurrentGameKey)
+                                        ?.SetResolution(CurrentGameKey, new GameResolutionSetting(ResolutionWidth, ResolutionHeight, EnableFullScreen));
                 AppConfig.SetUsePopupWindow(CurrentGameBiz, UsePopupWindow);
             }
             if (IsLanguageSettingEnable)

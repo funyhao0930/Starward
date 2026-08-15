@@ -24,6 +24,7 @@ using Starward.Features.GameAccount;
 using Starward.Features.GameInstall;
 using Starward.Features.GameLauncher;
 using Starward.Features.GameRecord;
+using Starward.Features.GameSetting;
 using Starward.Features.HoYoPlay;
 using Starward.Features.PlayTime;
 using Starward.Features.RPC;
@@ -117,6 +118,19 @@ public static partial class AppConfig
             sc.AddSingleton<IGameGachaProvider, GryphlineGachaProvider>();
             sc.AddSingleton<GenshinBeyondGachaClient>();
             sc.AddSingleton<GenshinBeyondGachaService>();
+
+            // 画面设置：分辨率与窗口模式，各引擎存的位置不同
+            sc.AddSingleton<GameSettingProviderRegistry>();
+            sc.AddSingleton<IGameSettingProvider, HoYoGameSettingProvider>();
+            sc.AddSingleton<IGameSettingProvider>(sp => new UnrealGameSettingProvider(
+                KuroGameMapping.ProviderId,
+                key => Path.Join(GameLauncherService.GetGameInstallPath(key), KuroGameMapping.GameUserSettingsRelativePath),
+                sp.GetRequiredService<ILogger<UnrealGameSettingProvider>>()));
+            sc.AddSingleton<IGameSettingProvider>(sp => new UnrealGameSettingProvider(
+                HottaGameMapping.ProviderId,
+                HottaGameMapping.GetGameUserSettingsPath,
+                sp.GetRequiredService<ILogger<UnrealGameSettingProvider>>()));
+            sc.AddSingleton<IGameSettingProvider, GryphlineGameSettingProvider>();
 
             sc.AddSingleton<HoyolabClient>();
             sc.AddSingleton<HyperionClient>();
