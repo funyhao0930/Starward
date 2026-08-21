@@ -164,7 +164,9 @@ public class BackgroundService
         {
             GameDescriptor? descriptor = _providerRegistry.GetGame(key);
             string? installPath = GameLauncherService.GetGameInstallPath(key);
-            file = LocalGameArtwork.FindBackgroundImage(descriptor, installPath);
+            // 自带动态背景（视频）优先于静态图；没有视频再退回图像或截图
+            file = LocalGameArtwork.FindBackgroundVideo(descriptor, installPath)
+                   ?? LocalGameArtwork.FindBackgroundImage(descriptor, installPath);
         }
         catch (Exception ex)
         {

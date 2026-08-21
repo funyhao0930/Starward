@@ -84,6 +84,31 @@ public class LocalGameArtworkTests : IDisposable
 
 
     [Fact]
+    public void FindsTheBackgroundVideoTheLauncherShips()
+    {
+        // bgimgs 里同时有静态图与动态背景，动态背景是启动器自带的视频
+        WriteFile(@"art\bgimgs\bg_0.jpg", new DateTime(2026, 1, 1));
+        WriteFile(@"art\bgimgs\bg.mp4", new DateTime(2026, 2, 1));
+
+        string? image = LocalGameArtwork.FindBackgroundImage(Descriptor(["art"], []), _root);
+        string? video = LocalGameArtwork.FindBackgroundVideo(Descriptor(["art"], []), _root);
+
+        Assert.Equal("bg_0.jpg", Path.GetFileName(image));
+        Assert.Equal("bg.mp4", Path.GetFileName(video));
+    }
+
+
+    [Fact]
+    public void FindsNoBackgroundVideoOutsideTheLauncherArtwork()
+    {
+        // 视频只查启动器自带的美术目录，不查截图目录
+        WriteFile(@"shots\cut.mp4", new DateTime(2026, 2, 1));
+
+        Assert.Null(LocalGameArtwork.FindBackgroundVideo(Descriptor([], ["shots"]), _root));
+    }
+
+
+    [Fact]
     public void ReturnsNullWhenThereIsNothingToShow()
     {
         Assert.Null(LocalGameArtwork.FindBackgroundImage(Descriptor(["missing"], ["gone"]), _root));

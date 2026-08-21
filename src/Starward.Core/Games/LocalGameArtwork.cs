@@ -11,6 +11,7 @@ public static class LocalGameArtwork
 {
 
     private static readonly string[] ImageExtensions = [".jpg", ".jpeg", ".png", ".bmp", ".webp"];
+    private static readonly string[] VideoExtensions = [".mp4", ".mkv", ".webm"];
 
 
     /// <summary>
@@ -25,15 +26,30 @@ public static class LocalGameArtwork
             return null;
         }
         // 游戏自带的美术是固定的，优先于截图；截图会随玩家的进度变化
-        return FindNewestImage(descriptor.ResolveBackgroundPaths(installPath))
-            ?? FindNewestImage(descriptor.ResolveScreenshotPaths(installPath));
+        return FindNewestFile(descriptor.ResolveBackgroundPaths(installPath), ImageExtensions)
+            ?? FindNewestFile(descriptor.ResolveScreenshotPaths(installPath), ImageExtensions);
     }
 
 
     /// <summary>
-    /// 这些目录里最新的一张图，包含子目录
+    /// 找出该游戏自带的动态背景（视频），找不到返回 null。
+    /// <para/>
+    /// 只查启动器自带的背景目录，不退回截图——截图里不会有视频。
     /// </summary>
-    private static string? FindNewestImage(IReadOnlyList<string> folders)
+    public static string? FindBackgroundVideo(GameDescriptor? descriptor, string? installPath)
+    {
+        if (descriptor is null)
+        {
+            return null;
+        }
+        return FindNewestFile(descriptor.ResolveBackgroundPaths(installPath), VideoExtensions);
+    }
+
+
+    /// <summary>
+    /// 这些目录里符合扩展名的最新一个文件，包含子目录
+    /// </summary>
+    private static string? FindNewestFile(IReadOnlyList<string> folders, IReadOnlyList<string> extensions)
     {
         string? newest = null;
         DateTime newestTime = DateTime.MinValue;
@@ -54,7 +70,7 @@ public static class LocalGameArtwork
             }
             foreach (string file in files)
             {
-                if (!ImageExtensions.Contains(Path.GetExtension(file), StringComparer.OrdinalIgnoreCase))
+                if (!extensions.Contains(Path.GetExtension(file), StringComparer.OrdinalIgnoreCase))
                 {
                     continue;
                 }
