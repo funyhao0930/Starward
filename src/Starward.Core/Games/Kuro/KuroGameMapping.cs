@@ -78,6 +78,10 @@ public static class KuroGameMapping
                 ExecutableName = Path.Combine(GameFolderName, "Wuthering Waves.exe"),
                 ProcessName = "Client-Win64-Shipping.exe",
                 ScreenshotPaths = [Path.Combine(GameFolderName, @"Client\Saved\ScreenShot")],
+                // 官方启动器把主界面动态背景缓存为 kr_game_cache\animate_bg\<md5>\home_*.jpg 逐帧序列
+                // （animate_bg.json 记录 12 秒、20fps）。项目侧已用 ffmpeg 依此参数把影格合成
+                // bg.mp4 放在同一目录，这里指到上层递归即可命中；md5 会随版本变，动画更新后需重新合成。
+                BackgroundPaths = [@"kr_game_cache\animate_bg"],
                 Capabilities = Capabilities,
             },
         }.AsReadOnly();
