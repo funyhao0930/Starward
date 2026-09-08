@@ -27,12 +27,9 @@ public static class KuroBackgroundMapper
             string? video = background.BackgroundFile;
             string? poster = background.FirstFrameImage;
             string? slogan = background.Slogan;
-            // 视频背景要三张齐全：显示层会拿 Theme 当叠图、拿 Background 算主题色，
-            // 两者都是直接取 Url 的。缺了任何一张就退回静态图，
-            // 宁可少一层动画，也不要在渲染时炸开。
-            if (!string.IsNullOrWhiteSpace(video)
-                && !string.IsNullOrWhiteSpace(poster)
-                && !string.IsNullOrWhiteSpace(slogan))
+            // 视频背景至少要有视频和首帧图：显示层拿首帧图算主题色，也拿它当停播后的静态背景。
+            // 标语图是可选的，显示层允许没有叠图。
+            if (!string.IsNullOrWhiteSpace(video) && !string.IsNullOrWhiteSpace(poster))
             {
                 return
                 [
@@ -42,11 +39,11 @@ public static class KuroBackgroundMapper
                         Type = GameBackground.BACKGROUND_TYPE_VIDEO,
                         Background = new GameImage { Url = poster },
                         Video = new GameImage { Url = video },
-                        Theme = new GameImage { Url = slogan },
+                        Theme = string.IsNullOrWhiteSpace(slogan) ? null : new GameImage { Url = slogan },
                     },
                 ];
             }
-            // 三张不齐时首帧图还能当静态背景用
+            // 缺了视频或首帧图就凑不成动态背景，有首帧图还能当静态图用
             return FromStillImage(poster);
         }
         // 不是视频时 backgroundFile 本身就是那张图

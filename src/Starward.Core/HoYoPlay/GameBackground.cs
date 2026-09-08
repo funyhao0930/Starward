@@ -47,10 +47,13 @@ public class GameBackground
     public GameImage Video { get; set; }
 
     /// <summary>
-    /// 视频背景上的叠加图片
+    /// 视频背景上的叠加图片。
+    /// <para/>
+    /// 可以没有：静态背景本来就不带，动态背景也不是每家都给
+    /// （终末地只给视频和首帧图）。
     /// </summary>
     [JsonPropertyName("theme")]
-    public GameImage Theme { get; set; }
+    public GameImage? Theme { get; set; }
 
     /// <summary>
     /// <see cref="BACKGROUND_TYPE_UNSPECIFIED"/> or <see cref="BACKGROUND_TYPE_VIDEO"/>

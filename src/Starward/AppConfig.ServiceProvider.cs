@@ -15,6 +15,7 @@ using Starward.Core.Games.HoYo;
 using Starward.Core.Games.Hotta;
 using Starward.Core.Games.Kuro;
 using Starward.Core.HoYoPlay;
+using Starward.Core.Launcher.Gryphline;
 using Starward.Core.Launcher.Kuro;
 using Starward.Core.SelfQuery;
 using Starward.Features.Background;
@@ -99,6 +100,8 @@ public static partial class AppConfig
             sc.AddSingleton<IGameBackgroundProvider, HoYoBackgroundProvider>();
             sc.AddSingleton<KuroLauncherClient>();
             sc.AddSingleton<IGameBackgroundProvider, KuroBackgroundProvider>();
+            sc.AddSingleton<GryphlineLauncherClient>();
+            sc.AddSingleton<IGameBackgroundProvider, GryphlineBackgroundProvider>();
 
             sc.AddSingleton<BackgroundService>();
             sc.AddSingleton<GameLauncherService>();

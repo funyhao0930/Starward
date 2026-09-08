@@ -414,15 +414,26 @@ public sealed partial class AppBackground : UserControl
     private async Task SetVideoBackgroundAsync(GameBackground gameBackground, string filePath, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        // 不是每家的动态背景都有叠图：米哈游与鸣潮给版本标语，终末地只给视频和首帧图。
+        // 没有叠图时 _videoOverlayImage 保持为空，画面合成那里本来就会跳过它。
+        string? themeUrl = gameBackground.Theme?.Url;
         if (BackgroundService.FileIsSupportedVideo(filePath))
         {
             StartMediaPlayer(filePath);
-            _ = PrepareVideoOverlayImageAsync(gameBackground.Theme.Url, cancellationToken);
+            if (!string.IsNullOrWhiteSpace(themeUrl))
+            {
+                _ = PrepareVideoOverlayImageAsync(themeUrl, cancellationToken);
+            }
             _ = ChangeAccentColorToImageFileAsync(gameBackground.Background.Url, cancellationToken);
+        }
+        else if (string.IsNullOrWhiteSpace(themeUrl))
+        {
+            // 停播视频后剩下首帧图，没有叠图可压就直接当普通背景图显示
+            await ChangeBackgroundImageAsync(filePath, cancellationToken);
         }
         else
         {
-            string overlayPath = await _backgroundService.GetBackgroundFileAsync(gameBackground.Theme.Url, cancellationToken);
+            string overlayPath = await _backgroundService.GetBackgroundFileAsync(themeUrl, cancellationToken);
             using var fs1 = File.OpenRead(filePath);
             using var bitmap = await CanvasBitmap.LoadAsync(CanvasDevice.GetSharedDevice(), fs1.AsRandomAccessStream(), 96);
             using var fs2 = File.OpenRead(overlayPath);

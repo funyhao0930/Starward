@@ -66,6 +66,9 @@ public static class GryphlineGameMapping
                 [
                     Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), "ENDFIELD"),
                 ],
+                // 没有 BackgroundPaths：官方启动器的背景图不落地，默认那张编在
+                // Games.exe 的 Qt 资源里，取不出来。背景图走在线接口，
+                // 见 GryphlineLauncherClient；接口不通时只能退到上面的截图。
                 Capabilities = Capabilities,
             },
         }.AsReadOnly();

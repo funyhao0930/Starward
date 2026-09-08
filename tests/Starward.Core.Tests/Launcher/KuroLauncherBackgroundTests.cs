@@ -85,18 +85,34 @@ public class KuroLauncherBackgroundTests
     }
 
 
+    /// <summary>
+    /// 标语图是可选的，显示层允许动态背景没有叠图，
+    /// 不该为了少一张图就牺牲动画
+    /// </summary>
     [Fact]
-    public void ToGameBackgrounds_FallsBackToTheFirstFrameWhenTheSloganIsMissing()
+    public void ToGameBackgrounds_KeepsTheVideoWhenTheSloganIsMissing()
     {
-        // 少了标语图就凑不齐视频背景要的三张，退回静态图而不是留一个会炸的 Theme
         KuroLauncherBackground background = Parse(VideoJson);
         background.Slogan = null;
 
         GameBackground result = Assert.Single(KuroBackgroundMapper.ToGameBackgrounds(background));
 
-        Assert.Equal(GameBackground.BACKGROUND_TYPE_UNSPECIFIED, result.Type);
-        Assert.Equal("https://example.invalid/launcher/clientUpload/frame0001.webp", result.Background.Url);
-        Assert.Null(result.Video);
+        Assert.Equal(GameBackground.BACKGROUND_TYPE_VIDEO, result.Type);
+        Assert.Equal("https://example.invalid/launcher/clientUpload/video0001.mp4", result.Video.Url);
+        Assert.Null(result.Theme);
+    }
+
+
+    /// <summary>
+    /// 首帧图不能少：显示层拿它算主题色，停播视频后也要靠它
+    /// </summary>
+    [Fact]
+    public void ToGameBackgrounds_RefusesAVideoWithNoFirstFrame()
+    {
+        KuroLauncherBackground background = Parse(VideoJson);
+        background.FirstFrameImage = null;
+
+        Assert.Empty(KuroBackgroundMapper.ToGameBackgrounds(background));
     }
 
 
