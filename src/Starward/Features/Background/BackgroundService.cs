@@ -4,9 +4,7 @@ using Starward.Core;
 using Starward.Core.Games;
 using Starward.Core.HoYoPlay;
 using Starward.Features.GameLauncher;
-using Starward.Features.HoYoPlay;
 using Starward.Helpers;
-using Starward.Providers.HoYo;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -26,24 +24,24 @@ public class BackgroundService
 
     private readonly ILogger<BackgroundService> _logger;
 
-    private readonly HoYoPlayService _hoYoPlayService;
-
     private readonly HttpClient _httpClient;
 
 
 
     private readonly IGameProviderRegistry _providerRegistry;
 
+    private readonly BackgroundProviderRegistry _backgroundProviders;
+
 
     public BackgroundService(ILogger<BackgroundService> logger,
-                             HoYoPlayService hoYoPlayService,
                              HttpClient httpClient,
-                             IGameProviderRegistry providerRegistry)
+                             IGameProviderRegistry providerRegistry,
+                             BackgroundProviderRegistry backgroundProviders)
     {
         _logger = logger;
-        _hoYoPlayService = hoYoPlayService;
         _httpClient = httpClient;
         _providerRegistry = providerRegistry;
+        _backgroundProviders = backgroundProviders;
     }
 
 
@@ -124,13 +122,6 @@ public class BackgroundService
 
 
     /// <summary>
-    /// 该游戏是否有 HoYoPlay 那样的在线背景图接口。
-    /// 只支持启动的游戏没有，对它们调用会抛出 Unknown launcher id。
-    /// </summary>
-    private bool SupportsOnlineBackground(GameKey key) => _providerRegistry.SupportsCapability(key, GameCapability.Install);
-
-
-    /// <summary>
     /// 应用配置使用的键
     /// </summary>
     private static GameBiz SettingsKey(GameKey key) => new(GameKeyResolver.ToSettingsKey(key));
@@ -144,7 +135,7 @@ public class BackgroundService
 
     /// <summary>
     /// 该游戏在本机的背景图：游戏自带的启动器美术，或玩家自己的截图。
-    /// 只在没有在线背景图接口时才有意义。
+    /// 用在没有在线背景图接口、或接口临时取不到的时候。
     /// </summary>
     public string? GetLocalArtworkFile(GameKey key)
     {
@@ -188,30 +179,33 @@ public class BackgroundService
     /// <returns></returns>
     public async Task<List<GameBackground>> GetGameBackgroundsAsync(GameKey key, CancellationToken cancellationToken = default)
     {
-        // 只支持启动的游戏没有 HoYoPlay 那样的在线背景图接口，
-        // 在这里统一拦下，调用方不必各自判断
-        if (!SupportsOnlineBackground(key))
+        List<GameBackground> backgrounds = [];
+        try
         {
-            List<GameBackground> local = [];
-            if (TryGetCustomBgFilePath(key, out string? customPath))
-            {
-                local.Add(GameBackground.FromCustomFile(customPath));
-            }
-            else if (GetLocalArtworkFile(key) is string artwork)
+            // 哪些游戏有在线接口、接口长什么样，都由各家的 Provider 自己管
+            backgrounds = await _backgroundProviders.GetBackgroundsAsync(key, cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // 调用方给了超时，让它自己决定退回哪张图。
+            // 只认调用方的取消：HttpClient 自己超时抛的也是这个类型，
+            // 那种情况下面的本机图兜底仍然该走。
+            throw;
+        }
+        catch (Exception ex)
+        {
+            // 接口挂了不该让启动页空着，下面还有本机图兜底
+            _logger.LogWarning(ex, "Get online backgrounds ({key})", key);
+        }
+        if (backgrounds.Count == 0)
+        {
+            // 没有在线接口，或接口这次没给出东西
+            if (GetLocalArtworkFile(key) is string artwork)
             {
                 // 与自定义背景同样是本机文件，走同一条分支即可，
                 // 也因此不会被记进 AppConfig 的背景图缓存名
-                local.Add(GameBackground.FromCustomFile(artwork));
+                backgrounds.Add(GameBackground.FromCustomFile(artwork));
             }
-            return local;
-        }
-        GameId gameId = HoYoGameIds.Resolve(key)!;
-        GameBackgroundInfo backgroundInfo = await _hoYoPlayService.GetGameBackgroundAsync(gameId, cancellationToken);
-        List<GameBackground> backgrounds = backgroundInfo?.Backgrounds?.ToList() ?? [];
-        GameInfo gameInfo = await _hoYoPlayService.GetGameInfoAsync(gameId, cancellationToken);
-        if (!string.IsNullOrWhiteSpace(gameInfo?.Display?.Background?.Url))
-        {
-            backgrounds.Add(GameBackground.FromPosterUrl(gameInfo.Display.Background.Url));
         }
         if (TryGetCustomBgFilePath(key, out string? path))
         {

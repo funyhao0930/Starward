@@ -15,6 +15,7 @@ using Starward.Core.Games.HoYo;
 using Starward.Core.Games.Hotta;
 using Starward.Core.Games.Kuro;
 using Starward.Core.HoYoPlay;
+using Starward.Core.Launcher.Kuro;
 using Starward.Core.SelfQuery;
 using Starward.Features.Background;
 using Starward.Features.Database;
@@ -91,6 +92,13 @@ public static partial class AppConfig
 
             AddSimpleGameProvider(sc, GryphlineGameMapping.ProviderId, GryphlineGameMapping.GetDescriptors);
             sc.AddSingleton<IGameDiscoveryProvider, GryphlineDiscoveryProvider>();
+
+            // 在线背景图。各家官方启动器的接口形状差别很大，
+            // 由各自的 Provider 换成统一的 GameBackground。
+            sc.AddSingleton<BackgroundProviderRegistry>();
+            sc.AddSingleton<IGameBackgroundProvider, HoYoBackgroundProvider>();
+            sc.AddSingleton<KuroLauncherClient>();
+            sc.AddSingleton<IGameBackgroundProvider, KuroBackgroundProvider>();
 
             sc.AddSingleton<BackgroundService>();
             sc.AddSingleton<GameLauncherService>();
