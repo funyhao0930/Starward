@@ -258,7 +258,8 @@ internal static class DatabaseService
         Sql_v18,
         Sql_v19,
         Sql_v20,
-        Sql_v21
+        Sql_v21,
+        Sql_v22,
     ];
 
 
@@ -1037,12 +1038,51 @@ internal static class DatabaseService
         COMMIT TRANSACTION;
         """;
 
+    private const string Sql_v21 = """
+        BEGIN TRANSACTION;
+
+        UPDATE PlayTimeItem SET GameBiz = REPLACE(GameBiz, '_bilibili', '_cn') WHERE GameBiz LIKE '%_bilibili';
+
+        CREATE TABLE IF NOT EXISTS PlayTimeStats
+        (
+            Id           INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            GameBiz      TEXT    NOT NULL,
+            Pid          INTEGER NOT NULL,
+            StartTime    INTEGER NOT NULL,
+            EndTime      INTEGER NOT NULL,
+            Interruption INTEGER NOT NULL DEFAULT 0,
+            Type         INTEGER NOT NULL DEFAULT 0
+        );
+        CREATE UNIQUE INDEX IF NOT EXISTS IX_PlayTimeStats_GameBiz_StartTime_Pid ON PlayTimeStats (GameBiz, StartTime, Pid);
+        PRAGMA USER_VERSION = 21;
+        COMMIT TRANSACTION;
+        """;
+
     /// <summary>
     /// 鸣潮与终末地的抽卡记录。
     /// 结构与米哈游的记录表一致，只是新增两张表，不动既有数据。
+    /// <para/>
+    /// 这两张表本来是 v21，与上游 0.18.2 的 v21 撞号后让给了上游，改成 v22。
+    /// 在本分支上跑过旧 v21 的数据库版本号已经是 21，再升级只会执行 v22，
+    /// 会漏掉上游 v21 建的 PlayTimeStats，因此这里把它一并补上。
+    /// 两段都是幂等的，正常升级路径重复执行也没有副作用。
     /// </summary>
-    private const string Sql_v21 = """
+    private const string Sql_v22 = """
         BEGIN TRANSACTION;
+
+        UPDATE PlayTimeItem SET GameBiz = REPLACE(GameBiz, '_bilibili', '_cn') WHERE GameBiz LIKE '%_bilibili';
+
+        CREATE TABLE IF NOT EXISTS PlayTimeStats
+        (
+            Id           INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            GameBiz      TEXT    NOT NULL,
+            Pid          INTEGER NOT NULL,
+            StartTime    INTEGER NOT NULL,
+            EndTime      INTEGER NOT NULL,
+            Interruption INTEGER NOT NULL DEFAULT 0,
+            Type         INTEGER NOT NULL DEFAULT 0
+        );
+        CREATE UNIQUE INDEX IF NOT EXISTS IX_PlayTimeStats_GameBiz_StartTime_Pid ON PlayTimeStats (GameBiz, StartTime, Pid);
 
         CREATE TABLE IF NOT EXISTS WuwaGachaItem
         (
@@ -1080,7 +1120,7 @@ internal static class DatabaseService
         CREATE INDEX IF NOT EXISTS IX_EndfieldGachaItem_RankType ON EndfieldGachaItem (RankType);
         CREATE INDEX IF NOT EXISTS IX_EndfieldGachaItem_GachaType ON EndfieldGachaItem (GachaType);
 
-        PRAGMA USER_VERSION = 21;
+        PRAGMA USER_VERSION = 22;
         COMMIT TRANSACTION;
         """;
 

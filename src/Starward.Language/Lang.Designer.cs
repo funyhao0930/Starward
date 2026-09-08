@@ -5398,6 +5398,132 @@ namespace Starward.Language {
         }
         
         /// <summary>
+        ///   查找类似 {0} days 的本地化字符串。
+        /// </summary>
+        public static string PlayTimeStatsDialog_0Days {
+            get {
+                return ResourceManager.GetString("PlayTimeStatsDialog_0Days", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Average Daily Playtime 的本地化字符串。
+        /// </summary>
+        public static string PlayTimeStatsDialog_AverageDailyPlaytime {
+            get {
+                return ResourceManager.GetString("PlayTimeStatsDialog_AverageDailyPlaytime", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Last 12 Months 的本地化字符串。
+        /// </summary>
+        public static string PlayTimeStatsDialog_Last12Months {
+            get {
+                return ResourceManager.GetString("PlayTimeStatsDialog_Last12Months", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Last 12 Weeks 的本地化字符串。
+        /// </summary>
+        public static string PlayTimeStatsDialog_Last12Weeks {
+            get {
+                return ResourceManager.GetString("PlayTimeStatsDialog_Last12Weeks", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Last 15 Days 的本地化字符串。
+        /// </summary>
+        public static string PlayTimeStatsDialog_Last15Days {
+            get {
+                return ResourceManager.GetString("PlayTimeStatsDialog_Last15Days", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Longest Daily Playtime 的本地化字符串。
+        /// </summary>
+        public static string PlayTimeStatsDialog_LongestDailyPlaytime {
+            get {
+                return ResourceManager.GetString("PlayTimeStatsDialog_LongestDailyPlaytime", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Longest Session 的本地化字符串。
+        /// </summary>
+        public static string PlayTimeStatsDialog_LongestSession {
+            get {
+                return ResourceManager.GetString("PlayTimeStatsDialog_LongestSession", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Longest Streak 的本地化字符串。
+        /// </summary>
+        public static string PlayTimeStatsDialog_LongestStreak {
+            get {
+                return ResourceManager.GetString("PlayTimeStatsDialog_LongestStreak", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Played for {0} days 的本地化字符串。
+        /// </summary>
+        public static string PlayTimeStatsDialog_PlayedFor0Days {
+            get {
+                return ResourceManager.GetString("PlayTimeStatsDialog_PlayedFor0Days", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Playtime Statistics 的本地化字符串。
+        /// </summary>
+        public static string PlayTimeStatsDialog_PlaytimeStatistics {
+            get {
+                return ResourceManager.GetString("PlayTimeStatsDialog_PlaytimeStatistics", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Started {0} times 的本地化字符串。
+        /// </summary>
+        public static string PlayTimeStatsDialog_Started0Times {
+            get {
+                return ResourceManager.GetString("PlayTimeStatsDialog_Started0Times", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Statistics are based on game runtime, not actual playtime, and are for reference only. 的本地化字符串。
+        /// </summary>
+        public static string PlayTimeStatsDialog_StatsTip {
+            get {
+                return ResourceManager.GetString("PlayTimeStatsDialog_StatsTip", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Total 的本地化字符串。
+        /// </summary>
+        public static string PlayTimeStatsDialog_Total {
+            get {
+                return ResourceManager.GetString("PlayTimeStatsDialog_Total", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Total Playtime 的本地化字符串。
+        /// </summary>
+        public static string PlayTimeStatsDialog_TotalPlaytime {
+            get {
+                return ResourceManager.GetString("PlayTimeStatsDialog_TotalPlaytime", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Pre-Install Finished 的本地化字符串。
         /// </summary>
         public static string PreDownloadButton_PreInstallFinished {

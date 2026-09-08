@@ -10,25 +10,25 @@ using Starward.Features.GameLauncher;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Threading.Tasks;
-using Vanara.PInvoke;
 
 namespace Starward.Features.PlayTime;
 
-internal class PlayTimeService
+internal class PlayTimeRecordService
 {
 
-    private readonly ILogger<PlayTimeService> _logger;
+    private readonly ILogger<PlayTimeRecordService> _logger;
 
     private readonly IGameProviderRegistry _providerRegistry;
 
+    private readonly PlayTimeStatsService _playTimeStatsService;
 
 
-    public PlayTimeService(ILogger<PlayTimeService> logger, IGameProviderRegistry providerRegistry)
+    public PlayTimeRecordService(ILogger<PlayTimeRecordService> logger, IGameProviderRegistry providerRegistry, PlayTimeStatsService playTimeStatsService)
     {
         _logger = logger;
         _providerRegistry = providerRegistry;
+        _playTimeStatsService = playTimeStatsService;
     }
 
 
@@ -37,6 +37,7 @@ internal class PlayTimeService
     {
         try
         {
+            biz = biz.IsBilibili() ? $"{biz.Game}_cn" : biz;
             var instance = AppInstance.FindOrRegisterForKey($"playtime_{pid}");
             if (!instance.IsCurrent)
             {
@@ -55,6 +56,7 @@ internal class PlayTimeService
                 {
                     var now = DateTimeOffset.Now;
                     Log(biz, pid, PlayTimeState.Stop, now.ToUnixTimeMilliseconds(), $"{process.ProcessName} [{now}]");
+                    SavePlayTimeStats(biz, pid, process.StartTime, now.DateTime);
                     break;
                 }
                 else
@@ -66,11 +68,7 @@ internal class PlayTimeService
                     }
                 }
             }
-            DatabaseService.SetValue($"playtime_total_{biz}", GetPlayTimeTotal(biz));
-            DatabaseService.SetValue($"playtime_month_{biz}", GetPlayCurrentMonth(biz));
-            DatabaseService.SetValue($"playtime_week_{biz}", GetPlayCurrentWeek(biz));
-            DatabaseService.SetValue($"playtime_day_{biz}", GetPlayCurrentDay(biz));
-            DatabaseService.SetValue($"startup_count_{biz}", GetStartUpCount(biz));
+            DatabaseService.SetValue($"playtime_total_{biz}", _playTimeStatsService.GetPlayTimeTotal(biz));
             _logger.LogInformation("End log playtime ({biz}, {pid})", biz, pid);
         }
         catch (Exception ex)
@@ -82,14 +80,12 @@ internal class PlayTimeService
 
 
 
-
-
     private void LogStartState(GameBiz biz, Process process)
     {
         var startTime = new DateTimeOffset(process.StartTime);
         Log(biz, process.Id, PlayTimeState.Start, startTime.ToUnixTimeMilliseconds(), $"{process.ProcessName} [{startTime}]");
         using var dapper = DatabaseService.CreateConnection();
-        var last = dapper.QueryFirstOrDefault<PlayTimeItemStruct>("SELECT * FROM PlayTimeItem WHERE GameBiz = @biz AND Pid = @Id ORDER BY TimeStamp DESC LIMIT 1;", new { biz, process.Id });
+        var last = dapper.QueryFirstOrDefault<PlayTimeItemStruct>("SELECT * FROM PlayTimeItem WHERE GameBiz = @biz AND Pid = @Id ORDER BY TimeStamp DESC LIMIT 1;", new { biz = biz.ToString(), process.Id });
         DateTimeOffset time = startTime;
         if (last.TimeStamp > startTime.ToUnixTimeMilliseconds())
         {
@@ -127,8 +123,6 @@ internal class PlayTimeService
 
 
 
-
-
     private void Log(GameBiz biz, int pid, PlayTimeState state, long ts = 0, string? message = null)
     {
         try
@@ -152,245 +146,29 @@ internal class PlayTimeService
 
 
 
-
-
-    #region Calculate Play Time
-
-
-
-
-    /// <summary>
-    /// 获取总游戏时间
-    /// </summary>
-    /// <param name="biz"></param>
-    /// <returns></returns>
-    public TimeSpan GetPlayTimeTotal(GameBiz biz)
+    private void SavePlayTimeStats(GameBiz biz, int pid, DateTime startTime, DateTime endTime)
     {
-        return CalculatePlayTime(biz);
-    }
-
-
-    /// <summary>
-    /// 获取本月游戏时间
-    /// </summary>
-    /// <param name="biz"></param>
-    /// <returns></returns>
-    public TimeSpan GetPlayCurrentMonth(GameBiz biz)
-    {
-        var now = DateTimeOffset.Now;
-        var month = now.Add(-now.TimeOfDay).AddDays(1 - now.Day);
-        return CalculatePlayTime(biz, month, now);
-    }
-
-
-    /// <summary>
-    /// 获取本周游戏时间
-    /// </summary>
-    /// <param name="biz"></param>
-    /// <returns></returns>
-    public TimeSpan GetPlayCurrentWeek(GameBiz biz)
-    {
-        var now = DateTimeOffset.Now;
-        var week = now.Add(-now.TimeOfDay).AddDays(-(((int)now.DayOfWeek + 6) % 7));
-        return CalculatePlayTime(biz, week, now);
-    }
-
-
-    /// <summary>
-    /// 获取当天游戏时间
-    /// </summary>
-    /// <param name="biz"></param>
-    /// <returns></returns>
-    public TimeSpan GetPlayCurrentDay(GameBiz biz)
-    {
-        var now = DateTimeOffset.Now;
-        var day = now.Add(-now.TimeOfDay);
-        return CalculatePlayTime(biz, day, now);
-    }
-
-
-
-    /// <summary>
-    /// 获取最近 7 天游戏时间
-    /// </summary>
-    /// <param name="biz"></param>
-    /// <returns></returns>
-    public TimeSpan GetPlayTimeLast7Days(GameBiz biz)
-    {
-        var now = DateTimeOffset.Now;
-        var week = now.Add(-now.TimeOfDay).AddDays(-7);
-        return CalculatePlayTime(biz, week, now);
-    }
-
-
-    /// <summary>
-    /// 获取启动次数
-    /// </summary>
-    /// <param name="biz"></param>
-    /// <returns></returns>
-    public int GetStartUpCount(GameBiz biz)
-    {
-        using var dapper = DatabaseService.CreateConnection();
-        return dapper.QuerySingleOrDefault<int>("SELECT COUNT(*) FROM PlayTimeItem WHERE GameBiz = @biz AND State = @state;", new { biz, state = PlayTimeState.Start });
-    }
-
-
-
-    /// <summary>
-    /// 获取最后一次游戏时间
-    /// </summary>
-    /// <param name="biz"></param>
-    /// <returns></returns>
-    public (DateTimeOffset Time, TimeSpan Span) GetLastPlayTime(GameBiz biz)
-    {
-        using var dapper = DatabaseService.CreateConnection();
-        var start_item = dapper.QueryFirstOrDefault<PlayTimeItem>("SELECT * FROM PlayTimeItem WHERE GameBiz = @biz AND State = 1 ORDER BY TimeStamp DESC LIMIT 1;", new { biz });
-        if (start_item != null)
+        try
         {
-            var last_item = dapper.QueryFirstOrDefault<PlayTimeItem>("SELECT * FROM PlayTimeItem WHERE GameBiz = @biz AND Pid = @Pid ORDER BY TimeStamp DESC LIMIT 1;", new { biz, start_item.Pid });
-            if (last_item != null)
+            using var dapper = DatabaseService.CreateConnection();
+            var stats = new PlayTimeStats
             {
-                return (DateTimeOffset.FromUnixTimeMilliseconds(start_item.TimeStamp), TimeSpan.FromMilliseconds(last_item.TimeStamp - start_item.TimeStamp));
-            }
+                GameBiz = biz,
+                Pid = pid,
+                StartTime = new DateTimeOffset(startTime).ToUnixTimeMilliseconds(),
+                EndTime = new DateTimeOffset(endTime).ToUnixTimeMilliseconds(),
+            };
+            using var t = dapper.BeginTransaction();
+            dapper.Execute("INSERT OR REPLACE INTO PlayTimeStats (GameBiz, Pid, StartTime, EndTime, Interruption, Type) VALUES (@GameBiz, @Pid, @StartTime, @EndTime, @Interruption, @Type);", stats);
+            dapper.Execute("DELETE FROM PlayTimeItem WHERE GameBiz = @GameBiz AND Pid = @Pid AND TimeStamp >= @StartTime AND TimeStamp <= @EndTime;", stats);
+            t.Commit();
+            _logger.LogInformation("Save play time stats: GameBiz {biz}, Pid {pid}, StartTime {startTime}, EndTime {endTime}, Interruption {interruption}", biz, pid, startTime, endTime, false);
         }
-        return (DateTimeOffset.MinValue, TimeSpan.Zero);
-    }
-
-
-
-    /// <summary>
-    /// 计算游戏时间
-    /// </summary>
-    /// <param name="biz"></param>
-    /// <param name="start"></param>
-    /// <param name="end"></param>
-    /// <returns></returns>
-    public TimeSpan CalculatePlayTime(GameBiz biz, DateTimeOffset? start = null, DateTimeOffset? end = null)
-    {
-        long ts_start = start?.ToUnixTimeMilliseconds() ?? 0;
-        long ts_end = end?.ToUnixTimeMilliseconds() ?? long.MaxValue;
-        using var dapper = DatabaseService.CreateConnection();
-        var items = dapper.Query<PlayTimeItemStruct>("SELECT * FROM PlayTimeItem WHERE GameBiz = @biz AND TimeStamp >= @ts_start AND TimeStamp <= @ts_end ORDER BY TimeStamp;", new { biz, ts_start, ts_end }).ToList();
-        return CalculatePlayTime(items, start, end);
-    }
-
-
-    /// <summary>
-    /// 计算游戏时间
-    /// </summary>
-    /// <param name="items"></param>
-    /// <param name="start"></param>
-    /// <param name="end"></param>
-    /// <returns></returns>
-    private static TimeSpan CalculatePlayTime(List<PlayTimeItemStruct> items, DateTimeOffset? start = null, DateTimeOffset? end = null)
-    {
-        if (items.Count == 0)
+        catch (Exception ex)
         {
-            return TimeSpan.Zero;
+            _logger.LogError(ex, "Save play time stats: GameBiz {biz}, Pid {pid}, StartTime {startTime}, EndTime {endTime}, Interruption {interruption}", biz, pid, startTime, endTime, false);
         }
-
-        const long MAX_INTERVAL = 60_000;
-
-        long ts_total = 0;
-        long ts_start = start?.ToUnixTimeMilliseconds() ?? items[0].TimeStamp;
-        long ts_end = end?.ToUnixTimeMilliseconds() ?? items[^1].TimeStamp;
-
-        if (items.Count == 1)
-        {
-            if (items[0].State is PlayTimeState.Start)
-            {
-                ts_total += Math.Clamp(items[0].TimeStamp - ts_start, 0, MAX_INTERVAL);
-            }
-            else if (items[0].State is PlayTimeState.Stop)
-            {
-                ts_total += Math.Clamp(ts_end - items[0].TimeStamp, 0, MAX_INTERVAL);
-            }
-            else if (items[0].State is PlayTimeState.Play)
-            {
-                ts_total += Math.Clamp(ts_end - ts_start, 0, MAX_INTERVAL);
-            }
-        }
-        else
-        {
-            var dic_start_time = new Dictionary<int, long>();
-            var dic_last_time = new Dictionary<int, long>();
-
-            if (items[0].State is PlayTimeState.Play or PlayTimeState.Stop && items[0].TimeStamp - ts_start <= MAX_INTERVAL)
-            {
-                dic_start_time[items[0].Pid] = ts_start;
-                dic_last_time[items[0].Pid] = ts_start;
-            }
-
-            for (int i = 0; i < items.Count; i++)
-            {
-                var item = items[i];
-                int pid = item.Pid;
-                long ts_last_time = dic_last_time.GetValueOrDefault(pid);
-                if (item.TimeStamp - ts_last_time > MAX_INTERVAL)
-                {
-                    // 距离上一个时间记录点超过 MAX_INTERVAL，认为是新的一次游戏
-                    long ts_start_time = dic_start_time.GetValueOrDefault(pid);
-                    if (ts_last_time != 0 && ts_start_time != 0)
-                    {
-                        ts_total += Math.Clamp(ts_last_time - ts_start_time, 0, long.MaxValue);
-                    }
-                    if (item.State is not PlayTimeState.Stop and not PlayTimeState.Error)
-                    {
-                        dic_last_time[pid] = item.TimeStamp;
-                        dic_start_time[pid] = item.TimeStamp;
-                    }
-                    else
-                    {
-                        dic_start_time[pid] = 0;
-                        dic_last_time[pid] = 0;
-                    }
-                }
-                else
-                {
-                    if (item.State is PlayTimeState.Start)
-                    {
-                        long ts_start_time = dic_start_time.GetValueOrDefault(pid);
-                        if (ts_start_time != 0)
-                        {
-                            ts_total += Math.Clamp(ts_last_time - ts_start_time, 0, long.MaxValue);
-                        }
-                        dic_start_time[pid] = item.TimeStamp;
-                        dic_last_time[pid] = item.TimeStamp;
-                    }
-                    else if (item.State is PlayTimeState.Stop or PlayTimeState.Error)
-                    {
-                        long ts_start_time = dic_start_time.GetValueOrDefault(pid);
-                        if (ts_start_time != 0)
-                        {
-                            ts_total += item.TimeStamp - ts_start_time;
-                        }
-                        dic_start_time[pid] = 0;
-                        dic_last_time[pid] = 0;
-                    }
-                    else
-                    {
-                        dic_last_time[pid] = item.TimeStamp;
-                    }
-                }
-            }
-
-            // 计算因意外或正在运行，没有停止记录的游戏时间
-            foreach (var (pid, ts_start_time) in dic_start_time)
-            {
-                long ts_last_time = dic_last_time.GetValueOrDefault(pid);
-                if (ts_start_time != 0 && ts_last_time != 0)
-                {
-                    ts_total += Math.Clamp(ts_last_time - ts_start_time, 0, long.MaxValue);
-                }
-            }
-        }
-        return TimeSpan.FromMilliseconds(ts_total);
     }
-
-
-
-    #endregion
-
 
 
 
@@ -519,25 +297,6 @@ internal class PlayTimeService
 
 
     #endregion
-
-
-
-
-    private struct PlayTimeItemStruct
-    {
-
-        public long TimeStamp { get; set; }
-
-
-        public GameBiz GameBiz { get; set; }
-
-
-        public int Pid { get; set; }
-
-
-        public PlayTimeState State { get; set; }
-
-    }
 
 
 

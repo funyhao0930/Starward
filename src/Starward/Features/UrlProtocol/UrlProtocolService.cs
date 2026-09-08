@@ -85,11 +85,11 @@ internal class UrlProtocolService
                         var kvs = HttpUtility.ParseQueryString(uri.Query);
                         if (int.TryParse(kvs["pid"], out int pid))
                         {
-                            await AppConfig.GetService<PlayTimeService>().StartProcessToLogAsync(key, pid);
+                            await AppConfig.GetService<PlayTimeRecordService>().StartProcessToLogAsync(key, pid);
                         }
                         else
                         {
-                            await AppConfig.GetService<PlayTimeService>().StartProcessToLogAsync(key);
+                            await AppConfig.GetService<PlayTimeRecordService>().StartProcessToLogAsync(key);
                         }
                     }
                     else

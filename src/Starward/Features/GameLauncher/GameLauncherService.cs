@@ -31,16 +31,16 @@ internal partial class GameLauncherService
 
     private readonly HoYoPlayService _hoYoPlayService;
 
-    private readonly PlayTimeService _playTimeService;
+    private readonly PlayTimeRecordService _playTimeRecorderService;
 
     private readonly IGameProviderRegistry _providerRegistry;
 
 
-    public GameLauncherService(ILogger<GameLauncherService> logger, HoYoPlayService hoYoPlayService, PlayTimeService playTimeService, IGameProviderRegistry providerRegistry)
+    public GameLauncherService(ILogger<GameLauncherService> logger, HoYoPlayService hoYoPlayService, PlayTimeRecordService playTimeRecorderService, IGameProviderRegistry providerRegistry)
     {
         _logger = logger;
         _hoYoPlayService = hoYoPlayService;
-        _playTimeService = playTimeService;
+        _playTimeRecorderService = playTimeRecorderService;
         _providerRegistry = providerRegistry;
     }
 
@@ -370,11 +370,11 @@ internal partial class GameLauncherService
                 if (command.TrackByProcessName)
                 {
                     // 创建出来的进程是第三方工具或 cmd.exe，需要按进程名查找真正的游戏进程
-                    return await _playTimeService.StartProcessToLogAsync(key);
+                    return await _playTimeRecorderService.StartProcessToLogAsync(key);
                 }
                 else
                 {
-                    await _playTimeService.StartProcessToLogAsync(key, process.Id);
+                    await _playTimeRecorderService.StartProcessToLogAsync(key, process.Id);
                     return process;
                 }
             }
