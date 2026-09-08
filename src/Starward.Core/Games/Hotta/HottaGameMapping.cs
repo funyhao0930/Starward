@@ -33,14 +33,14 @@ public static class HottaGameMapping
 
 
     /// <summary>
-    /// 台服的存档目录后缀，对应游戏本体的 <c>-saveddirsuffix=</c> 开关。
+    /// 台服的存档目录后缀，对应游戏本体的 <c>--saveddirsuffix=</c> 开关。
+    /// <para/>
+    /// 官方外壳的完整启动命令记录在 <c>NTETW\UserData\Log\NTETWGame.log</c> 里：
+    /// <code>HTGame.exe /Game/LoginAndCreate/Map/Updater/Updater_P --saveddirsuffix=GAT -SAVEWINPOS=1</code>
     /// <para/>
     /// 注意：它只决定存档与配置目录（Saved_GAT），并不决定区服。
-    /// 实测传入本值后游戏确实使用 Saved_GAT，但界面仍是国际服。
-    /// 区服由官方登录外壳通过共享内存握手传给游戏
-    /// （启动器中可见 <c>Global\ArcGame_ShareMem_%1_%2</c> 与
-    /// <c>GameShareMemMgr::setGameStartInfo</c>），
-    /// 游戏本体没有任何区服相关的命令行开关，因此无法绕开外壳直接进入台服。
+    /// 实测传入本值后游戏确实使用 Saved_GAT，但界面仍是国际服，
+    /// 原因见 <see cref="GetDescriptors"/> 里对启动方式的说明。
     /// </summary>
     public const string TaiwanSavedDirSuffix = "GAT";
 
@@ -148,11 +148,16 @@ public static class HottaGameMapping
                 ChannelName = CoreLang.GameServer_TaiwanServer,
                 IconUri = "ms-appx:///Assets/Image/Transparent.png",
                 ChannelIconUri = "ms-appx:///Assets/Image/Transparent.png",
-                // 直接启动虚幻引擎的游戏本体。
-                // Config.ini 记录的 NTETWGame.exe /launcher 是官方的登录外壳，
-                // 走那条路只会打开官方启动器，与本程序替代启动器的目的相悖。
-                // 必须经过官方登录外壳：区服由它通过共享内存交给游戏，
-                // 直接启动 HTGame.exe 可以进入游戏，但只会是国际服。
+                // 只能启动官方外壳 NTETWGame.exe，不能像其他游戏那样直接拉起游戏本体。
+                // 外壳不只是启动器，它同时是账号登录的服务端：
+                // 游戏侧的 WPLauncherSDK_64.dll 读同目录的 GameLauncher.config
+                // （内容是外壳目录下 WPGameClientSDK_64.dll 的绝对路径），
+                // 加载它之后通过命名管道 \\.\PIPE\ 连回外壳，
+                // 再共用 Global\ArcGame_ShareMem_ 取得启动参数。
+                // 登录窗口是外壳画的 QML（日志里的 globalquickloginframe.qml），
+                // 拿到 token 后经管道回传给游戏，游戏侧除了 SteamLogin 没有任何自带的登录入口。
+                // 因此绕开外壳直接跑 HTGame.exe 只能进国际服，
+                // 要做到直接启动就得自己实现代理商的登录协议，超出本项目范围。
                 // /launcher 来自官方 Config.ini 的 [UPDATE_CONFIG] LaunchCmdLine，
                 // 走这里可以跳过官方的更新器。
                 ExecutableName = @"NTETW\NTETWGame.exe",
