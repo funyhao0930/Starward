@@ -34,6 +34,9 @@ internal partial class GachaPityProgressBackgroundBrushConverter : IValueConvert
                 point = 65;
                 guarantee = 80;
             }
+            // 上面按卡池编号推断，只对米哈游三款成立；记录自己带了规则时以它为准
+            point = item.SoftPity ?? point;
+            guarantee = item.PityMax ?? guarantee;
             double offset = pity / guarantee;
             if (pity < point)
             {

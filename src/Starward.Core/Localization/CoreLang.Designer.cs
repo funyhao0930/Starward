@@ -797,5 +797,59 @@ namespace Starward.Core.Localization {
                 return ResourceManager.GetString("GachaType_WeaponRecruitment", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   查找类似 Standard Board 的本地化字符串。
+        /// </summary>
+        public static string GachaType_StandardBoard {
+            get {
+                return ResourceManager.GetString("GachaType_StandardBoard", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 Limited Character Board 的本地化字符串。
+        /// </summary>
+        public static string GachaType_LimitedCharacterBoard {
+            get {
+                return ResourceManager.GetString("GachaType_LimitedCharacterBoard", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 Arc Miracle Box 的本地化字符串。
+        /// </summary>
+        public static string GachaType_ArcMiracleBox {
+            get {
+                return ResourceManager.GetString("GachaType_ArcMiracleBox", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 Mystery Box 的本地化字符串。
+        /// </summary>
+        public static string GachaType_MysteryBox {
+            get {
+                return ResourceManager.GetString("GachaType_MysteryBox", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 The file is not a gacha record exported by nte-exporter. 的本地化字符串。
+        /// </summary>
+        public static string Gacha_TheFileIsNotAnNteExporterRecordFile {
+            get {
+                return ResourceManager.GetString("Gacha_TheFileIsNotAnNteExporterRecordFile", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 This is an achievement export from nte-exporter, not a gacha record. 的本地化字符串。
+        /// </summary>
+        public static string Gacha_TheFileIsAnNteExporterAchievementFile {
+            get {
+                return ResourceManager.GetString("Gacha_TheFileIsAnNteExporterAchievementFile", resourceCulture);
+            }
+        }
     }
 }

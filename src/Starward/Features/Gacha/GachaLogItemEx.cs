@@ -25,7 +25,24 @@ public partial class GachaLogItemEx : GachaLogItem
 
     public string Icon { get; set; }
 
-    public double Progress => (double)Pity / ((GachaType is GenshinGachaType.WeaponEventWish or StarRailGachaType.LightConeEventWarp or StarRailGachaType.LightConeCollaborationWarp or ZZZGachaType.WEngineChannel or ZZZGachaType.WEngineReverberation or ZZZGachaType.BangbooChannel) ? 80 : 90) * 100;
+
+    /// <summary>
+    /// 本条记录所在卡池的保底抽数，为 null 时按卡池编号推断。
+    /// <para/>
+    /// 推断那套规则只认米哈游三款的卡池编号，而各家的编号是各自从 1 开始数的，
+    /// 撞号在所难免（例如绝区零的音擎频段是 3，别家的 3 未必是武器池）。
+    /// 因此非米哈游的游戏由 <see cref="GachaLogService.GetPityRule"/> 明确给出，
+    /// 不参与推断。
+    /// </summary>
+    public int? PityMax { get; set; }
+
+    /// <summary>
+    /// 软保底起点，进度条从这一抽起变红，为 null 时同样按卡池编号推断
+    /// </summary>
+    public int? SoftPity { get; set; }
+
+
+    public double Progress => (double)Pity / (PityMax ?? ((GachaType is GenshinGachaType.WeaponEventWish or StarRailGachaType.LightConeEventWarp or StarRailGachaType.LightConeCollaborationWarp or ZZZGachaType.WEngineChannel or ZZZGachaType.WEngineReverberation or ZZZGachaType.BangbooChannel) ? 80 : 90)) * 100;
 
 
     public bool IsPointerIn { get; set => SetProperty(ref field, value); }

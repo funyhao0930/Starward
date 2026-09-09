@@ -2810,4 +2810,25 @@
   <data name="PlayTimeStatsDialog_StatsTip" xml:space="preserve">
     <value>统计基于游戏运行时长，而不是实际在线时长，仅供参考。</value>
   </data>
+  <data name="GachaLogPage_ImportRecords" xml:space="preserve">
+    <value>导入记录</value>
+  </data>
+  <data name="GachaLogPage_NteExporterImportDesc" xml:space="preserve">
+    <value>异环没有抽卡记录接口，请导入 nte-exporter 导出的 JSON 文件。</value>
+  </data>
+  <data name="NteGachaService_ImportGachaResult" xml:space="preserve">
+    <value>读取 {0} 条记录，新增 {1} 条</value>
+  </data>
+  <data name="NteGachaService_TheExportFileDoesNotContainAUid" xml:space="preserve">
+    <value>导出文件里没有 uid，请先选择一个账号，或重新导出一份能认出账号的文件。</value>
+  </data>
+  <data name="NteGachaService_TheSelectedFilesBelongToDifferentUids" xml:space="preserve">
+    <value>所选文件属于不同的 uid，一次只能导入一个账号。</value>
+  </data>
+  <data name="NteGachaService_TheExportFileContainsNoGachaRecords" xml:space="preserve">
+    <value>导出文件里没有抽卡记录。</value>
+  </data>
+  <data name="NteGachaService_SomeRecordsCouldNotBeRead" xml:space="preserve">
+    <value>有 {0} 条记录读不出来（卡池或时间戳无法识别），已跳过。</value>
+  </data>
 </root>

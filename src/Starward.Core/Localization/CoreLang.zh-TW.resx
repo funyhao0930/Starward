@@ -352,4 +352,22 @@
   <data name="GachaType_WeaponRecruitment" xml:space="preserve">
     <value>武器申領</value>
   </data>
+  <data name="GachaType_StandardBoard" xml:space="preserve">
+    <value>常駐棋盤</value>
+  </data>
+  <data name="GachaType_LimitedCharacterBoard" xml:space="preserve">
+    <value>限定角色棋盤</value>
+  </data>
+  <data name="GachaType_ArcMiracleBox" xml:space="preserve">
+    <value>弧盤奇蹟盒</value>
+  </data>
+  <data name="GachaType_MysteryBox" xml:space="preserve">
+    <value>神秘盒子</value>
+  </data>
+  <data name="Gacha_TheFileIsNotAnNteExporterRecordFile" xml:space="preserve">
+    <value>該檔案不是 nte-exporter 匯出的抽卡記錄</value>
+  </data>
+  <data name="Gacha_TheFileIsAnNteExporterAchievementFile" xml:space="preserve">
+    <value>這是 nte-exporter 的成就匯出，不是抽卡記錄</value>
+  </data>
 </root>

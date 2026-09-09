@@ -364,4 +364,22 @@
   <data name="GachaType_WeaponRecruitment" xml:space="preserve">
     <value>Weapon Recruitment</value>
   </data>
+  <data name="GachaType_StandardBoard" xml:space="preserve">
+    <value>Standard Board</value>
+  </data>
+  <data name="GachaType_LimitedCharacterBoard" xml:space="preserve">
+    <value>Limited Character Board</value>
+  </data>
+  <data name="GachaType_ArcMiracleBox" xml:space="preserve">
+    <value>Arc Miracle Box</value>
+  </data>
+  <data name="GachaType_MysteryBox" xml:space="preserve">
+    <value>Mystery Box</value>
+  </data>
+  <data name="Gacha_TheFileIsNotAnNteExporterRecordFile" xml:space="preserve">
+    <value>The file is not a gacha record exported by nte-exporter.</value>
+  </data>
+  <data name="Gacha_TheFileIsAnNteExporterAchievementFile" xml:space="preserve">
+    <value>This is an achievement export from nte-exporter, not a gacha record.</value>
+  </data>
 </root>

@@ -2810,4 +2810,25 @@ You are welcome to submit the exported data to the following repository:</value>
   <data name="PlayTimeStatsDialog_StatsTip" xml:space="preserve">
     <value>Statistics are based on game runtime, not actual playtime, and are for reference only.</value>
   </data>
+  <data name="GachaLogPage_ImportRecords" xml:space="preserve">
+    <value>Import Records</value>
+  </data>
+  <data name="GachaLogPage_NteExporterImportDesc" xml:space="preserve">
+    <value>Neverness to Everness has no gacha record API. Import the JSON files exported by nte-exporter.</value>
+  </data>
+  <data name="NteGachaService_ImportGachaResult" xml:space="preserve">
+    <value>Read {0} records, {1} added</value>
+  </data>
+  <data name="NteGachaService_TheExportFileDoesNotContainAUid" xml:space="preserve">
+    <value>The export file does not contain a uid. Select an account first, or re-export with the account detected.</value>
+  </data>
+  <data name="NteGachaService_TheSelectedFilesBelongToDifferentUids" xml:space="preserve">
+    <value>The selected files belong to different uids. Import one account at a time.</value>
+  </data>
+  <data name="NteGachaService_TheExportFileContainsNoGachaRecords" xml:space="preserve">
+    <value>The export file contains no gacha records.</value>
+  </data>
+  <data name="NteGachaService_SomeRecordsCouldNotBeRead" xml:space="preserve">
+    <value>{0} records could not be read (unrecognised pool or timestamp) and were skipped.</value>
+  </data>
 </root>

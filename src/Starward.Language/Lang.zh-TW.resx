@@ -2810,4 +2810,25 @@
   <data name="PlayTimeStatsDialog_StatsTip" xml:space="preserve">
     <value>統計基於遊戲運行時長，而非實際遊玩時長，僅供參考。</value>
   </data>
+  <data name="GachaLogPage_ImportRecords" xml:space="preserve">
+    <value>匯入記錄</value>
+  </data>
+  <data name="GachaLogPage_NteExporterImportDesc" xml:space="preserve">
+    <value>異環沒有抽卡記錄介面，請匯入 nte-exporter 匯出的 JSON 檔案。</value>
+  </data>
+  <data name="NteGachaService_ImportGachaResult" xml:space="preserve">
+    <value>讀取 {0} 筆記錄，新增 {1} 筆</value>
+  </data>
+  <data name="NteGachaService_TheExportFileDoesNotContainAUid" xml:space="preserve">
+    <value>匯出檔案裡沒有 uid，請先選擇一個帳號，或重新匯出一份能認出帳號的檔案。</value>
+  </data>
+  <data name="NteGachaService_TheSelectedFilesBelongToDifferentUids" xml:space="preserve">
+    <value>所選檔案屬於不同的 uid，一次只能匯入一個帳號。</value>
+  </data>
+  <data name="NteGachaService_TheExportFileContainsNoGachaRecords" xml:space="preserve">
+    <value>匯出檔案裡沒有抽卡記錄。</value>
+  </data>
+  <data name="NteGachaService_SomeRecordsCouldNotBeRead" xml:space="preserve">
+    <value>有 {0} 筆記錄讀不出來（卡池或時間戳無法辨識），已略過。</value>
+  </data>
 </root>

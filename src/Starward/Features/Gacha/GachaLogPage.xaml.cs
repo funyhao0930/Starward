@@ -12,6 +12,7 @@ using Starward.Core;
 using Starward.Core.Gacha;
 using Starward.Core.GameRecord;
 using Starward.Core.Games.HoYo;
+using Starward.Core.Games.Hotta;
 using Starward.Features.Gacha.UIGF;
 using Starward.Features.GameLauncher;
 using Starward.Features.GameRecord;
@@ -109,6 +110,19 @@ public sealed partial class GachaLogPage : PageBase
             Button_Export_Excel.Visibility = Visibility.Collapsed;
             Button_Import.Visibility = Visibility.Collapsed;
             Button_UIGF4.Visibility = Visibility.Collapsed;
+        }
+        if (CurrentGameKey.IsProvider(HottaGameMapping.ProviderId))
+        {
+            // 异环没有抽卡接口，记录只能从 nte-exporter 的导出文件读进来：
+            // 「更新记录」那一整套（本机缓存、保存的 URL、手动输入 URL）都无从谈起，
+            // 换成导入按钮；设置里与 URL 有关的部分也一并收起。
+            SplitButton_UpdateGachaLog.Visibility = Visibility.Collapsed;
+            Button_ImportRecords.Visibility = Visibility.Visible;
+            StackPanel_UrlSettings.Visibility = Visibility.Collapsed;
+            // 物品统计面板的三个列表都只为米哈游三款准备，对异环点开是空的
+            Button_ItemStatsPane.Visibility = Visibility.Collapsed;
+            // 空状态的表情图只有米哈游三款有素材，异环留个空框比留张空图好
+            Image_Emoji.Visibility = Visibility.Collapsed;
         }
     }
 
@@ -936,6 +950,7 @@ public sealed partial class GachaLogPage : PageBase
             var dialog = new DeleteGachaLogDialog
             {
                 CurrentGameBiz = this.CurrentGameBiz,
+                CurrentGameKey = this.CurrentGameKey,
                 DefaultUid = this.SelectUid,
                 XamlRoot = this.XamlRoot,
             };
@@ -1036,7 +1051,10 @@ public sealed partial class GachaLogPage : PageBase
                 "json" => "json",
                 _ => "json"
             };
-            var suggestName = $"Starward_Export_{CurrentGameBiz.Game}_{uid}_{DateTime.Now:yyyyMMddHHmmss}.{ext}";
+            // 非米哈游游戏的 Game 是 provider:game:channel 这样的存储键，
+            // 冒号在 Windows 文件名里非法，会让保存对话框直接拒绝
+            string gameName = string.Join('_', CurrentGameBiz.Game.Split(Path.GetInvalidFileNameChars(), StringSplitOptions.RemoveEmptyEntries));
+            var suggestName = $"Starward_Export_{gameName}_{uid}_{DateTime.Now:yyyyMMddHHmmss}.{ext}";
             var file = await FileDialogHelper.OpenSaveFileDialogAsync(this.XamlRoot, suggestName, (ext, $".{ext}"));
             if (file is not null)
             {
@@ -1113,6 +1131,62 @@ public sealed partial class GachaLogPage : PageBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Import gacha log");
+            InAppToast.MainWindow?.Error(ex);
+        }
+    }
+
+
+
+    /// <summary>
+    /// 从 nte-exporter 的导出文件导入异环记录。
+    /// <para/>
+    /// 与其他游戏的「导入」不同，这是异环唯一的入口，所以放在工具栏第一位。
+    /// 该工具一个卡池写一个文件，因此允许一次选多份；
+    /// 没有 uid 的导出只能落到当前选中的账号上。
+    /// </summary>
+    [RelayCommand]
+    private async Task ImportGachaLogFromFilesAsync()
+    {
+        try
+        {
+            if (_gachaLogService is not NteGachaService service)
+            {
+                return;
+            }
+            List<string> files = await FileDialogHelper.PickMultipleFilesAsync(this.XamlRoot, ("Json", ".json"));
+            files = files.Where(File.Exists).ToList();
+            if (files.Count is 0)
+            {
+                return;
+            }
+            NteGachaService.NteGachaImportResult result = service.ImportGachaLogFiles(files, SelectUid ?? 0);
+            if (result.Uid == SelectUid)
+            {
+                UpdateGachaTypeStats(result.Uid);
+            }
+            else if (UidList.Contains(result.Uid))
+            {
+                SelectUid = result.Uid;
+            }
+            else
+            {
+                UidList.Add(result.Uid);
+                SelectUid = result.Uid;
+            }
+            string message = string.Format(Lang.NteGachaService_ImportGachaResult, result.Total, result.Added);
+            if (result.Warnings.Count > 0)
+            {
+                // 抓包本身就可能漏页，工具已经报出来的问题不能吞掉
+                InAppToast.MainWindow?.Warning(message, string.Join(Environment.NewLine, result.Warnings), 0);
+            }
+            else
+            {
+                InAppToast.MainWindow?.Success(null, message);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Import gacha log from nte-exporter files");
             InAppToast.MainWindow?.Error(ex);
         }
     }

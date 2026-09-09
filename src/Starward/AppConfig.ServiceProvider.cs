@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Serilog;
 using Starward.Core.Gacha.Genshin;
 using Starward.Core.Gacha.Gryphline;
+using Starward.Core.Gacha.Hotta;
 using Starward.Core.Gacha.Kuro;
 using Starward.Core.Gacha.StarRail;
 using Starward.Core.Gacha.ZZZ;
@@ -128,6 +129,9 @@ public static partial class AppConfig
             sc.AddSingleton<GryphlineGachaClient>();
             sc.AddSingleton<EndfieldGachaService>();
             sc.AddSingleton<IGameGachaProvider, GryphlineGachaProvider>();
+            sc.AddSingleton<HottaGachaClient>();
+            sc.AddSingleton<NteGachaService>();
+            sc.AddSingleton<IGameGachaProvider, HottaGachaProvider>();
             sc.AddSingleton<GenshinBeyondGachaClient>();
             sc.AddSingleton<GenshinBeyondGachaService>();
 

@@ -125,8 +125,9 @@ public static class HottaGameMapping
     /// 本供应商支持的功能。没有实现下载器，因此不包含 Install、Update、Repair。
     /// <para/>
     /// 声明 <see cref="GameCapability.Gacha"/> 说的是「这款游戏有抽卡记录」，
-    /// 不是「Starward 已经抓得到」。异环的协议还没有研究，
-    /// 启动器会在抽卡页的位置显示尚待开发。
+    /// 不是「Starward 已经抓得到」。异环没有抽卡记录接口，
+    /// 记录只走游戏自己的 RPC，所以抽卡页只能导入第三方抓包工具 nte-exporter 的文件，
+    /// 详见 <c>Starward.Core.Gacha.Hotta.HottaGachaClient</c>。
     /// </summary>
     public const GameCapability Capabilities = GameCapability.Launch
                                              | GameCapability.Discovery

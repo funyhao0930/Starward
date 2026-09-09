@@ -66,6 +66,15 @@ internal abstract class GachaLogService
     protected virtual int ThirdRankType => TopRankType - 2;
 
 
+    /// <summary>
+    /// 卡池的保底规则：保底抽数与软保底起点。
+    /// <para/>
+    /// 返回 null 表示沿用 <see cref="GachaLogItemEx.Progress"/> 里按卡池编号推断的老规则，
+    /// 米哈游三款都走这条路。其他厂商的卡池编号会与它们相撞，必须自己给出。
+    /// </summary>
+    protected virtual (int PityMax, int SoftPity)? GetPityRule(IGachaType type) => null;
+
+
 
     /// <summary>
     /// 这款游戏自己对抽卡的叫法。
@@ -103,12 +112,15 @@ internal abstract class GachaLogService
         foreach (IGachaType type in QueryGachaTypes)
         {
             var l = GetGachaLogItemsByQueryType(list, type);
+            (int PityMax, int SoftPity)? pityRule = GetPityRule(type);
             int index = 0;
             int pity = 0;
             foreach (var item in l)
             {
                 item.Index = ++index;
                 item.Pity = ++pity;
+                item.PityMax = pityRule?.PityMax;
+                item.SoftPity = pityRule?.SoftPity;
                 if (item.RankType == TopRankType)
                 {
                     pity = 0;
@@ -265,11 +277,14 @@ internal abstract class GachaLogService
                 }
                 else
                 {
+                    (int PityMax, int SoftPity)? pityRule = GetPityRule(type);
                     stats.List_5.Insert(0, new GachaLogItemEx
                     {
                         GachaType = type.Value,
                         Name = Lang.GachaStatsCard_Pity,
                         Pity = stats.Pity_5,
+                        PityMax = pityRule?.PityMax,
+                        SoftPity = pityRule?.SoftPity,
                         Time = list.Last().Time,
                         HasUpItem = GachaNoUp.Dictionary.TryGetValue($"{CurrentGameBiz}{type.Value}", out _),
                     });
@@ -278,6 +293,8 @@ internal abstract class GachaLogService
                         GachaType = type.Value,
                         Name = Lang.GachaStatsCard_Pity,
                         Pity = stats.Pity_4,
+                        PityMax = pityRule?.PityMax,
+                        SoftPity = pityRule?.SoftPity,
                         Time = list.Last().Time,
                         HasUpItem = GachaNoUp.Dictionary.TryGetValue($"{CurrentGameBiz}{type.Value}", out _),
                     });

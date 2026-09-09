@@ -8038,5 +8038,68 @@ namespace Starward.Language {
                 return ResourceManager.GetString("GameLauncherPage_OfficialLauncherUpdateAvailable", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   查找类似 Import Records 的本地化字符串。
+        /// </summary>
+        public static string GachaLogPage_ImportRecords {
+            get {
+                return ResourceManager.GetString("GachaLogPage_ImportRecords", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 Neverness to Everness has no gacha record API. Import the JSON files exported by nte-exporter. 的本地化字符串。
+        /// </summary>
+        public static string GachaLogPage_NteExporterImportDesc {
+            get {
+                return ResourceManager.GetString("GachaLogPage_NteExporterImportDesc", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 Read {0} records, {1} added 的本地化字符串。
+        /// </summary>
+        public static string NteGachaService_ImportGachaResult {
+            get {
+                return ResourceManager.GetString("NteGachaService_ImportGachaResult", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 The export file does not contain a uid. Select an account first, or re-export with the account detected. 的本地化字符串。
+        /// </summary>
+        public static string NteGachaService_TheExportFileDoesNotContainAUid {
+            get {
+                return ResourceManager.GetString("NteGachaService_TheExportFileDoesNotContainAUid", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 The selected files belong to different uids. Import one account at a time. 的本地化字符串。
+        /// </summary>
+        public static string NteGachaService_TheSelectedFilesBelongToDifferentUids {
+            get {
+                return ResourceManager.GetString("NteGachaService_TheSelectedFilesBelongToDifferentUids", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 The export file contains no gacha records. 的本地化字符串。
+        /// </summary>
+        public static string NteGachaService_TheExportFileContainsNoGachaRecords {
+            get {
+                return ResourceManager.GetString("NteGachaService_TheExportFileContainsNoGachaRecords", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 {0} records could not be read (unrecognised pool or timestamp) and were skipped. 的本地化字符串。
+        /// </summary>
+        public static string NteGachaService_SomeRecordsCouldNotBeRead {
+            get {
+                return ResourceManager.GetString("NteGachaService_SomeRecordsCouldNotBeRead", resourceCulture);
+            }
+        }
     }
 }

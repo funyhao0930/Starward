@@ -260,6 +260,7 @@ internal static class DatabaseService
         Sql_v20,
         Sql_v21,
         Sql_v22,
+        Sql_v23,
     ];
 
 
@@ -1121,6 +1122,38 @@ internal static class DatabaseService
         CREATE INDEX IF NOT EXISTS IX_EndfieldGachaItem_GachaType ON EndfieldGachaItem (GachaType);
 
         PRAGMA USER_VERSION = 22;
+        COMMIT TRANSACTION;
+        """;
+
+    /// <summary>
+    /// 异环（斯卡布罗集市）的抽卡记录。
+    /// <para/>
+    /// 结构与鸣潮、终末地那两张表完全一致：同样没有服务器端记录 ID，
+    /// 主键仍是 (Uid, Id)，Id 由 <see cref="Starward.Core.Gacha.GachaSyntheticId"/> 合成，
+    /// 重复导入同一份记录只会覆盖同样的行。
+    /// </summary>
+    private const string Sql_v23 = """
+        BEGIN TRANSACTION;
+
+        CREATE TABLE IF NOT EXISTS NteGachaItem
+        (
+            Uid       INTEGER NOT NULL,
+            Id        INTEGER NOT NULL,
+            Name      TEXT    NOT NULL,
+            Time      TEXT    NOT NULL,
+            ItemId    INTEGER NOT NULL,
+            ItemType  TEXT    NOT NULL,
+            RankType  INTEGER NOT NULL,
+            GachaType INTEGER NOT NULL,
+            Count     INTEGER NOT NULL,
+            Lang      TEXT,
+            PRIMARY KEY (Uid, Id)
+        );
+        CREATE INDEX IF NOT EXISTS IX_NteGachaItem_Id ON NteGachaItem (Id);
+        CREATE INDEX IF NOT EXISTS IX_NteGachaItem_RankType ON NteGachaItem (RankType);
+        CREATE INDEX IF NOT EXISTS IX_NteGachaItem_GachaType ON NteGachaItem (GachaType);
+
+        PRAGMA USER_VERSION = 23;
         COMMIT TRANSACTION;
         """;
 

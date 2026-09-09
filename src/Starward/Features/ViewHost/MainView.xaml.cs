@@ -207,7 +207,7 @@ public sealed partial class MainView : UserControl
         {
             page = typeof(GameLauncherPage);
         }
-        // 声明了抽卡能力但还没有实现协议的游戏（异环），显示尚待开发
+        // 声明了抽卡能力但 Starward 还没有实现的游戏，显示尚待开发
         if (page.Name is nameof(GachaLogPage) && AppConfig.GetService<GachaProviderRegistry>().GetService(CurrentGameKey) is null)
         {
             page = typeof(GachaLogPlaceholderPage);

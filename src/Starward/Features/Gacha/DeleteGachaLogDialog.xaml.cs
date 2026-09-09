@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Starward.Core;
+using Starward.Core.Games;
 using Starward.Helpers;
 using System;
 using System.Collections.Generic;
@@ -22,6 +23,12 @@ public sealed partial class DeleteGachaLogDialog : ContentDialog
 
 
     public GameBiz CurrentGameBiz { get; set; }
+
+
+    /// <summary>
+    /// 用来找抽卡服务，与抽卡页面用的是同一个注册表
+    /// </summary>
+    public GameKey CurrentGameKey { get; set; }
 
 
     public long? DefaultUid { get; set; }
@@ -65,18 +72,9 @@ public sealed partial class DeleteGachaLogDialog : ContentDialog
     {
         try
         {
-            if (CurrentGameBiz.Game is GameBiz.hk4e)
-            {
-                _gachaLogService = AppConfig.GetService<GenshinGachaService>();
-            }
-            if (CurrentGameBiz.Game is GameBiz.hkrpg)
-            {
-                _gachaLogService = AppConfig.GetService<StarRailGachaService>();
-            }
-            if (CurrentGameBiz.Game is GameBiz.nap)
-            {
-                _gachaLogService = AppConfig.GetService<ZZZGachaService>();
-            }
+            // 走供应商注册表，而不是逐个游戏写死：
+            // 原先只认米哈游三款，鸣潮、终末地与异环点进来都是一个空对话框
+            _gachaLogService = AppConfig.GetService<GachaProviderRegistry>().GetService(CurrentGameKey)!;
 
             if (_gachaLogService is not null)
             {
