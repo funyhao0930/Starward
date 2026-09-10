@@ -287,18 +287,20 @@ public class HottaGachaClientTests
 
 
     /// <summary>
-    /// 时间戳按 UTC 读入，存的是本地时间；ID 用的是 UTC，
-    /// 所以同一抽在任何时区（包括夏令时重复的那一小时）都得到同一个 ID
+    /// 时间戳就是游戏里显示的时间，原样存，不再当成 UTC 换一次时区。
+    /// 实测：游戏内写 2026/9/1 21:33:48，当成 UTC 转本地会变成 9/2 05:33:48，差了 8 小时。
+    /// ID 仍与机器时区无关。
     /// </summary>
     [Fact]
-    public void ParseExport_ReadsTimestampsAsUtc()
+    public void ParseExport_KeepsTheTimestampAsTheGameShowsIt()
     {
         var export = HottaGachaClient.ParseExport(ArcExport);
 
         HottaGachaItem item = Assert.Single(export.Items);
-        var utc = new DateTime(2026, 7, 1, 9, 0, 0, DateTimeKind.Utc);
-        Assert.Equal(utc, item.Time.ToUniversalTime());
-        Assert.Equal(GachaSyntheticId.FromTime(utc, 99, $"{HottaGachaType.ArcMiracleBox}|fork_nonos"), item.Id);
+        Assert.Equal(new DateTime(2026, 7, 1, 9, 0, 0), item.Time);
+        Assert.Equal(DateTimeKind.Unspecified, item.Time.Kind);
+        DateTime key = new(2026, 7, 1, 9, 0, 0, DateTimeKind.Utc);
+        Assert.Equal(GachaSyntheticId.FromTime(key, 99, $"{HottaGachaType.ArcMiracleBox}|fork_nonos"), item.Id);
     }
 
 
@@ -487,6 +489,23 @@ public class HottaGachaClientTests
         HottaGachaItem item = Assert.Single(export.Items);
         Assert.Equal("fork_nonos", item.RewardId);
         Assert.Equal("成功的第一步", HottaGachaNames.Localize(item.RewardId, item.Name, new CultureInfo("zh-TW")));
+    }
+
+
+    /// <summary>
+    /// 遊戲只記「有給東西」的那次投擲，一次十連在記錄裡是 11~13 條，
+    /// 直接數條數會少算；單抽則只有 1 條。
+    /// </summary>
+    [Theory]
+    [InlineData(13, 10)]
+    [InlineData(11, 10)]
+    [InlineData(6, 10)]
+    [InlineData(3, 3)]
+    [InlineData(1, 1)]
+    [InlineData(0, 0)]
+    public void RollsInGroup_TreatsAFullRowGroupAsATenPull(int rowCount, int expected)
+    {
+        Assert.Equal(expected, HottaGachaType.RollsInGroup(rowCount));
     }
 
 

@@ -81,7 +81,57 @@ internal class NteGachaService : GachaLogService
 
 
     /// <summary>
-    /// 与基类的区别只有一处：保底数的是掷骰次数，而不是记录条数。
+    /// 每条记录落在第几次投掷上（从 1 开始，跨整个卡池累计）。
+    /// <para/>
+    /// 同一个时间戳是一次抽卡（十连或单抽），组内第 k 条记录算在这一组的第 k 次投掷上，
+    /// 超出该组投掷数的部分并到最后一次。两处实测都对得上：
+    /// 常驻最后一只 S 在组内第 5 条，游戏显示垫 15；限定在第 1 条，显示垫 69。
+    /// </summary>
+    private static List<(GachaLogItemEx Item, int Roll)> AttributeRolls(List<GachaLogItemEx> pool)
+    {
+        var result = new List<(GachaLogItemEx, int)>(pool.Count);
+        int before = 0;
+        for (int i = 0; i < pool.Count;)
+        {
+            int j = i;
+            while (j < pool.Count && pool[j].Time == pool[i].Time)
+            {
+                j++;
+            }
+            int rolls = HottaGachaType.RollsInGroup(j - i);
+            for (int k = i; k < j; k++)
+            {
+                result.Add((pool[k], before + Math.Min(k - i + 1, rolls)));
+            }
+            before += rolls;
+            i = j;
+        }
+        return result;
+    }
+
+
+    /// <summary>
+    /// 一个卡池总共掷了几次
+    /// </summary>
+    private static int CountRolls(List<GachaLogItemEx> pool)
+    {
+        int total = 0;
+        for (int i = 0; i < pool.Count;)
+        {
+            int j = i;
+            while (j < pool.Count && pool[j].Time == pool[i].Time)
+            {
+                j++;
+            }
+            total += HottaGachaType.RollsInGroup(j - i);
+            i = j;
+        }
+        return total;
+    }
+
+
+    /// <summary>
+    /// 与基类的区别：Index 与 Pity 数的是投掷次数，而不是记录条数。
     /// </summary>
     public override List<GachaLogItemEx> GetGachaLogItemEx(long uid)
     {
@@ -96,22 +146,16 @@ internal class NteGachaService : GachaLogService
         {
             List<GachaLogItemEx> pool = GetGachaLogItemsByQueryType(list, type);
             (int PityMax, int SoftPity)? pityRule = GetPityRule(type);
-            int index = 0;
-            int pity = 0;
-            foreach (GachaLogItemEx item in pool)
+            int lastTop = 0;
+            foreach ((GachaLogItemEx item, int roll) in AttributeRolls(pool))
             {
-                if (IsPull(item))
-                {
-                    index++;
-                    pity++;
-                }
-                item.Index = index;
-                item.Pity = pity;
+                item.Index = roll;
+                item.Pity = roll - lastTop;
                 item.PityMax = pityRule?.PityMax;
                 item.SoftPity = pityRule?.SoftPity;
                 if (IsRankSubject(item) && item.RankType == TopRankType)
                 {
-                    pity = 0;
+                    lastTop = roll;
                 }
             }
         }
@@ -121,7 +165,7 @@ internal class NteGachaService : GachaLogService
 
     /// <summary>
     /// 抽数与稀有度得分开算，基类那套「一行一抽、稀有度直接决定保底」对棋盘不成立，
-    /// 因此整个重写。数字的含义：抽数是掷骰次数，出货与保底只看角色。
+    /// 因此整个重写。数字的含义：抽数是投掷次数，出货与保底只看角色。
     /// </summary>
     public override (List<GachaTypeStats> GachaStats, List<GachaLogItemEx> ItemStats) GetGachaTypeStats(long uid)
     {
@@ -138,13 +182,13 @@ internal class NteGachaService : GachaLogService
             {
                 continue;
             }
-            int pulls = pool.Count(IsPull);
+            int rolls = CountRolls(pool);
             List<GachaLogItemEx> subjects = pool.Where(IsRankSubject).ToList();
             var stats = new GachaTypeStats
             {
                 GachaType = type.Value,
                 GachaTypeText = type.ToLocalization(),
-                Count = pulls,
+                Count = rolls,
                 Count_5 = subjects.Count(x => x.RankType == TopRankType),
                 Count_4 = subjects.Count(x => x.RankType == SecondRankType),
                 Count_3 = subjects.Count(x => x.RankType == ThirdRankType),
@@ -153,21 +197,21 @@ internal class NteGachaService : GachaLogService
                 List_5 = subjects.Where(x => x.RankType == TopRankType).Reverse().ToList(),
                 List_4 = subjects.Where(x => x.RankType == SecondRankType).Reverse().ToList(),
             };
-            if (pulls > 0)
+            if (rolls > 0)
             {
-                stats.Ratio_5 = (double)stats.Count_5 / pulls;
-                stats.Ratio_4 = (double)stats.Count_4 / pulls;
-                stats.Ratio_3 = (double)stats.Count_3 / pulls;
+                stats.Ratio_5 = (double)stats.Count_5 / rolls;
+                stats.Ratio_4 = (double)stats.Count_4 / rolls;
+                stats.Ratio_3 = (double)stats.Count_3 / rolls;
             }
-            // 末尾垫了多少抽：最后一个 S 之后又掷了几次骰子
-            stats.Pity_5 = CountPullsAfterLast(pool, TopRankType);
-            stats.Pity_4 = CountPullsAfterLast(pool, SecondRankType);
+            // 末尾垫了多少：最后一次出货那一投之后又掷了几次
+            stats.Pity_5 = rolls - LastRollOf(pool, TopRankType);
+            stats.Pity_4 = rolls - LastRollOf(pool, SecondRankType);
             if (stats.Count_5 > 0)
             {
-                stats.Average_5 = (double)(pulls - stats.Pity_5) / stats.Count_5;
+                stats.Average_5 = (double)(rolls - stats.Pity_5) / stats.Count_5;
             }
             (int PityMax, int SoftPity)? pityRule = GetPityRule(type);
-            var pityItem = new GachaLogItemEx
+            stats.List_5.Insert(0, new GachaLogItemEx
             {
                 GachaType = type.Value,
                 Name = Lang.GachaStatsCard_Pity,
@@ -175,8 +219,7 @@ internal class NteGachaService : GachaLogService
                 PityMax = pityRule?.PityMax,
                 SoftPity = pityRule?.SoftPity,
                 Time = pool.Last().Time,
-            };
-            stats.List_5.Insert(0, pityItem);
+            });
             stats.List_4.Insert(0, new GachaLogItemEx
             {
                 GachaType = type.Value,
@@ -200,23 +243,19 @@ internal class NteGachaService : GachaLogService
 
 
     /// <summary>
-    /// 最后一次拿到 <paramref name="rankType"/> 之后又掷了几次骰子
+    /// 最后一次拿到 <paramref name="rankType"/> 是第几次投掷，没有则 0
     /// </summary>
-    private static int CountPullsAfterLast(List<GachaLogItemEx> pool, int rankType)
+    private static int LastRollOf(List<GachaLogItemEx> pool, int rankType)
     {
-        int pulls = 0;
-        for (int i = pool.Count - 1; i >= 0; i--)
+        int last = 0;
+        foreach ((GachaLogItemEx item, int roll) in AttributeRolls(pool))
         {
-            if (IsRankSubject(pool[i]) && pool[i].RankType == rankType)
+            if (IsRankSubject(item) && item.RankType == rankType)
             {
-                break;
-            }
-            if (IsPull(pool[i]))
-            {
-                pulls++;
+                last = roll;
             }
         }
-        return pulls;
+        return last;
     }
 
 

@@ -173,24 +173,24 @@ public class HottaGachaClient : GachaLogClient
             }
         }
 
-        var parsed = new List<(DateTime Utc, int Ordinal, string Key, HottaExportRecord Record, int GachaType)>();
+        var parsed = new List<(DateTime Time, int Ordinal, string Key, HottaExportRecord Record, int GachaType)>();
         int dropped = 0;
         foreach (HottaExportRecord record in file.Records ?? [])
         {
             int gachaType = HottaGachaType.FromPoolId(record.PoolGroupId);
-            if (gachaType == 0 || !TryParseUtcTime(record.Timestamp, out DateTime utc))
+            if (gachaType == 0 || !TryParseWallClockTime(record.Timestamp, out DateTime time))
             {
                 // 认不出来的卡池不能悄悄并进别的池子，读不了的时间戳也没法排序，只能丢
                 dropped++;
                 continue;
             }
-            parsed.Add((utc, record.TimestampGroupOrdinal ?? 0, record.Uid ?? "", record, gachaType));
+            parsed.Add((time, record.TimestampGroupOrdinal ?? 0, record.Uid ?? "", record, gachaType));
         }
 
         // 文件里是从新到旧排的，但第三方工具的顺序不保证，这里显式排成从旧到新：
         // 同一时间戳内 ordinal 0 是最新的，所以要倒过来。排序只决定返回的顺序，
         // 不参与 ID 的计算，因此拿工具那个不稳定的记录 ID 兜底也无妨。
-        var ordered = parsed.OrderBy(x => x.Utc)
+        var ordered = parsed.OrderBy(x => x.Time)
                             .ThenByDescending(x => x.Ordinal)
                             .ThenBy(x => x.Key, StringComparer.Ordinal)
                             .ToList();
@@ -200,14 +200,14 @@ public class HottaGachaClient : GachaLogClient
         // 这时同一秒会出现重复的 ordinal，两条记录会算出同一个 ID，
         // 其中一条就被 INSERT OR REPLACE 悄悄覆盖掉。这种文件退回按位置数：
         // ID 会随抓包深浅变化，但至少不会丢记录。
-        bool ordinalsAreUnique = ordered.GroupBy(x => (x.Utc, x.Ordinal)).All(x => x.Count() is 1);
+        bool ordinalsAreUnique = ordered.GroupBy(x => (x.Time, x.Ordinal)).All(x => x.Count() is 1);
 
         var items = new List<HottaGachaItem>(ordered.Count);
         var positions = new Dictionary<DateTime, int>();
-        foreach ((DateTime utc, int ordinal, _, HottaExportRecord record, int gachaType) in ordered)
+        foreach ((DateTime time, int ordinal, _, HottaExportRecord record, int gachaType) in ordered)
         {
-            positions.TryGetValue(utc, out int position);
-            positions[utc] = position + 1;
+            positions.TryGetValue(time, out int position);
+            positions[time] = position + 1;
             // ordered 在同一秒内已经是从旧到新，按位置数出来的序号也就与时间同向
             int sequence = ordinalsAreUnique ? ToSequence(ordinal) : Math.Clamp(position, 0, MaxSequence);
             string itemId = record.RewardId ?? "";
@@ -215,17 +215,17 @@ public class HottaGachaClient : GachaLogClient
             {
                 Uid = uid,
                 // ID 必须在多次导出之间保持不变，否则重复导入会插入重复记录，
-                // 因此只用记录自身固有的东西：UTC 时间、组内序号、卡池与物品 ID。
-                // 时间取 UTC 而不是下面存库用的本地时间，换时区（含夏令时重复的那一小时）
-                // 才不会算出不同的 ID；名称来自该工具会更新的对照表，不能进 ID。
-                Id = GachaSyntheticId.FromTime(utc, sequence, $"{gachaType}|{itemId}"),
+                // 因此只用记录自身固有的东西：时间、组内序号、卡池与物品 ID。
+                // 标成 UTC 是为了让 FromTime 里的换算变成空操作，换时区不会改 ID；
+                // 名称来自该工具会更新的对照表，不能进 ID。
+                Id = GachaSyntheticId.FromTime(DateTime.SpecifyKind(time, DateTimeKind.Utc), sequence, $"{gachaType}|{itemId}"),
                 GachaType = gachaType,
                 Name = NormalizeName(record.RewardName, itemId),
                 ItemType = record.RewardType ?? "",
                 ResultType = record.ResultType,
                 RewardId = itemId,
                 RankType = ToRankType(record.RewardRank),
-                Time = utc.ToLocalTime(),
+                Time = time,
                 ItemId = GachaSyntheticId.ToItemId(itemId),
                 Count = record.Quantity is > 0 ? record.Quantity.Value : 1,
                 Lang = "en",
@@ -285,19 +285,26 @@ public class HottaGachaClient : GachaLogClient
 
 
     /// <summary>
-    /// 时间戳是 UTC 渲染的 <c>yyyy-MM-dd HH:mm:ss</c>，字符串里没有时区标记，
-    /// 这里原样按 UTC 读出来。存库前才转本地时间，ID 则一直用 UTC 算。
+    /// 读时间戳。
+    /// <para/>
+    /// 该工具用 <c>datetime.fromtimestamp(..., timezone.utc)</c> 渲染，看起来像 UTC，
+    /// 但游戏发过来的刻度本来就是服务器当地时间，所以渲染出来的字符串
+    /// <b>就是游戏里显示的那个时间</b>，不能再当成 UTC 换一次时区。
+    /// 实测：游戏内记录写 2026/9/1 21:33:48，当成 UTC 转本地会变成 9/2 05:33:48，正好差了 8 小时。
+    /// <para/>
+    /// 因此原样读成挂钟时间存库；算 ID 时把它标成 UTC 只是为了让
+    /// <see cref="GachaSyntheticId.FromTime"/> 里的 <c>ToUniversalTime()</c> 不做任何换算，
+    /// 这样换时区也不会算出不同的 ID。
     /// </summary>
-    private static bool TryParseUtcTime(string? text, out DateTime utc)
+    private static bool TryParseWallClockTime(string? text, out DateTime time)
     {
-        const DateTimeStyles styles = DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal;
-        if (DateTime.TryParseExact(text, "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture, styles, out DateTime value)
-            || DateTime.TryParse(text, CultureInfo.InvariantCulture, styles, out value))
+        if (DateTime.TryParseExact(text, "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime value)
+            || DateTime.TryParse(text, CultureInfo.InvariantCulture, DateTimeStyles.None, out value))
         {
-            utc = DateTime.SpecifyKind(value, DateTimeKind.Utc);
+            time = DateTime.SpecifyKind(value, DateTimeKind.Unspecified);
             return true;
         }
-        utc = default;
+        time = default;
         return false;
     }
 

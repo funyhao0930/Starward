@@ -79,6 +79,23 @@ public readonly record struct HottaGachaType(int Value) : IGachaType
 
 
     /// <summary>
+    /// 一组记录（同一个时间戳）实际掷了几次骰子。
+    /// <para/>
+    /// <b>游戏的记录只写「给了东西」的那次投掷</b>：落空的格子不留记录，
+    /// 所以一次十连在记录里只有 6~10 条 dice，直接数 dice 一定少算。
+    /// 实测限定棋盘 31 组全是 11~13 条（十连），常驻棋盘 25 组十连
+    /// 加 1 组只有 1 条（单抽），中间没有别的形态，因此按条数区分。
+    /// <para/>
+    /// 这是照实测归纳出来的，不是从协议里读到的。以后要是出现别的抽数档位，
+    /// 这里得跟着改；数字对不上时先怀疑这个函数。
+    /// </summary>
+    public static int RollsInGroup(int rowCount)
+    {
+        return rowCount >= 6 ? 10 : rowCount;
+    }
+
+
+    /// <summary>
     /// 这一行的稀有度算不算数。
     /// <para/>
     /// 异环给每种奖励都标了稀有度，棋盘上掉的「S 级骰子道具」跟抽到 S 角色是两回事，
