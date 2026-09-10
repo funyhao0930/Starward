@@ -42,6 +42,18 @@ public partial class GachaLogItemEx : GachaLogItem
     public int? SoftPity { get; set; }
 
 
+    /// <summary>
+    /// 异环专用，见 <see cref="Starward.Core.Gacha.Hotta.HottaGachaItem.ResultType"/>。
+    /// 别的游戏一行就是一抽，这一列是空的。
+    /// </summary>
+    public string? ResultType { get; set; }
+
+    /// <summary>
+    /// 异环专用，导出文件里的 <c>reward_id</c> 原文，用来查中文名
+    /// </summary>
+    public string? RewardId { get; set; }
+
+
     public double Progress => (double)Pity / (PityMax ?? ((GachaType is GenshinGachaType.WeaponEventWish or StarRailGachaType.LightConeEventWarp or StarRailGachaType.LightConeCollaborationWarp or ZZZGachaType.WEngineChannel or ZZZGachaType.WEngineReverberation or ZZZGachaType.BangbooChannel) ? 80 : 90)) * 100;
 
 

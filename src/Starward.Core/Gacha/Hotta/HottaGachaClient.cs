@@ -105,10 +105,14 @@ public class HottaGachaClient : GachaLogClient
     /// </summary>
     /// <param name="Uid">文件里的玩家 uid，工具没认出来时是 0</param>
     /// <param name="Items">已经按时间从旧到新排好、合成过 ID 的记录</param>
-    /// <param name="SkippedCount">按规则滤掉的非抽卡行数，见 <see cref="IsPull"/>，属正常情况</param>
     /// <param name="DroppedCount">卡池认不出来或时间戳读不了而丢弃的行数，不正常，要让用户知道</param>
     /// <param name="Warnings">抓包过程中的问题，需要原样告诉用户</param>
-    public record HottaGachaExport(long Uid, List<HottaGachaItem> Items, int SkippedCount, int DroppedCount, List<string> Warnings);
+    /// <remarks>
+    /// 导出文件里的每一行都读进来，包括积分与追猎给的奖励。
+    /// 斯卡布罗集市一行不等于一抽，但角色几乎都从积分来，在这里滤掉就再也找不回来了；
+    /// 谁算一抽由 <c>NteGachaService</c> 按 <see cref="HottaGachaItem.ResultType"/> 判断。
+    /// </remarks>
+    public record HottaGachaExport(long Uid, List<HottaGachaItem> Items, int DroppedCount, List<string> Warnings);
 
 
     /// <summary>
@@ -170,7 +174,6 @@ public class HottaGachaClient : GachaLogClient
         }
 
         var parsed = new List<(DateTime Utc, int Ordinal, string Key, HottaExportRecord Record, int GachaType)>();
-        int skipped = 0;
         int dropped = 0;
         foreach (HottaExportRecord record in file.Records ?? [])
         {
@@ -179,11 +182,6 @@ public class HottaGachaClient : GachaLogClient
             {
                 // 认不出来的卡池不能悄悄并进别的池子，读不了的时间戳也没法排序，只能丢
                 dropped++;
-                continue;
-            }
-            if (!IsPull(record, gachaType))
-            {
-                skipped++;
                 continue;
             }
             parsed.Add((utc, record.TimestampGroupOrdinal ?? 0, record.Uid ?? "", record, gachaType));
@@ -224,6 +222,8 @@ public class HottaGachaClient : GachaLogClient
                 GachaType = gachaType,
                 Name = NormalizeName(record.RewardName, itemId),
                 ItemType = record.RewardType ?? "",
+                ResultType = record.ResultType,
+                RewardId = itemId,
                 RankType = ToRankType(record.RewardRank),
                 Time = utc.ToLocalTime(),
                 ItemId = GachaSyntheticId.ToItemId(itemId),
@@ -231,24 +231,7 @@ public class HottaGachaClient : GachaLogClient
                 Lang = "en",
             });
         }
-        return new HottaGachaExport(uid, items, skipped, dropped, warnings);
-    }
-
-
-    /// <summary>
-    /// 这一行算不算一抽。
-    /// <para/>
-    /// 两个棋盘卡池里，掷一次骰子才是一抽，落格附带的 <c>points_gift</c>
-    /// 与软保底的 <c>chase_reward</c> 与前一抽共用时间戳，只是奖励，
-    /// 计进去会让抽数与保底都虚高。弧盘奇迹盒与神秘盒子每行都是一抽。
-    /// </summary>
-    private static bool IsPull(HottaExportRecord record, int gachaType)
-    {
-        if (gachaType is HottaGachaType.StandardBoard or HottaGachaType.LimitedCharacterBoard)
-        {
-            return string.IsNullOrEmpty(record.ResultType) || record.ResultType is "dice";
-        }
-        return true;
+        return new HottaGachaExport(uid, items, dropped, warnings);
     }
 
 

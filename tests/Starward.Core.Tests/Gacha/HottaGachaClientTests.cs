@@ -1,6 +1,7 @@
 using Starward.Core.Gacha;
 using Starward.Core.Gacha.Hotta;
 using System;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
@@ -199,16 +200,18 @@ public class HottaGachaClientTests
 
 
     /// <summary>
-    /// 棋盘上只有掷骰子才是一抽，附带奖励计进去会让抽数与保底都虚高
+    /// 每一行都讀進來，但只有擲骰那幾行算一抽；附帶獎勵靠 ResultType 分辨
     /// </summary>
     [Fact]
-    public void ParseExport_KeepsOnlyDiceRowsOnTheBoardPools()
+    public void ParseExport_KeepsEveryRowAndTagsWhichAreRolls()
     {
         var export = HottaGachaClient.ParseExport(LimitedBoardExport);
 
-        Assert.Equal(3, export.Items.Count);
-        Assert.Equal(2, export.SkippedCount);
-        Assert.DoesNotContain(export.Items, x => x.Name is "Warp Piece" or "Beetle Coin");
+        Assert.Equal(5, export.Items.Count);
+        Assert.Equal(3, export.Items.Count(x => x.ResultType is "dice"));
+        // 附帶獎勵要留著（角色幾乎都從積分來），但不是「一抽」
+        Assert.Equal("chase_reward", export.Items.Single(x => x.Name is "Warp Piece").ResultType);
+        Assert.Equal("points_gift", export.Items.Single(x => x.Name is "Beetle Coin").ResultType);
     }
 
 
@@ -221,7 +224,7 @@ public class HottaGachaClientTests
     {
         var export = HottaGachaClient.ParseExport(LimitedBoardExport);
 
-        Assert.Equal(["Dreamless Seed", "Elite Hunter Guide", "Linko"], export.Items.Select(x => x.Name));
+        Assert.Equal(["Dreamless Seed", "Elite Hunter Guide", "Beetle Coin", "Warp Piece", "Linko"], export.Items.Select(x => x.Name));
         Assert.Equal(export.Items.OrderBy(x => x.Id).Select(x => x.Id), export.Items.Select(x => x.Id));
         Assert.Equal(export.Items.Count, export.Items.Select(x => x.Id).Distinct().Count());
     }
@@ -261,7 +264,7 @@ public class HottaGachaClientTests
         var export = HottaGachaClient.ParseExport(ArcExport);
 
         HottaGachaItem item = Assert.Single(export.Items);
-        Assert.Equal(0, export.SkippedCount);
+        Assert.Null(item.ResultType);
         Assert.Equal("fork_nonos", item.Name);
         Assert.Equal(0, item.RankType);
         Assert.Equal("arc", item.ItemType);
@@ -362,7 +365,7 @@ public class HottaGachaClientTests
 
         var export = HottaGachaClient.ParseExport(json);
 
-        Assert.Equal(3, export.Items.Count);
+        Assert.Equal(5, export.Items.Count);
     }
 
 
@@ -399,7 +402,6 @@ public class HottaGachaClientTests
         var export = HottaGachaClient.ParseExport(json);
 
         Assert.Empty(export.Items);
-        Assert.Equal(0, export.SkippedCount);
         Assert.Equal(5, export.DroppedCount);
     }
 
@@ -431,6 +433,60 @@ public class HottaGachaClientTests
         Assert.Equal(3, export.Items.Count);
         Assert.Equal(3, export.Items.Select(x => x.Id).Distinct().Count());
         Assert.Equal(export.Items.OrderBy(x => x.Id).Select(x => x.Id), export.Items.Select(x => x.Id));
+    }
+
+
+    /// <summary>
+    /// 導出檔只有英文名，界面是中文時要換成中文；別的語言維持英文
+    /// </summary>
+    [Theory]
+    [InlineData("zh-TW", "娜娜莉")]
+    [InlineData("zh-HK", "娜娜莉")]
+    [InlineData("zh-CN", "娜娜莉")]
+    [InlineData("en-US", "Nanally")]
+    [InlineData("ja-JP", "Nanally")]
+    public void Localize_SwitchesOnTheUiLanguage(string culture, string expected)
+    {
+        Assert.Equal(expected, HottaGachaNames.Localize("1010", "Nanally", new CultureInfo(culture)));
+    }
+
+
+    /// <summary>
+    /// 简繁要分开：国服写「达芙蒂尔」，台服写「達芙蒂爾」
+    /// </summary>
+    [Fact]
+    public void Localize_UsesSimplifiedForTheMainlandAndTraditionalElsewhere()
+    {
+        Assert.Equal("達芙蒂爾", HottaGachaNames.Localize("1054", "Daffodill", new CultureInfo("zh-TW")));
+        Assert.Equal("达芙蒂尔", HottaGachaNames.Localize("1054", "Daffodill", new CultureInfo("zh-CN")));
+    }
+
+
+    /// <summary>
+    /// 表里没有的一律退回导出文件里的名字，不猜
+    /// </summary>
+    [Theory]
+    [InlineData("Dice_ticket_01", "Warp Piece")]
+    [InlineData("Fashion_Glide_1072", "Sheepcopter")]
+    [InlineData("", "whatever")]
+    [InlineData(null, "whatever")]
+    public void Localize_FallsBackWhenTheIdIsNotInTheTable(string? rewardId, string fallback)
+    {
+        Assert.Equal(fallback, HottaGachaNames.Localize(rewardId, fallback, new CultureInfo("zh-TW")));
+    }
+
+
+    /// <summary>
+    /// 弧盤的名字也要換，而且解析出來的 RewardId 得原樣留著才查得到
+    /// </summary>
+    [Fact]
+    public void ParseExport_KeepsTheRawRewardIdSoNamesCanBeLocalized()
+    {
+        var export = HottaGachaClient.ParseExport(ArcExport);
+
+        HottaGachaItem item = Assert.Single(export.Items);
+        Assert.Equal("fork_nonos", item.RewardId);
+        Assert.Equal("成功的第一步", HottaGachaNames.Localize(item.RewardId, item.Name, new CultureInfo("zh-TW")));
     }
 
 

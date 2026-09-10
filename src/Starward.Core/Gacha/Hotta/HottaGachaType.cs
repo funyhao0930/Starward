@@ -58,6 +58,46 @@ public readonly record struct HottaGachaType(int Value) : IGachaType
     };
 
 
+    /// <summary>
+    /// 这一行算不算一抽。
+    /// <para/>
+    /// 斯卡布罗集市是掷骰子走棋盘：掷一次是一抽（<c>dice</c>），
+    /// 落格与积分给的奖励（<c>points_gift</c>、<c>chase_reward</c>）
+    /// 与那次投掷共用时间戳，只是奖励。弧盘奇迹盒与神秘盒子每行都是一抽。
+    /// <para/>
+    /// 用真实记录验证过：只数掷骰时，两次 S 角色之间最多 78 抽，不超过 90 抽的保底；
+    /// 把奖励行也算进去就会冒出 94 抽这种不可能的间隔。
+    /// </summary>
+    public static bool IsPull(int gachaType, string? resultType)
+    {
+        if (gachaType is StandardBoard or LimitedCharacterBoard)
+        {
+            return string.IsNullOrEmpty(resultType) || resultType is "dice";
+        }
+        return true;
+    }
+
+
+    /// <summary>
+    /// 这一行的稀有度算不算数。
+    /// <para/>
+    /// 异环给每种奖励都标了稀有度，棋盘上掉的「S 级骰子道具」跟抽到 S 角色是两回事，
+    /// 所以棋盘卡池只认角色（<paramref name="rewardType"/> 为 <c>character</c>）。
+    /// 弧盘奇迹盒每行都是弧盘，神秘盒子认它给的东西，都照单全收。
+    /// <para/>
+    /// 顺带一提，角色几乎都不是掷骰子掉出来的：实测限定棋盘 42 个角色里
+    /// 39 个来自 <c>points_gift</c>，所以「只留 dice」会把 S 角色全丢光。
+    /// </summary>
+    public static bool IsRankSubject(int gachaType, string? rewardType)
+    {
+        if (gachaType is StandardBoard or LimitedCharacterBoard)
+        {
+            return rewardType is "character";
+        }
+        return true;
+    }
+
+
     public string ToLocalization() => Value switch
     {
         StandardBoard => CoreLang.GachaType_StandardBoard,

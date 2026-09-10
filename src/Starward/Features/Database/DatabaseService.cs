@@ -261,6 +261,7 @@ internal static class DatabaseService
         Sql_v21,
         Sql_v22,
         Sql_v23,
+        Sql_v24,
     ];
 
 
@@ -1154,6 +1155,25 @@ internal static class DatabaseService
         CREATE INDEX IF NOT EXISTS IX_NteGachaItem_GachaType ON NteGachaItem (GachaType);
 
         PRAGMA USER_VERSION = 23;
+        COMMIT TRANSACTION;
+        """;
+
+    /// <summary>
+    /// 异环记录多存一个 <c>ResultType</c>。
+    /// <para/>
+    /// 斯卡布罗集市是个棋盘：掷一次骰子才是一抽，而角色几乎都是积分给的
+    /// （<c>points_gift</c>），与那次投掷共用时间戳。只存稀有度分不出这两者，
+    /// 抽数与保底就会算错，因此把导出文件里的 <c>result_type</c> 一并存下来。
+    /// <para/>
+    /// 同时存下 <c>reward_id</c> 原文：ItemId 是散列过的整数，查不回中文名。
+    /// </summary>
+    private const string Sql_v24 = """
+        BEGIN TRANSACTION;
+
+        ALTER TABLE NteGachaItem ADD COLUMN ResultType TEXT;
+        ALTER TABLE NteGachaItem ADD COLUMN RewardId TEXT;
+
+        PRAGMA USER_VERSION = 24;
         COMMIT TRANSACTION;
         """;
 

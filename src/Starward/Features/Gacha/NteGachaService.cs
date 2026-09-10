@@ -73,6 +73,154 @@ internal class NteGachaService : GachaLogService
 
 
     /// <summary>
+    /// 谁算一抽、谁的稀有度算数，规则在 <see cref="HottaGachaType"/> 里，那边有测试
+    /// </summary>
+    private static bool IsPull(GachaLogItemEx item) => HottaGachaType.IsPull(item.GachaType, item.ResultType);
+
+    private static bool IsRankSubject(GachaLogItemEx item) => HottaGachaType.IsRankSubject(item.GachaType, item.ItemType);
+
+
+    /// <summary>
+    /// 与基类的区别只有一处：保底数的是掷骰次数，而不是记录条数。
+    /// </summary>
+    public override List<GachaLogItemEx> GetGachaLogItemEx(long uid)
+    {
+        using var dapper = DatabaseService.CreateConnection();
+        var list = dapper.Query<GachaLogItemEx>($"SELECT * FROM {GachaTableName} WHERE Uid = @uid ORDER BY Id;", new { uid }).ToList();
+        foreach (GachaLogItemEx item in list)
+        {
+            // 导出文件里只有英文名，界面是中文时换成中文；查不到就保持原样
+            item.Name = HottaGachaNames.Localize(item.RewardId, item.Name);
+        }
+        foreach (IGachaType type in QueryGachaTypes)
+        {
+            List<GachaLogItemEx> pool = GetGachaLogItemsByQueryType(list, type);
+            (int PityMax, int SoftPity)? pityRule = GetPityRule(type);
+            int index = 0;
+            int pity = 0;
+            foreach (GachaLogItemEx item in pool)
+            {
+                if (IsPull(item))
+                {
+                    index++;
+                    pity++;
+                }
+                item.Index = index;
+                item.Pity = pity;
+                item.PityMax = pityRule?.PityMax;
+                item.SoftPity = pityRule?.SoftPity;
+                if (IsRankSubject(item) && item.RankType == TopRankType)
+                {
+                    pity = 0;
+                }
+            }
+        }
+        return list;
+    }
+
+
+    /// <summary>
+    /// 抽数与稀有度得分开算，基类那套「一行一抽、稀有度直接决定保底」对棋盘不成立，
+    /// 因此整个重写。数字的含义：抽数是掷骰次数，出货与保底只看角色。
+    /// </summary>
+    public override (List<GachaTypeStats> GachaStats, List<GachaLogItemEx> ItemStats) GetGachaTypeStats(long uid)
+    {
+        var statsList = new List<GachaTypeStats>();
+        List<GachaLogItemEx> allItems = GetGachaLogItemEx(uid);
+        if (allItems.Count is 0)
+        {
+            return (statsList, []);
+        }
+        foreach (IGachaType type in QueryGachaTypes)
+        {
+            List<GachaLogItemEx> pool = GetGachaLogItemsByQueryType(allItems, type);
+            if (pool.Count is 0)
+            {
+                continue;
+            }
+            int pulls = pool.Count(IsPull);
+            List<GachaLogItemEx> subjects = pool.Where(IsRankSubject).ToList();
+            var stats = new GachaTypeStats
+            {
+                GachaType = type.Value,
+                GachaTypeText = type.ToLocalization(),
+                Count = pulls,
+                Count_5 = subjects.Count(x => x.RankType == TopRankType),
+                Count_4 = subjects.Count(x => x.RankType == SecondRankType),
+                Count_3 = subjects.Count(x => x.RankType == ThirdRankType),
+                StartTime = pool.First().Time,
+                EndTime = pool.Last().Time,
+                List_5 = subjects.Where(x => x.RankType == TopRankType).Reverse().ToList(),
+                List_4 = subjects.Where(x => x.RankType == SecondRankType).Reverse().ToList(),
+            };
+            if (pulls > 0)
+            {
+                stats.Ratio_5 = (double)stats.Count_5 / pulls;
+                stats.Ratio_4 = (double)stats.Count_4 / pulls;
+                stats.Ratio_3 = (double)stats.Count_3 / pulls;
+            }
+            // 末尾垫了多少抽：最后一个 S 之后又掷了几次骰子
+            stats.Pity_5 = CountPullsAfterLast(pool, TopRankType);
+            stats.Pity_4 = CountPullsAfterLast(pool, SecondRankType);
+            if (stats.Count_5 > 0)
+            {
+                stats.Average_5 = (double)(pulls - stats.Pity_5) / stats.Count_5;
+            }
+            (int PityMax, int SoftPity)? pityRule = GetPityRule(type);
+            var pityItem = new GachaLogItemEx
+            {
+                GachaType = type.Value,
+                Name = Lang.GachaStatsCard_Pity,
+                Pity = stats.Pity_5,
+                PityMax = pityRule?.PityMax,
+                SoftPity = pityRule?.SoftPity,
+                Time = pool.Last().Time,
+            };
+            stats.List_5.Insert(0, pityItem);
+            stats.List_4.Insert(0, new GachaLogItemEx
+            {
+                GachaType = type.Value,
+                Name = Lang.GachaStatsCard_Pity,
+                Pity = stats.Pity_4,
+                PityMax = pityRule?.PityMax,
+                SoftPity = pityRule?.SoftPity,
+                Time = pool.Last().Time,
+            });
+            statsList.Add(stats);
+        }
+        List<GachaLogItemEx> groupStats = allItems.Where(IsRankSubject)
+                                                  .GroupBy(x => x.ItemId)
+                                                  .Select(x => { GachaLogItemEx item = x.First(); item.ItemCount = x.Count(); return item; })
+                                                  .OrderByDescending(x => x.RankType)
+                                                  .ThenByDescending(x => x.ItemCount)
+                                                  .ThenByDescending(x => x.Time)
+                                                  .ToList();
+        return (statsList, groupStats);
+    }
+
+
+    /// <summary>
+    /// 最后一次拿到 <paramref name="rankType"/> 之后又掷了几次骰子
+    /// </summary>
+    private static int CountPullsAfterLast(List<GachaLogItemEx> pool, int rankType)
+    {
+        int pulls = 0;
+        for (int i = pool.Count - 1; i >= 0; i--)
+        {
+            if (IsRankSubject(pool[i]) && pool[i].RankType == rankType)
+            {
+                break;
+            }
+            if (IsPull(pool[i]))
+            {
+                pulls++;
+            }
+        }
+        return pulls;
+    }
+
+
+    /// <summary>
     /// 没有接口可取，界面上这条路已经隐藏，真被调用到时明确失败而不是静默无事
     /// </summary>
     public override Task<long> GetGachaLogAsync(string url, bool all, string? lang = null, IProgress<string>? progress = null, CancellationToken cancellationToken = default)
@@ -97,9 +245,9 @@ internal class NteGachaService : GachaLogService
         using var dapper = DatabaseService.CreateConnection();
         using var t = dapper.BeginTransaction();
         int affect = dapper.Execute("""
-            INSERT OR REPLACE INTO NteGachaItem (Uid, Id, Name, Time, ItemId, ItemType, RankType, GachaType, Count, Lang)
-            VALUES (@Uid, @Id, @Name, @Time, @ItemId, @ItemType, @RankType, @GachaType, @Count, @Lang);
-            """, items, t);
+            INSERT OR REPLACE INTO NteGachaItem (Uid, Id, Name, Time, ItemId, ItemType, RankType, GachaType, Count, Lang, ResultType, RewardId)
+            VALUES (@Uid, @Id, @Name, @Time, @ItemId, @ItemType, @RankType, @GachaType, @Count, @Lang, @ResultType, @RewardId);
+            """, items.OfType<HottaGachaItem>().ToList(), t);
         t.Commit();
         return affect;
     }
