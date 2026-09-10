@@ -96,18 +96,21 @@ public readonly record struct HottaGachaType(int Value) : IGachaType
 
 
     /// <summary>
-    /// 这一行的稀有度算不算数。
+    /// 这一行算不算某一档稀有度的「出货」。
     /// <para/>
-    /// 异环给每种奖励都标了稀有度，棋盘上掉的「S 级骰子道具」跟抽到 S 角色是两回事，
-    /// 所以棋盘卡池只认角色（<paramref name="rewardType"/> 为 <c>character</c>）。
-    /// 弧盘奇迹盒每行都是弧盘，神秘盒子认它给的东西，都照单全收。
-    /// <para/>
-    /// 顺带一提，角色几乎都不是掷骰子掉出来的：实测限定棋盘 42 个角色里
-    /// 39 个来自 <c>points_gift</c>，所以「只留 dice」会把 S 角色全丢光。
+    /// 游戏自己就把两档分开写：
+    /// <list type="bullet">
+    /// <item>「90次掷骰必得S级<b>角色</b>」——最高档只认角色，
+    /// 棋盘上掉的 S 级骰子道具不是出货；</item>
+    /// <item>「10次掷骰必额外获得1个A级<b>道具</b>」——这里的道具是泛指奖励，
+    /// 实测 31 组每组都至少有一个 A 级奖励，但有 7 组一个 A 级 item 都没有，
+    /// 所以下面几档照单全收，不分类型。</item>
+    /// </list>
+    /// 弧盘奇迹盒与神秘盒子本来就每行都是奖励本身，两档都全收。
     /// </summary>
-    public static bool IsRankSubject(int gachaType, string? rewardType)
+    public static bool CountsForRank(int gachaType, string? rewardType, bool topRank)
     {
-        if (gachaType is StandardBoard or LimitedCharacterBoard)
+        if (topRank && gachaType is StandardBoard or LimitedCharacterBoard)
         {
             return rewardType is "character";
         }

@@ -510,6 +510,26 @@ public class HottaGachaClientTests
 
 
     /// <summary>
+    /// 遊戲的兩條保底寫的不是同一件事：「90次擲骰必得S級<b>角色</b>」，
+    /// 「10次擲骰必額外獲得1個A級<b>道具</b>」（泛指獎勵）。
+    /// 所以棋盤的最高檔只認角色，其餘檔照單全收；弧盤奇蹟盒兩檔都全收。
+    /// </summary>
+    [Theory]
+    [InlineData(HottaGachaType.LimitedCharacterBoard, "character", true, true)]
+    [InlineData(HottaGachaType.LimitedCharacterBoard, "item", true, false)]
+    [InlineData(HottaGachaType.LimitedCharacterBoard, "arc", true, false)]
+    [InlineData(HottaGachaType.LimitedCharacterBoard, "item", false, true)]
+    [InlineData(HottaGachaType.LimitedCharacterBoard, "arc", false, true)]
+    [InlineData(HottaGachaType.StandardBoard, "cosmetic", true, false)]
+    [InlineData(HottaGachaType.ArcMiracleBox, "arc", true, true)]
+    [InlineData(HottaGachaType.MysteryBox, "item", true, true)]
+    public void CountsForRank_OnlyTheTopTierIsCharacterOnlyOnTheBoards(int gachaType, string rewardType, bool topRank, bool expected)
+    {
+        Assert.Equal(expected, HottaGachaType.CountsForRank(gachaType, rewardType, topRank));
+    }
+
+
+    /// <summary>
     /// 没有接口，所有取记录的入口都得明确失败，不能悄悄返回空
     /// </summary>
     [Fact]

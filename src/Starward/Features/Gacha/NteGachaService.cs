@@ -77,7 +77,7 @@ internal class NteGachaService : GachaLogService
     /// </summary>
     private static bool IsPull(GachaLogItemEx item) => HottaGachaType.IsPull(item.GachaType, item.ResultType);
 
-    private static bool IsRankSubject(GachaLogItemEx item) => HottaGachaType.IsRankSubject(item.GachaType, item.ItemType);
+    private static bool CountsForRank(GachaLogItemEx item, bool topRank) => HottaGachaType.CountsForRank(item.GachaType, item.ItemType, topRank);
 
 
     /// <summary>
@@ -147,15 +147,25 @@ internal class NteGachaService : GachaLogService
             List<GachaLogItemEx> pool = GetGachaLogItemsByQueryType(list, type);
             (int PityMax, int SoftPity)? pityRule = GetPityRule(type);
             int lastTop = 0;
+            int lastSecond = 0;
             foreach ((GachaLogItemEx item, int roll) in AttributeRolls(pool))
             {
                 item.Index = roll;
-                item.Pity = roll - lastTop;
                 item.PityMax = pityRule?.PityMax;
                 item.SoftPity = pityRule?.SoftPity;
-                if (IsRankSubject(item) && item.RankType == TopRankType)
+                // 每一档各数各的：五星那行显示离上一个五星几投，四星那行显示离上一个四星几投。
+                // 基类也是这么做的（先按五星算一遍，再把四星那几行改写掉），
+                // 之前漏了后半段，四星清单里显示的其实是五星的垫抽数。
+                bool top = item.RankType == TopRankType && CountsForRank(item, true);
+                bool second = item.RankType == SecondRankType && CountsForRank(item, false);
+                item.Pity = second ? roll - lastSecond : roll - lastTop;
+                if (top)
                 {
                     lastTop = roll;
+                }
+                if (second)
+                {
+                    lastSecond = roll;
                 }
             }
         }
@@ -183,19 +193,20 @@ internal class NteGachaService : GachaLogService
                 continue;
             }
             int rolls = CountRolls(pool);
-            List<GachaLogItemEx> subjects = pool.Where(IsRankSubject).ToList();
+            List<GachaLogItemEx> top = pool.Where(x => x.RankType == TopRankType && CountsForRank(x, true)).ToList();
+            List<GachaLogItemEx> second = pool.Where(x => x.RankType == SecondRankType && CountsForRank(x, false)).ToList();
             var stats = new GachaTypeStats
             {
                 GachaType = type.Value,
                 GachaTypeText = type.ToLocalization(),
                 Count = rolls,
-                Count_5 = subjects.Count(x => x.RankType == TopRankType),
-                Count_4 = subjects.Count(x => x.RankType == SecondRankType),
-                Count_3 = subjects.Count(x => x.RankType == ThirdRankType),
+                Count_5 = top.Count,
+                Count_4 = second.Count,
+                Count_3 = pool.Count(x => x.RankType == ThirdRankType && CountsForRank(x, false)),
                 StartTime = pool.First().Time,
                 EndTime = pool.Last().Time,
-                List_5 = subjects.Where(x => x.RankType == TopRankType).Reverse().ToList(),
-                List_4 = subjects.Where(x => x.RankType == SecondRankType).Reverse().ToList(),
+                List_5 = Enumerable.Reverse(top).ToList(),
+                List_4 = Enumerable.Reverse(second).ToList(),
             };
             if (rolls > 0)
             {
@@ -204,8 +215,8 @@ internal class NteGachaService : GachaLogService
                 stats.Ratio_3 = (double)stats.Count_3 / rolls;
             }
             // 末尾垫了多少：最后一次出货那一投之后又掷了几次
-            stats.Pity_5 = rolls - LastRollOf(pool, TopRankType);
-            stats.Pity_4 = rolls - LastRollOf(pool, SecondRankType);
+            stats.Pity_5 = rolls - LastRollOf(pool, TopRankType, true);
+            stats.Pity_4 = rolls - LastRollOf(pool, SecondRankType, false);
             if (stats.Count_5 > 0)
             {
                 stats.Average_5 = (double)(rolls - stats.Pity_5) / stats.Count_5;
@@ -231,8 +242,7 @@ internal class NteGachaService : GachaLogService
             });
             statsList.Add(stats);
         }
-        List<GachaLogItemEx> groupStats = allItems.Where(IsRankSubject)
-                                                  .GroupBy(x => x.ItemId)
+        List<GachaLogItemEx> groupStats = allItems.GroupBy(x => x.ItemId)
                                                   .Select(x => { GachaLogItemEx item = x.First(); item.ItemCount = x.Count(); return item; })
                                                   .OrderByDescending(x => x.RankType)
                                                   .ThenByDescending(x => x.ItemCount)
@@ -245,12 +255,12 @@ internal class NteGachaService : GachaLogService
     /// <summary>
     /// 最后一次拿到 <paramref name="rankType"/> 是第几次投掷，没有则 0
     /// </summary>
-    private static int LastRollOf(List<GachaLogItemEx> pool, int rankType)
+    private static int LastRollOf(List<GachaLogItemEx> pool, int rankType, bool topRank)
     {
         int last = 0;
         foreach ((GachaLogItemEx item, int roll) in AttributeRolls(pool))
         {
-            if (IsRankSubject(item) && item.RankType == rankType)
+            if (item.RankType == rankType && CountsForRank(item, topRank))
             {
                 last = roll;
             }
