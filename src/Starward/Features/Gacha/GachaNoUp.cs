@@ -1,7 +1,12 @@
 using Starward.Core;
 using Starward.Core.Gacha.Genshin;
+using Starward.Core.Gacha.Gryphline;
+using Starward.Core.Gacha.Kuro;
 using Starward.Core.Gacha.StarRail;
 using Starward.Core.Gacha.ZZZ;
+using Starward.Core.Games;
+using Starward.Core.Games.Gryphline;
+using Starward.Core.Games.Kuro;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,7 +23,21 @@ public class GachaNoUp
 
     public int GachaType { get; set; }
 
+    /// <summary>
+    /// 按物品 ID 索引的常驻物品，米哈游三款用它：它们的 item_id 就是游戏内的数字 ID，
+    /// 与界面语言无关，认 ID 最稳。
+    /// </summary>
     public Dictionary<int, GachaNoUpItem> Items { get; set; } = new();
+
+    /// <summary>
+    /// 按名称索引的常驻物品，同一个物品的各种写法都指向同一条记录。
+    /// <para/>
+    /// 终末地的 charId 是字符串，存进数据库时散列成了整数（见
+    /// <see cref="Starward.Core.Gacha.GachaSyntheticId.ToItemId"/>），
+    /// 鸣潮的 resourceId 虽是数字但没有公开对照表，两家都只能认名字。
+    /// 因此每条记录要把简体、繁体、英文的写法都列出来；没列到的语言会被当成 UP。
+    /// </summary>
+    public Dictionary<string, GachaNoUpItem> NamedItems { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
 
 
@@ -31,6 +50,61 @@ public class GachaNoUp
         AddGachaNoUpGenshin();
         AddGachaNoUpStarRail();
         AddGachaNoUpZZZ();
+        AddGachaNoUpWuwa();
+        AddGachaNoUpEndfield();
+    }
+
+
+
+    /// <summary>
+    /// 取某个游戏某个卡池的常驻物品表，字典键的拼法只在这里写一份
+    /// </summary>
+    public static bool TryGet(GameBiz game, int gachaType, out GachaNoUp? noUp)
+    {
+        return Dictionary.TryGetValue($"{game}{gachaType}", out noUp);
+    }
+
+
+
+    /// <summary>
+    /// 这一抽是不是当期 UP。先认 ID，认不出再认名字；两者都不在常驻表里就算 UP。
+    /// </summary>
+    public bool IsUp(GachaLogItemEx item)
+    {
+        if (!Items.TryGetValue(item.ItemId, out GachaNoUpItem? noUpItem) && item.Name is not null)
+        {
+            NamedItems.TryGetValue(item.Name, out noUpItem);
+        }
+        if (noUpItem is null)
+        {
+            return true;
+        }
+        foreach ((DateTime start, DateTime end) in noUpItem.NoUpTimes)
+        {
+            if (item.Time >= start && item.Time <= end)
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+
+
+    /// <summary>
+    /// 把物品按 <see cref="GachaNoUpItem.Names"/> 里的每种写法都登记一遍
+    /// </summary>
+    private static Dictionary<string, GachaNoUpItem> ToNameDictionary(IEnumerable<GachaNoUpItem> items)
+    {
+        var dictionary = new Dictionary<string, GachaNoUpItem>(StringComparer.OrdinalIgnoreCase);
+        foreach (GachaNoUpItem item in items)
+        {
+            foreach (string name in item.Names)
+            {
+                dictionary[name] = item;
+            }
+        }
+        return dictionary;
     }
 
 
@@ -527,6 +601,207 @@ public class GachaNoUp
     }
 
 
+    /// <summary>
+    /// 鸣潮的角色活动唤取（限定池）。
+    /// <para/>
+    /// 歪掉时给的是常驻五星共鸣者，开服至今这五位没有变过。
+    /// 武器活动唤取的五星必定是当期武器，没有歪的概念，因此不列。
+    /// </summary>
+    private static void AddGachaNoUpWuwa()
+    {
+        // 开服前不可能有记录，起点给宽一点即可
+        DateTime launch = new DateTime(2024, 5, 1);
+        List<GachaNoUpItem> items =
+        [
+            new GachaNoUpItem
+            {
+                Name = "卡卡罗",
+                Names = ["卡卡罗", "卡卡羅", "Calcharo"],
+                NoUpTimes = [(launch, DateTime.MaxValue)],
+            },
+            new GachaNoUpItem
+            {
+                Name = "安可",
+                Names = ["安可", "Encore"],
+                NoUpTimes = [(launch, DateTime.MaxValue)],
+            },
+            new GachaNoUpItem
+            {
+                Name = "维里奈",
+                Names = ["维里奈", "維里奈", "Verina"],
+                NoUpTimes = [(launch, DateTime.MaxValue)],
+            },
+            new GachaNoUpItem
+            {
+                Name = "鉴心",
+                Names = ["鉴心", "鑑心", "鑒心", "Jianxin"],
+                NoUpTimes = [(launch, DateTime.MaxValue)],
+            },
+            new GachaNoUpItem
+            {
+                Name = "凌阳",
+                Names = ["凌阳", "淩陽", "凌陽", "Lingyang"],
+                NoUpTimes = [(launch, DateTime.MaxValue)],
+            },
+        ];
+        GachaNoUp wuwa1 = new GachaNoUp
+        {
+            Game = GameKeyResolver.ToSettingsKey(KuroGameMapping.WutheringWavesGlobal),
+            GachaType = KuroGachaType.FeaturedResonator,
+            NamedItems = ToNameDictionary(items),
+        };
+        Dictionary.Add($"{wuwa1.Game}{wuwa1.GachaType}", wuwa1);
+    }
+
+
+    /// <summary>
+    /// 终末地的特许寻访（限定池）。
+    /// <para/>
+    /// 歪掉时给的不只是五位常驻六星干员：上一期、上上一期的限定干员也留在池子里。
+    /// 所以除了常驻干员，还要把每位限定干员自己的概率提升期以外的时间都算成非 UP，
+    /// 表里没有的新干员会被当成 UP，每个版本都得补一行。
+    /// <para/>
+    /// 辉光庆典是四位干员同时 UP，没有歪的概念；武库申领虽然也有非 UP 武器，
+    /// 但常驻六星武器没有可靠的公开名单，两者都不列。
+    /// </summary>
+    private static void AddGachaNoUpEndfield()
+    {
+        // 开服前不可能有记录，起点给宽一点即可
+        DateTime launch = new DateTime(2026, 1, 1);
+        List<GachaNoUpItem> items =
+        [
+            // 基础寻访的五位常驻六星干员，从头到尾都不会是当期 UP
+            new GachaNoUpItem
+            {
+                Name = "余烬",
+                Names = ["余烬", "餘燼", "Ember"],
+                NoUpTimes = [(launch, DateTime.MaxValue)],
+            },
+            new GachaNoUpItem
+            {
+                Name = "黎风",
+                Names = ["黎风", "黎風", "Lifeng"],
+                NoUpTimes = [(launch, DateTime.MaxValue)],
+            },
+            new GachaNoUpItem
+            {
+                Name = "艾尔黛拉",
+                Names = ["艾尔黛拉", "艾爾黛拉", "Ardelia"],
+                NoUpTimes = [(launch, DateTime.MaxValue)],
+            },
+            new GachaNoUpItem
+            {
+                Name = "别礼",
+                Names = ["别礼", "別禮", "Last Rite"],
+                NoUpTimes = [(launch, DateTime.MaxValue)],
+            },
+            new GachaNoUpItem
+            {
+                Name = "骏卫",
+                Names = ["骏卫", "駿衛", "Pogranichnik"],
+                NoUpTimes = [(launch, DateTime.MaxValue)],
+            },
+            // 限定六星干员，只有自己的概率提升期才算 UP
+            new GachaNoUpItem
+            {
+                Name = "莱万汀",
+                Names = ["莱万汀", "萊萬汀", "Laevatain"],
+                NoUpTimes = ExceptUpTimes((new DateTime(2026, 1, 22), new DateTime(2026, 2, 7))),
+            },
+            new GachaNoUpItem
+            {
+                Name = "洁尔佩塔",
+                Names = ["洁尔佩塔", "潔爾佩塔"],
+                NoUpTimes = ExceptUpTimes((new DateTime(2026, 2, 7), new DateTime(2026, 2, 24))),
+            },
+            new GachaNoUpItem
+            {
+                Name = "伊冯",
+                Names = ["伊冯", "伊馮", "Yvonne"],
+                NoUpTimes = ExceptUpTimes(
+                    (new DateTime(2026, 2, 24), new DateTime(2026, 3, 12)),
+                    (new DateTime(2026, 9, 24), new DateTime(2026, 10, 14))),
+            },
+            new GachaNoUpItem
+            {
+                Name = "汤汤",
+                Names = ["汤汤", "湯湯", "Tangtang"],
+                NoUpTimes = ExceptUpTimes((new DateTime(2026, 3, 12), new DateTime(2026, 3, 29))),
+            },
+            new GachaNoUpItem
+            {
+                Name = "洛茜",
+                Names = ["洛茜", "Rossi"],
+                NoUpTimes = ExceptUpTimes((new DateTime(2026, 3, 29), new DateTime(2026, 4, 17))),
+            },
+            new GachaNoUpItem
+            {
+                Name = "庄方宜",
+                Names = ["庄方宜", "莊方宜", "Zhuang Fangyi"],
+                NoUpTimes = ExceptUpTimes((new DateTime(2026, 4, 17), new DateTime(2026, 5, 22))),
+            },
+            new GachaNoUpItem
+            {
+                Name = "弭弗",
+                Names = ["弭弗", "Mi Fu"],
+                NoUpTimes = ExceptUpTimes((new DateTime(2026, 6, 5), new DateTime(2026, 6, 26))),
+            },
+            new GachaNoUpItem
+            {
+                Name = "卡缪",
+                Names = ["卡缪", "卡繆", "Camille"],
+                NoUpTimes = ExceptUpTimes((new DateTime(2026, 6, 26), new DateTime(2026, 7, 16))),
+            },
+            new GachaNoUpItem
+            {
+                Name = "诀",
+                Names = ["诀", "訣", "Arcane"],
+                NoUpTimes = ExceptUpTimes((new DateTime(2026, 7, 16), new DateTime(2026, 8, 9))),
+            },
+            new GachaNoUpItem
+            {
+                Name = "梨诺",
+                Names = ["梨诺", "梨諾", "Liino"],
+                NoUpTimes = ExceptUpTimes((new DateTime(2026, 8, 9), new DateTime(2026, 9, 2))),
+            },
+            new GachaNoUpItem
+            {
+                Name = "提弗洛斯",
+                Names = ["提弗洛斯", "Typhoeus"],
+                NoUpTimes = ExceptUpTimes((new DateTime(2026, 9, 2), new DateTime(2026, 9, 30))),
+            },
+        ];
+        GachaNoUp endfield1 = new GachaNoUp
+        {
+            Game = GameKeyResolver.ToSettingsKey(GryphlineGameMapping.EndfieldDefault),
+            GachaType = GryphlineGachaType.Special,
+            NamedItems = ToNameDictionary(items),
+        };
+        Dictionary.Add($"{endfield1.Game}{endfield1.GachaType}", endfield1);
+    }
+
+
+    /// <summary>
+    /// 把「概率提升期」翻过来，得到 <see cref="GachaNoUpItem.NoUpTimes"/> 要的非 UP 时间段。
+    /// 卡池换期都在同一天，这里以当天零点为界，换期当天算新一期的。
+    /// </summary>
+    private static List<(DateTime Start, DateTime End)> ExceptUpTimes(params (DateTime Start, DateTime End)[] upTimes)
+    {
+        var noUpTimes = new List<(DateTime Start, DateTime End)>();
+        DateTime cursor = DateTime.MinValue;
+        foreach ((DateTime start, DateTime end) in upTimes.OrderBy(x => x.Start))
+        {
+            if (cursor < start)
+            {
+                noUpTimes.Add((cursor, start.AddTicks(-1)));
+            }
+            cursor = end;
+        }
+        noUpTimes.Add((cursor, DateTime.MaxValue));
+        return noUpTimes;
+    }
+
+
 }
 
 
@@ -534,10 +809,25 @@ public class GachaNoUp
 public class GachaNoUpItem
 {
 
+    /// <summary>
+    /// 物品 ID，按名称匹配的游戏不填
+    /// </summary>
     public int Id { get; set; }
 
+    /// <summary>
+    /// 物品名称，只是给读代码的人看的
+    /// </summary>
     public string Name { get; set; }
 
+    /// <summary>
+    /// 这个物品在各语言下的写法，按名称匹配的游戏用它，见 <see cref="GachaNoUp.NamedItems"/>
+    /// </summary>
+    public string[] Names { get; set; } = [];
+
+    /// <summary>
+    /// 这些时间段里它不是当期 UP。常驻物品从头到尾都不是，
+    /// 曾经 UP 过的限定物品则要把自己的概率提升期挖掉。
+    /// </summary>
     public List<(DateTime Start, DateTime End)> NoUpTimes { get; set; }
 
 }

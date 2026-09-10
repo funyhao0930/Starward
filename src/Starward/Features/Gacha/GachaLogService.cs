@@ -113,6 +113,7 @@ internal abstract class GachaLogService
         {
             var l = GetGachaLogItemsByQueryType(list, type);
             (int PityMax, int SoftPity)? pityRule = GetPityRule(type);
+            bool hasNoUp = GachaNoUp.TryGet(CurrentGameBiz, type.Value, out GachaNoUp? noUp);
             int index = 0;
             int pity = 0;
             foreach (var item in l)
@@ -124,6 +125,11 @@ internal abstract class GachaLogService
                 if (item.RankType == TopRankType)
                 {
                     pity = 0;
+                    item.HasUpItem = hasNoUp;
+                    if (hasNoUp)
+                    {
+                        item.IsUp = noUp!.IsUp(item);
+                    }
                 }
             }
         }
@@ -286,7 +292,7 @@ internal abstract class GachaLogService
                         PityMax = pityRule?.PityMax,
                         SoftPity = pityRule?.SoftPity,
                         Time = list.Last().Time,
-                        HasUpItem = GachaNoUp.Dictionary.TryGetValue($"{CurrentGameBiz}{type.Value}", out _),
+                        HasUpItem = GachaNoUp.TryGet(CurrentGameBiz, type.Value, out _),
                     });
                     stats.List_4.Insert(0, new GachaLogItemEx
                     {
@@ -296,7 +302,7 @@ internal abstract class GachaLogService
                         PityMax = pityRule?.PityMax,
                         SoftPity = pityRule?.SoftPity,
                         Time = list.Last().Time,
-                        HasUpItem = GachaNoUp.Dictionary.TryGetValue($"{CurrentGameBiz}{type.Value}", out _),
+                        HasUpItem = GachaNoUp.TryGet(CurrentGameBiz, type.Value, out _),
                     });
                 }
             }
