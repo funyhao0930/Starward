@@ -158,7 +158,10 @@ internal class NteGachaService : GachaLogService
                 // 之前漏了后半段，四星清单里显示的其实是五星的垫抽数。
                 bool top = item.RankType == TopRankType && CountsForRank(item, true);
                 bool second = item.RankType == SecondRankType && CountsForRank(item, false);
-                item.Pity = second ? roll - lastSecond : roll - lastTop;
+                // 一次投掷可能同时给好几个奖励，它们落在同一投上，差值会是 0。
+                // 列表里写 0 看着像出错，至少显示 1，读成「与上一个同一投」。
+                // 末尾的「已垫」不走这里，那里的 0 是真的 0（最后一投就出货了）。
+                item.Pity = Math.Max(1, second ? roll - lastSecond : roll - lastTop);
                 if (top)
                 {
                     lastTop = roll;
