@@ -32,6 +32,12 @@ public interface IGameLaunchSettings
 
 
     /// <summary>
+    /// 停用 DLSS
+    /// </summary>
+    bool GetDisableDlss(GameKey key);
+
+
+    /// <summary>
     /// 启用第三方工具启动
     /// </summary>
     bool GetEnableThirdPartyTool(GameKey key);

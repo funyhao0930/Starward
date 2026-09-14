@@ -2728,6 +2728,9 @@
   <data name="GameLauncherPage_LaunchWithDX11" xml:space="preserve">
     <value>DX11で起動</value>
   </data>
+  <data name="GameLauncherPage_DisableDLSS" xml:space="preserve">
+    <value>DLSSを無効化</value>
+  </data>
   <data name="GameLauncherPage_GameUpdateAvailable" xml:space="preserve">
     <value>ゲームの更新があります（{0}）</value>
   </data>

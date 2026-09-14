@@ -38,6 +38,12 @@ internal class AppConfigGameLaunchSettings : IGameLaunchSettings
     }
 
 
+    public bool GetDisableDlss(GameKey key)
+    {
+        return AppConfig.GetDisableDlss(SettingsKey(key));
+    }
+
+
     public bool GetEnableThirdPartyTool(GameKey key)
     {
         return AppConfig.GetEnableThirdPartyTool(SettingsKey(key));

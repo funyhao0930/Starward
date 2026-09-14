@@ -95,6 +95,23 @@ public sealed record GameDescriptor
 
 
     /// <summary>
+    /// 勾选「使用 DX11 启动」时附加的参数，为空表示这款游戏不提供这个开关。
+    /// <para/>
+    /// 写法随引擎而不同：Unity 是 <c>-force-d3d11</c>，虚幻是 <c>-dx11</c>，
+    /// 因此不能在通用的启动代码里写死。
+    /// </summary>
+    public string? DX11LaunchArgument { get; init; }
+
+
+    /// <summary>
+    /// 勾选「停用 DLSS」时附加的参数，为空表示这款游戏不提供这个开关。
+    /// <para/>
+    /// 不是所有游戏都认得这种开关，取自各家官方启动器自己提供的选项。
+    /// </summary>
+    public string? DisableDlssLaunchArgument { get; init; }
+
+
+    /// <summary>
     /// 启动后等待游戏进程出现的最长时间。
     /// <para/>
     /// 直接启动游戏本体时进程几秒内就会出现，默认值足够；

@@ -62,6 +62,9 @@ public static class GryphlineGameMapping
                 // Unity 游戏，启动的就是游戏本体
                 ExecutableName = Path.Combine(GameFolderName, "Endfield.exe"),
                 ProcessName = "Endfield.exe",
+                // 终末地默认用 DX12，与其他游戏相反，因此需要一个退回 DX11 的开关。
+                // Unity 的写法是 -force-d3d11。
+                DX11LaunchArgument = "-force-d3d11",
                 ScreenshotPaths =
                 [
                     Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), "ENDFIELD"),

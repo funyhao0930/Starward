@@ -77,6 +77,12 @@ public static class KuroGameMapping
                 // 启动器安装根目录下的一层外壳，实际运行的是虚幻引擎的 Shipping 进程
                 ExecutableName = Path.Combine(GameFolderName, "Wuthering Waves.exe"),
                 ProcessName = "Client-Win64-Shipping.exe",
+                // 官方启动器自己提供的两个开关，取自在线配置的 RHIOptionList 与 commandList，
+                // 说明文字是「游戏异常时选择」。虚幻的写法是 -dx11，不是 Unity 的 -force-d3d11。
+                // 官方的 DX11 选项完整值是「-dx11 -krqlv=hd」，其中 -krqlv=hd 是默认选项也带的，
+                // Starward 一直没有传，这里也只补 DX11 本身，不改既有的启动行为。
+                DX11LaunchArgument = "-dx11",
+                DisableDlssLaunchArgument = "-slno",
                 ScreenshotPaths = [Path.Combine(GameFolderName, @"Client\Saved\ScreenShot")],
                 // 背景图正常走官方的在线接口（见 KuroLauncherClient），这里只是接口不通时的兜底。
                 // 官方启动器把主界面动态背景缓存为 kr_game_cache\animate_bg\<md5>\home_*.jpg 逐帧序列

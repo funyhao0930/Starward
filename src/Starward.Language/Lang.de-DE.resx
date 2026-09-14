@@ -2727,6 +2727,9 @@ Sie sind herzlich eingeladen, die exportierten Daten an das folgende Repository 
   <data name="GameLauncherPage_LaunchWithDX11" xml:space="preserve">
     <value>Mit DX11 starten</value>
   </data>
+  <data name="GameLauncherPage_DisableDLSS" xml:space="preserve">
+    <value>DLSS deaktivieren</value>
+  </data>
   <data name="GameLauncherPage_GameUpdateAvailable" xml:space="preserve">
     <value>Spiel-Update verfügbar ({0})</value>
   </data>

@@ -67,7 +67,7 @@ public sealed partial class GameLauncherPage : PageBase
     protected override void OnLoaded()
     {
         InitializeGameFeature();
-        CheckDX11Option();
+        CheckLaunchOptions();
         CheckGameVersion();
         UpdateGameInstallTask();
         CheckCloudGame();
@@ -295,9 +295,21 @@ public sealed partial class GameLauncherPage : PageBase
 
 
     /// <summary>
-    /// 是否显示 DX11 选项。终末地默认使用 DX12，只有它需要这个回退开关
+    /// 是否显示 DX11 选项
     /// </summary>
     public bool IsDX11OptionVisible { get; set => SetProperty(ref field, value); }
+
+
+    /// <summary>
+    /// 是否显示停用 DLSS 选项
+    /// </summary>
+    public bool IsDisableDlssOptionVisible { get; set => SetProperty(ref field, value); }
+
+
+    /// <summary>
+    /// 两个开关都没有时整块都不显示
+    /// </summary>
+    public bool IsLaunchOptionsVisible { get; set => SetProperty(ref field, value); }
 
 
     /// <summary>
@@ -317,15 +329,41 @@ public sealed partial class GameLauncherPage : PageBase
 
 
     /// <summary>
-    /// 检查是否需要显示 DX11 选项。
-    /// 目前只有终末地（鹰角）在新版本默认切到了 DX12，需要能退回 DX11
+    /// 停用 DLSS
     /// </summary>
-    private void CheckDX11Option()
+    public bool DisableDlss
     {
-        IsDX11OptionVisible = CurrentGameKey.ProviderId == Core.Games.Gryphline.GryphlineGameMapping.ProviderId;
+        get;
+        set
+        {
+            if (SetProperty(ref field, value))
+            {
+                AppConfig.SetDisableDlss(CurrentGameBiz, value);
+            }
+        }
+    }
+
+
+    /// <summary>
+    /// 检查启动页上要显示哪些额外的启动开关。
+    /// <para/>
+    /// 哪款游戏有哪个开关不写在这里：参数由 <see cref="GameDescriptor"/> 给出，
+    /// 给了就显示。目前终末地默认用 DX12 需要能退回 DX11，
+    /// 鸣潮的官方启动器则同时提供 DX11 与停用 DLSS 两个「游戏异常时选择」的开关。
+    /// </summary>
+    private void CheckLaunchOptions()
+    {
+        GameDescriptor? descriptor = CurrentGameKey.IsValid ? _providerRegistry.GetGame(CurrentGameKey) : null;
+        IsDX11OptionVisible = !string.IsNullOrWhiteSpace(descriptor?.DX11LaunchArgument);
+        IsDisableDlssOptionVisible = !string.IsNullOrWhiteSpace(descriptor?.DisableDlssLaunchArgument);
+        IsLaunchOptionsVisible = IsDX11OptionVisible || IsDisableDlssOptionVisible;
         if (IsDX11OptionVisible)
         {
             EnableDX11 = AppConfig.GetEnableDX11(CurrentGameBiz);
+        }
+        if (IsDisableDlssOptionVisible)
+        {
+            DisableDlss = AppConfig.GetDisableDlss(CurrentGameBiz);
         }
     }
 

@@ -88,9 +88,15 @@ public class SimpleGameLaunchProvider : IGameLaunchProvider
         {
             arg += " -use-d3d12";
         }
-        if (_settings.GetEnableDX11(key))
+        // DX11 与 DLSS 的开关写法各游戏不同，参数由游戏描述给出；
+        // 没给就说明这款游戏没有这个选项，界面上也不会显示。
+        if (_settings.GetEnableDX11(key) && !string.IsNullOrWhiteSpace(descriptor.DX11LaunchArgument))
         {
-            arg += " -force-d3d11";
+            arg += $" {descriptor.DX11LaunchArgument}";
+        }
+        if (_settings.GetDisableDlss(key) && !string.IsNullOrWhiteSpace(descriptor.DisableDlssLaunchArgument))
+        {
+            arg += $" {descriptor.DisableDlssLaunchArgument}";
         }
 
         bool useCommandPrompt = !thirdPartyTool && _settings.StartGameWithCommandPrompt;

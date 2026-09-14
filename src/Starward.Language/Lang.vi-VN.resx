@@ -2726,6 +2726,9 @@ Bạn có chấp nhận rủi ro và tiếp tục?</value>
   <data name="GameLauncherPage_LaunchWithDX11" xml:space="preserve">
     <value>Khởi chạy với DX11</value>
   </data>
+  <data name="GameLauncherPage_DisableDLSS" xml:space="preserve">
+    <value>Tắt DLSS</value>
+  </data>
   <data name="GameLauncherPage_GameUpdateAvailable" xml:space="preserve">
     <value>Có bản cập nhật game ({0})</value>
   </data>

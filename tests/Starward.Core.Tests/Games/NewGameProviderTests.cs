@@ -193,6 +193,96 @@ public class NewGameProviderTests
 
 
     /// <summary>
+    /// DX11 与停用 DLSS 的开关写法各游戏不同，必须由游戏描述给出而不是写死在启动代码里。
+    /// 终末地是 Unity，鸣潮是虚幻，两边的参数不一样。
+    /// </summary>
+    [Fact]
+    public void Descriptors_CarryTheirOwnLaunchOptionArguments()
+    {
+        GameDescriptor wuwa = AllDescriptors().First(x => x.Key == KuroGameMapping.WutheringWavesGlobal);
+        Assert.Equal("-dx11", wuwa.DX11LaunchArgument);
+        Assert.Equal("-slno", wuwa.DisableDlssLaunchArgument);
+
+        GameDescriptor endfield = AllDescriptors().First(x => x.Key == GryphlineGameMapping.EndfieldDefault);
+        Assert.Equal("-force-d3d11", endfield.DX11LaunchArgument);
+        // 终末地的官方启动器没有这个选项，界面上也不该显示
+        Assert.Null(endfield.DisableDlssLaunchArgument);
+
+        // 异环两个开关都没有
+        GameDescriptor nte = AllDescriptors().First(x => x.Key == HottaGameMapping.NevernessToEvernessTaiwan);
+        Assert.Null(nte.DX11LaunchArgument);
+        Assert.Null(nte.DisableDlssLaunchArgument);
+    }
+
+
+    /// <summary>
+    /// 勾选后附加的是游戏描述里的参数，两个开关可以同时打开
+    /// </summary>
+    [Fact]
+    public async Task Wuthering_AppendsItsOwnDX11AndDlssArguments()
+    {
+        string root = Path.Combine(Path.GetTempPath(), "StarwardTests", Guid.NewGuid().ToString("N"));
+        try
+        {
+            GameDescriptor descriptor = KuroGameMapping.GetDescriptors()[0];
+            string exe = Path.Combine(root, descriptor.ExecutableName!);
+            Directory.CreateDirectory(Path.GetDirectoryName(exe)!);
+            File.WriteAllText(exe, "");
+
+            var catalog = new SimpleGameCatalogProvider(KuroGameMapping.ProviderId, KuroGameMapping.GetDescriptors);
+            var settings = new FakeGameLaunchSettings { EnableDX11 = true, DisableDlss = true };
+            var provider = new SimpleGameLaunchProvider(KuroGameMapping.ProviderId, catalog, settings);
+            GameLaunchCommand command = await provider.CreateLaunchCommandAsync(
+                descriptor.Key,
+                new GameLaunchOptions { InstallPath = root },
+                TestContext.Current.CancellationToken);
+
+            Assert.Contains("-dx11", command.Arguments, StringComparison.Ordinal);
+            Assert.Contains("-slno", command.Arguments, StringComparison.Ordinal);
+            // Unity 的写法不能跑到虚幻游戏上
+            Assert.DoesNotContain("-force-d3d11", command.Arguments, StringComparison.Ordinal);
+        }
+        finally
+        {
+            try { Directory.Delete(root, true); } catch { }
+        }
+    }
+
+
+    /// <summary>
+    /// 没有对应参数的游戏，即使设置里打开了开关也不能凭空加参数
+    /// </summary>
+    [Fact]
+    public async Task Neverness_IgnoresLaunchOptionsItDoesNotHave()
+    {
+        string root = Path.Combine(Path.GetTempPath(), "StarwardTests", Guid.NewGuid().ToString("N"));
+        try
+        {
+            GameDescriptor descriptor = HottaGameMapping.GetDescriptors()[0];
+            string exe = Path.Combine(root, descriptor.ExecutableName!);
+            Directory.CreateDirectory(Path.GetDirectoryName(exe)!);
+            File.WriteAllText(exe, "");
+
+            var catalog = new SimpleGameCatalogProvider(HottaGameMapping.ProviderId, HottaGameMapping.GetDescriptors);
+            var settings = new FakeGameLaunchSettings { EnableDX11 = true, DisableDlss = true };
+            var provider = new SimpleGameLaunchProvider(HottaGameMapping.ProviderId, catalog, settings);
+            GameLaunchCommand command = await provider.CreateLaunchCommandAsync(
+                descriptor.Key,
+                new GameLaunchOptions { InstallPath = root },
+                TestContext.Current.CancellationToken);
+
+            Assert.DoesNotContain("-dx11", command.Arguments, StringComparison.Ordinal);
+            Assert.DoesNotContain("-force-d3d11", command.Arguments, StringComparison.Ordinal);
+            Assert.DoesNotContain("-slno", command.Arguments, StringComparison.Ordinal);
+        }
+        finally
+        {
+            try { Directory.Delete(root, true); } catch { }
+        }
+    }
+
+
+    /// <summary>
     /// 非米哈游游戏没有 GameBiz，使用 GameKey 的正规字符串作为存储键
     /// </summary>
     [Theory]

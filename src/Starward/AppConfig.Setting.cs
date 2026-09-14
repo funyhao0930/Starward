@@ -633,6 +633,23 @@ public static partial class AppConfig
     }
 
 
+    /// <summary>
+    /// 停用 DLSS
+    /// </summary>
+    public static bool GetDisableDlss(GameBiz biz)
+    {
+        return GetValue<bool>(default, $"disable_dlss_{biz}");
+    }
+
+    /// <summary>
+    /// 停用 DLSS
+    /// </summary>
+    public static void SetDisableDlss(GameBiz biz, bool value)
+    {
+        SetValue(value, $"disable_dlss_{biz}");
+    }
+
+
     #endregion
 
 

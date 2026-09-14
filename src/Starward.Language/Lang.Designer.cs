@@ -2637,6 +2637,15 @@ namespace Starward.Language {
         }
 
         /// <summary>
+        ///   查找类似 Disable DLSS 的本地化字符串。
+        /// </summary>
+        public static string GameLauncherPage_DisableDLSS {
+            get {
+                return ResourceManager.GetString("GameLauncherPage_DisableDLSS", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 No Write Permission 的本地化字符串。
         /// </summary>
         public static string GameLauncherPage_NoWritePermission {
