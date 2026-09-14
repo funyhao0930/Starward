@@ -88,6 +88,10 @@ public class SimpleGameLaunchProvider : IGameLaunchProvider
         {
             arg += " -use-d3d12";
         }
+        if (_settings.GetEnableDX11(key))
+        {
+            arg += " -force-d3d11";
+        }
 
         bool useCommandPrompt = !thirdPartyTool && _settings.StartGameWithCommandPrompt;
         if (useCommandPrompt)

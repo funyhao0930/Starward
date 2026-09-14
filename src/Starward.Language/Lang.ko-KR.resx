@@ -2726,6 +2726,9 @@
   <data name="GameLauncherPage_LaunchWithDX12" xml:space="preserve">
     <value>DX12로 시작</value>
   </data>
+  <data name="GameLauncherPage_LaunchWithDX11" xml:space="preserve">
+    <value>DX11로 시작</value>
+  </data>
   <data name="GameLauncherPage_DetailsGt" xml:space="preserve">
     <value>상세 &gt;</value>
   </data>

@@ -2746,6 +2746,9 @@ ChatGPT может допускать ошибки. Проверьте важн�
   <data name="GameLauncherPage_LaunchWithDX12" xml:space="preserve">
     <value>Запуск с DX12</value>
   </data>
+  <data name="GameLauncherPage_LaunchWithDX11" xml:space="preserve">
+    <value>Запуск с DX11</value>
+  </data>
   <data name="GameLauncherPage_DetailsGt" xml:space="preserve">
     <value>Подробнее &gt;</value>
   </data>

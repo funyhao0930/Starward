@@ -67,6 +67,7 @@ public sealed partial class GameLauncherPage : PageBase
     protected override void OnLoaded()
     {
         InitializeGameFeature();
+        CheckDX11Option();
         CheckGameVersion();
         UpdateGameInstallTask();
         CheckCloudGame();
@@ -289,6 +290,42 @@ public sealed partial class GameLauncherPage : PageBase
             {
                 AppConfig.SetEnableDX12(CurrentGameBiz, value);
             }
+        }
+    }
+
+
+    /// <summary>
+    /// 是否显示 DX11 选项。终末地默认使用 DX12，只有它需要这个回退开关
+    /// </summary>
+    public bool IsDX11OptionVisible { get; set => SetProperty(ref field, value); }
+
+
+    /// <summary>
+    /// 启用 DX11
+    /// </summary>
+    public bool EnableDX11
+    {
+        get;
+        set
+        {
+            if (SetProperty(ref field, value))
+            {
+                AppConfig.SetEnableDX11(CurrentGameBiz, value);
+            }
+        }
+    }
+
+
+    /// <summary>
+    /// 检查是否需要显示 DX11 选项。
+    /// 目前只有终末地（鹰角）在新版本默认切到了 DX12，需要能退回 DX11
+    /// </summary>
+    private void CheckDX11Option()
+    {
+        IsDX11OptionVisible = CurrentGameKey.ProviderId == Core.Games.Gryphline.GryphlineGameMapping.ProviderId;
+        if (IsDX11OptionVisible)
+        {
+            EnableDX11 = AppConfig.GetEnableDX11(CurrentGameBiz);
         }
     }
 

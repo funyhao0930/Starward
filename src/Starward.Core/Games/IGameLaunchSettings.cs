@@ -26,6 +26,12 @@ public interface IGameLaunchSettings
 
 
     /// <summary>
+    /// 使用 DirectX 11
+    /// </summary>
+    bool GetEnableDX11(GameKey key);
+
+
+    /// <summary>
     /// 启用第三方工具启动
     /// </summary>
     bool GetEnableThirdPartyTool(GameKey key);

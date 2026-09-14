@@ -32,6 +32,12 @@ internal class AppConfigGameLaunchSettings : IGameLaunchSettings
     }
 
 
+    public bool GetEnableDX11(GameKey key)
+    {
+        return AppConfig.GetEnableDX11(SettingsKey(key));
+    }
+
+
     public bool GetEnableThirdPartyTool(GameKey key)
     {
         return AppConfig.GetEnableThirdPartyTool(SettingsKey(key));

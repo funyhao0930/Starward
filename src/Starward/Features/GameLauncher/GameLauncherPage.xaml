@@ -641,6 +641,36 @@
                 </StackPanel>
             </Border>
 
+            <!--  DX11 选项（终末地）  -->
+            <Border Grid.Row="1"
+                    Grid.Column="0"
+                    Grid.ColumnSpan="3"
+                    Padding="10,0,10,0"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Center"
+                    Background="{ThemeResource ControlOnImageFillColorDefaultBrush}"
+                    CornerRadius="12"
+                    Visibility="{x:Bind IsDX11OptionVisible}">
+
+                <StackPanel Margin="0,-2,0,-2"
+                            Orientation="Horizontal"
+                            Spacing="8">
+                    <CheckBox MinWidth="0"
+                              VerticalAlignment="Center"
+                              VerticalContentAlignment="Center"
+                              Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                              IsChecked="{x:Bind EnableDX11, Mode=TwoWay}"
+                              Style="{ThemeResource CompactCheckBoxStyle}">
+                        <TextBlock Margin="-2,0,0,4"
+                                   VerticalAlignment="Center"
+                                   FontSize="12"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                   IsTextScaleFactorEnabled="False"
+                                   Text="{x:Bind lang:Lang.GameLauncherPage_LaunchWithDX11}" />
+                    </CheckBox>
+                </StackPanel>
+            </Border>
+
 
         </Grid>
 
