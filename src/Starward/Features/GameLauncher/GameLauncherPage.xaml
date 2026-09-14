@@ -578,17 +578,6 @@
                 </Hyperlink>
             </TextBlock>
 
-            <!--  官方启动器有新版本，这些游戏没有下载器，更新要回官方启动器做  -->
-            <TextBlock Grid.Row="1"
-                       Grid.Column="2"
-                       HorizontalAlignment="Center"
-                       VerticalAlignment="Center"
-                       cu:Effects.Shadow="{StaticResource TextShadow}"
-                       FontSize="12"
-                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                       Text="{x:Bind OfficialLauncherUpdateText}"
-                       Visibility="{x:Bind OfficialLauncherUpdateText, Converter={StaticResource ObjectToVisibilityConverter}}" />
-
             <!--  可移动存储设备未连接  -->
             <TextBlock Grid.Row="1"
                        Grid.Column="2"
@@ -643,55 +632,86 @@
             </Border>
 
 
+            <!--  额外的启动开关：终末地的 DX11，鸣潮的 DX11 与停用 DLSS  -->
+            <!--  与 DX12 选项同一个位置，两者不会同时出现：DX12 只给有下载器的米哈游游戏  -->
+            <Border Grid.Row="1"
+                    Grid.Column="0"
+                    Grid.ColumnSpan="3"
+                    Padding="10,0,10,0"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Center"
+                    Background="{ThemeResource ControlOnImageFillColorDefaultBrush}"
+                    CornerRadius="12"
+                    Visibility="{x:Bind IsLaunchOptionsVisible}">
+
+                <StackPanel Margin="0,-2,0,-2"
+                            Orientation="Horizontal"
+                            Spacing="8">
+                    <CheckBox MinWidth="0"
+                              VerticalAlignment="Center"
+                              VerticalContentAlignment="Center"
+                              Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                              IsChecked="{x:Bind EnableDX11, Mode=TwoWay}"
+                              Style="{ThemeResource CompactCheckBoxStyle}"
+                              Visibility="{x:Bind IsDX11OptionVisible}">
+                        <TextBlock Margin="-2,0,0,4"
+                                   VerticalAlignment="Center"
+                                   FontSize="12"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                   IsTextScaleFactorEnabled="False"
+                                   Text="{x:Bind lang:Lang.GameLauncherPage_LaunchWithDX11}" />
+                    </CheckBox>
+                    <CheckBox MinWidth="0"
+                              VerticalAlignment="Center"
+                              VerticalContentAlignment="Center"
+                              Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                              IsChecked="{x:Bind DisableDlss, Mode=TwoWay}"
+                              Style="{ThemeResource CompactCheckBoxStyle}"
+                              Visibility="{x:Bind IsDisableDlssOptionVisible}">
+                        <TextBlock Margin="-2,0,0,4"
+                                   VerticalAlignment="Center"
+                                   FontSize="12"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                   IsTextScaleFactorEnabled="False"
+                                   Text="{x:Bind lang:Lang.GameLauncherPage_DisableDLSS}" />
+                    </CheckBox>
+                </StackPanel>
+            </Border>
+
+
         </Grid>
 
-        <!--  额外的启动开关：终末地的 DX11，鸣潮的 DX11 与停用 DLSS  -->
+        <!--  厂商公布了新版本。这些游戏没有下载器，更新要回官方启动器做，  -->
+        <!--  因此只是一句提醒，不接任何动作，也不改启动按钮的状态。  -->
         <!--
-            不放在上面那个 Grid 的第 1 行里：那一行 40 像素是「定位游戏」「官方启动器有新版本」
-            「可移动存储设备未连接」几段提示共用的，DX12 选项也在那里。米哈游游戏有下载器，
-            不会显示官方启动器的更新提示，所以从来不冲突；但这几个开关属于只支持启动的游戏，
-            它们同时会显示版本提示，两者叠在一起。因此与账号切换器一样浮在按钮列上方。
+            浮在按钮列上方，不放进按钮列下面那一行：那一行是「定位游戏」「可移动存储设备未连接」
+            与启动开关共用的，而版本提示与启动开关同属只支持启动的游戏，一定会同时出现。
+            做成与启动按钮同一族的胶囊，配图标与强调色，压在背景图上也读得清楚。
         -->
         <Border Height="32"
                 Margin="0,0,40,100"
-                Padding="10,0,10,0"
+                Padding="12,0,14,0"
                 HorizontalAlignment="Right"
                 VerticalAlignment="Bottom"
                 Background="{ThemeResource ControlOnImageFillColorDefaultBrush}"
-                CornerRadius="12"
-                Visibility="{x:Bind IsLaunchOptionsVisible}">
+                CornerRadius="16"
+                Shadow="{StaticResource ThemeShadow}"
+                Translation="0,0,8"
+                Visibility="{x:Bind OfficialLauncherUpdateText, Converter={StaticResource ObjectToVisibilityConverter}}">
 
             <StackPanel VerticalAlignment="Center"
                         Orientation="Horizontal"
                         Spacing="8">
-                <CheckBox MinWidth="0"
-                          VerticalAlignment="Center"
-                          VerticalContentAlignment="Center"
-                          Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                          IsChecked="{x:Bind EnableDX11, Mode=TwoWay}"
-                          Style="{ThemeResource CompactCheckBoxStyle}"
-                          Visibility="{x:Bind IsDX11OptionVisible}">
-                    <TextBlock Margin="-2,0,0,4"
-                               VerticalAlignment="Center"
-                               FontSize="12"
-                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                               IsTextScaleFactorEnabled="False"
-                               Text="{x:Bind lang:Lang.GameLauncherPage_LaunchWithDX11}" />
-                </CheckBox>
-                <CheckBox MinWidth="0"
-                          VerticalAlignment="Center"
-                          VerticalContentAlignment="Center"
-                          Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                          IsChecked="{x:Bind DisableDlss, Mode=TwoWay}"
-                          Style="{ThemeResource CompactCheckBoxStyle}"
-                          Visibility="{x:Bind IsDisableDlssOptionVisible}">
-                    <TextBlock Margin="-2,0,0,4"
-                               VerticalAlignment="Center"
-                               FontSize="12"
-                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                               IsTextScaleFactorEnabled="False"
-                               Text="{x:Bind lang:Lang.GameLauncherPage_DisableDLSS}" />
-                </CheckBox>
+                <!--  与设置页「检查更新」用同一个图标  -->
+                <FontIcon VerticalAlignment="Center"
+                          FontSize="14"
+                          Foreground="{ThemeResource SystemFillColorCautionBrush}"
+                          Glyph="&#xE752;" />
+                <TextBlock VerticalAlignment="Center"
+                           FontSize="12"
+                           Foreground="{ThemeResource TextFillColorPrimaryBrush}"
+                           IsTextScaleFactorEnabled="False"
+                           Text="{x:Bind OfficialLauncherUpdateText}" />
             </StackPanel>
         </Border>
 
