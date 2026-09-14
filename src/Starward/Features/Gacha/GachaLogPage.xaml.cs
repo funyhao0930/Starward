@@ -110,6 +110,12 @@ public sealed partial class GachaLogPage : PageBase
             Button_Export_Excel.Visibility = Visibility.Collapsed;
             Button_Import.Visibility = Visibility.Collapsed;
             Button_UIGF4.Visibility = Visibility.Collapsed;
+            // 物品统计面板里的三个列表分别绑定原神、星铁、绝区零的数据模板，
+            // 上面的 Enable*GachaItemStats 只会对这三款置位，
+            // 其他游戏按下去是一个空面板，不如不给按。
+            Button_ItemStatsPane.Visibility = Visibility.Collapsed;
+            // 空状态的表情图也只有这三款有素材，留个空框比留张空图好
+            Image_Emoji.Visibility = Visibility.Collapsed;
         }
         if (CurrentGameKey.IsProvider(HottaGameMapping.ProviderId))
         {
@@ -119,10 +125,6 @@ public sealed partial class GachaLogPage : PageBase
             SplitButton_UpdateGachaLog.Visibility = Visibility.Collapsed;
             Button_ImportRecords.Visibility = Visibility.Visible;
             StackPanel_UrlSettings.Visibility = Visibility.Collapsed;
-            // 物品统计面板的三个列表都只为米哈游三款准备，对异环点开是空的
-            Button_ItemStatsPane.Visibility = Visibility.Collapsed;
-            // 空状态的表情图只有米哈游三款有素材，异环留个空框比留张空图好
-            Image_Emoji.Visibility = Visibility.Collapsed;
         }
     }
 
