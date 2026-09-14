@@ -81,10 +81,11 @@ internal class EndfieldGachaService : GachaLogService
     /// 既不推进 80 抽小保底，也不算进 120 抽大保底。不这么处理的话墊抽会多算，
     /// 实测记录里因此出现过第 82 抽才出 6 星——超过了 80 抽的上限。
     /// <para/>
-    /// 已知的不足：累计 60 抽赠送的那张十连券要下一期才能用，而它是<b>计入</b>
-    /// 下一期保底的。两种赠送在记录里都只有 <c>isFree</c> 这一个标记，用掉之后
-    /// 又都落在同一期卡池里，分不出来，因此那一次会少算 10 抽。少算只会让墊抽
-    /// 偏小，不会算出超过保底上限的数字，比多算安全。
+    /// 累计 60 抽赠送的那张十连券是另一回事，它<b>计入</b>下一期的保底，而记录里
+    /// 也确实不带 <c>isFree</c>：券本身在领到的那一期单独记一条「寻访情报书」
+    /// （没有物品，见 <see cref="Starward.Core.Gacha.Gryphline.GryphlineGachaClient"/>
+    /// 里跳过空记录的那段），用掉之后那十抽就是下一期的前十抽，与普通抽没有区别。
+    /// 因此只看 <c>isFree</c> 刚好把两种赠送分对。
     /// </summary>
     protected override bool CountsForPity(GachaLogItemEx item) => !item.IsFree;
 

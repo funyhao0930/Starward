@@ -1183,8 +1183,9 @@ internal static class DatabaseService
     /// 清掉终末地那些没有物品的记录。
     /// <para/>
     /// 寻访接口偶尔会在一次十连的十条之外多给一条 charId、charName、rarity
-    /// 全空的记录，是累计 60 抽福利的赠送记录而不是一抽，留着只会让卡池总数与
-    /// 「已垫」多算。<see cref="Starward.Core.Gacha.Gryphline.GryphlineGachaClient"/>
+    /// 全空的记录，它是累计 60 抽福利赠送的那张十连券（游戏内显示为「寻访情报书」）
+    /// 而不是一抽，留着只会让卡池总数与「已垫」多算。
+    /// <see cref="Starward.Core.Gacha.Gryphline.GryphlineGachaClient"/>
     /// 现在已经在解析时跳过，这里把先前存进来的删掉。
     /// </summary>
     private const string Sql_v25 = """
