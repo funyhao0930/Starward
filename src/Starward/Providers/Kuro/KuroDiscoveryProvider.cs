@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Win32;
 using Starward.Core.Games;
 using Starward.Core.Games.Kuro;
+using Starward.Core.Launcher.Kuro;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -32,13 +33,34 @@ internal class KuroDiscoveryProvider : IGameDiscoveryProvider
 
     private readonly IGameCatalogProvider _catalog;
 
+    private readonly KuroLauncherClient _launcherClient;
+
+
+    /// <summary>
+    /// 官方公布的游戏版本号，一个工作阶段内只查一次
+    /// </summary>
+    private Version? _latestVersion;
+
+    /// <summary>
+    /// 上次查询失败的时间。失败不缓存结果，但也不能每次切页都重试。
+    /// </summary>
+    private DateTimeOffset _lastFailedTime = DateTimeOffset.MinValue;
+
+    private static readonly TimeSpan RetryInterval = TimeSpan.FromMinutes(10);
+
+    /// <summary>
+    /// 慢到这个地步就别拖着启动页了
+    /// </summary>
+    private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(5);
+
 
     /// <remarks>
     /// 不能注入 <see cref="IGameProviderRegistry"/>，那会与注册表形成循环依赖。
     /// </remarks>
-    public KuroDiscoveryProvider(ILogger<KuroDiscoveryProvider> logger)
+    public KuroDiscoveryProvider(ILogger<KuroDiscoveryProvider> logger, KuroLauncherClient launcherClient)
     {
         _logger = logger;
+        _launcherClient = launcherClient;
         _catalog = new SimpleGameCatalogProvider(KuroGameMapping.ProviderId, KuroGameMapping.GetDescriptors);
     }
 
@@ -92,6 +114,53 @@ internal class KuroDiscoveryProvider : IGameDiscoveryProvider
         {
             _logger.LogWarning(ex, "Read Wuthering Waves local version");
         }
+        return null;
+    }
+
+
+    /// <summary>
+    /// 鸣潮公布的版本号说的是游戏本体，与 <see cref="GetLocalVersionAsync"/>
+    /// 读出来的 launcherDownloadConfig.json 是同一个口径，可以直接比较。
+    /// </summary>
+    public GameVersionSource LatestVersionSource => GameVersionSource.Game;
+
+
+    /// <summary>
+    /// 官方公布的游戏版本号，取自官方启动器的游戏配置。
+    /// <para/>
+    /// Starward 没有实现鸣潮的下载器，这个版本号只用来提醒玩家该回官方启动器更新，
+    /// 不会把启动按钮接到下载流程上。
+    /// </summary>
+    public async ValueTask<Version?> GetLatestVersionAsync(GameKey key, string installPath, CancellationToken cancellationToken = default)
+    {
+        if (key != KuroGameMapping.WutheringWavesGlobal)
+        {
+            return null;
+        }
+        if (_latestVersion is not null)
+        {
+            return _latestVersion;
+        }
+        if (DateTimeOffset.Now - _lastFailedTime < RetryInterval)
+        {
+            return null;
+        }
+        try
+        {
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            timeout.CancelAfter(RequestTimeout);
+            KuroLauncherGameIndex? index = await _launcherClient.GetGameIndexAsync(timeout.Token);
+            if (Version.TryParse(index?.Default?.Version, out Version? version))
+            {
+                _latestVersion = version;
+                return version;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Get Wuthering Waves latest version");
+        }
+        _lastFailedTime = DateTimeOffset.Now;
         return null;
     }
 

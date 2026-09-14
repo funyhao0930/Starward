@@ -8049,6 +8049,15 @@ namespace Starward.Language {
         }
 
         /// <summary>
+        ///   查找类似 Game update available ({0}) 的本地化字符串。
+        /// </summary>
+        public static string GameLauncherPage_GameUpdateAvailable {
+            get {
+                return ResourceManager.GetString("GameLauncherPage_GameUpdateAvailable", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 Import Records 的本地化字符串。
         /// </summary>
         public static string GachaLogPage_ImportRecords {

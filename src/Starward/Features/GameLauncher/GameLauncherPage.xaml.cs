@@ -413,10 +413,16 @@ public sealed partial class GameLauncherPage : PageBase
             {
                 return;
             }
-            _logger.LogInformation("Official launcher version of ({key}): local {local}, latest {latest}.", CurrentGameKey, localGameVersion, latest);
+            _logger.LogInformation("Published version of ({key}): local {local}, latest {latest}, source {source}.", CurrentGameKey, localGameVersion, latest, discovery.LatestVersionSource);
             if (latest > localGameVersion)
             {
-                OfficialLauncherUpdateText = string.Format(Lang.GameLauncherPage_OfficialLauncherUpdateAvailable, latest);
+                // 各家公布的版本号说的不是同一个东西，措辞跟着供应商走，
+                // 见 IGameDiscoveryProvider.LatestVersionSource
+                OfficialLauncherUpdateText = string.Format(discovery.LatestVersionSource switch
+                {
+                    GameVersionSource.Game => Lang.GameLauncherPage_GameUpdateAvailable,
+                    _ => Lang.GameLauncherPage_OfficialLauncherUpdateAvailable,
+                }, latest);
             }
         }
         catch (Exception ex)

@@ -2729,6 +2729,9 @@ Puede enviar los datos exportados al siguiente repositorio:</value>
   <data name="GameLauncherPage_LaunchWithDX11" xml:space="preserve">
     <value>Iniciar con DX11</value>
   </data>
+  <data name="GameLauncherPage_GameUpdateAvailable" xml:space="preserve">
+    <value>Actualización del juego disponible ({0})</value>
+  </data>
   <data name="GameLauncherPage_DetailsGt" xml:space="preserve">
     <value>Detalles &gt;</value>
   </data>

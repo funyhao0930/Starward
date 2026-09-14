@@ -41,4 +41,33 @@ public interface IGameDiscoveryProvider : IGameProvider
         return ValueTask.FromResult<Version?>(null);
     }
 
+
+    /// <summary>
+    /// <see cref="GetLatestVersionAsync"/> 返回的版本号说的是什么东西，决定界面上的措辞。
+    /// <para/>
+    /// 各家公布版本号的口径不一样：异环那份是官方启动器（更新程序）自身的版本，
+    /// 鸣潮那份是游戏本体的版本。两者都只能回官方启动器去更新，
+    /// 但告诉玩家的话不该一样。
+    /// </summary>
+    GameVersionSource LatestVersionSource => GameVersionSource.OfficialLauncher;
+
+}
+
+
+/// <summary>
+/// 厂商公布的版本号描述的对象
+/// </summary>
+public enum GameVersionSource
+{
+
+    /// <summary>
+    /// 官方启动器（更新程序）自身的版本
+    /// </summary>
+    OfficialLauncher,
+
+    /// <summary>
+    /// 游戏本体的版本
+    /// </summary>
+    Game,
+
 }

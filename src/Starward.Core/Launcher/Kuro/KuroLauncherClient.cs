@@ -123,16 +123,40 @@ public class KuroLauncherClient
         {
             language = DEFAULT_LANGUAGE;
         }
-        // 背景图不是关键功能，主 CDN 挂掉时安静地换备援，
-        // 两个都不行才让调用方知道
+        return await GetFromCdnAsync<KuroLauncherBackground>(
+            host => $"{host}/launcher/{APP_ID}_{APP_KEY}/{GAME_ID}/background/{BACKGROUND_TOKEN}/{language}.json",
+            cancellationToken);
+    }
+
+
+    /// <summary>
+    /// 游戏配置，其中包含线上的游戏版本号。两个 CDN 都取不到时返回 null。
+    /// <para/>
+    /// 路径与背景图那一条不同：这里是 <c>launcher/game/{GAME_ID}/{APP_ID}_{APP_KEY}</c>，
+    /// 背景图是 <c>launcher/{APP_ID}_{APP_KEY}/{GAME_ID}</c>，两段的顺序正好相反，
+    /// 都取自官方启动器自己请求过的地址，不能互相套用。
+    /// </summary>
+    public async Task<KuroLauncherGameIndex?> GetGameIndexAsync(CancellationToken cancellationToken = default)
+    {
+        return await GetFromCdnAsync<KuroLauncherGameIndex>(
+            host => $"{host}/launcher/game/{GAME_ID}/{APP_ID}_{APP_KEY}/index.json",
+            cancellationToken);
+    }
+
+
+    /// <summary>
+    /// 依次尝试每个 CDN。主 CDN 挂掉时安静地换备援，两个都不行才让调用方知道。
+    /// </summary>
+    private async Task<T?> GetFromCdnAsync<T>(Func<string, string> urlFactory, CancellationToken cancellationToken) where T : class
+    {
         Exception? lastException = null;
         foreach (string host in Hosts)
         {
             cancellationToken.ThrowIfCancellationRequested();
             try
             {
-                string url = $"{host}/launcher/{APP_ID}_{APP_KEY}/{GAME_ID}/background/{BACKGROUND_TOKEN}/{language}.json";
-                return await _httpClient.GetFromJsonAsync(url, typeof(KuroLauncherBackground), KuroLauncherJsonContext.Default, cancellationToken) as KuroLauncherBackground;
+                string url = urlFactory(host);
+                return await _httpClient.GetFromJsonAsync(url, typeof(T), KuroLauncherJsonContext.Default, cancellationToken) as T;
             }
             // 只有调用方真的取消了才立刻退出。HttpClient 自己超时抛的也是
             // OperationCanceledException，那种情况该继续试备援。

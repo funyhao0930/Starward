@@ -2723,6 +2723,9 @@
   <data name="GameLauncherPage_LaunchWithDX11" xml:space="preserve">
     <value>เปิดตัวด้วย DX11</value>
   </data>
+  <data name="GameLauncherPage_GameUpdateAvailable" xml:space="preserve">
+    <value>มีอัปเดตเกม ({0})</value>
+  </data>
   <data name="GameLauncherPage_DetailsGt" xml:space="preserve">
     <value>รายละเอียด &gt;</value>
   </data>

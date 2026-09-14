@@ -2771,6 +2771,9 @@ You are welcome to submit the exported data to the following repository:</value>
   <data name="GameLauncherPage_OfficialLauncherUpdateAvailable" xml:space="preserve">
     <value>Official launcher update available ({0})</value>
   </data>
+  <data name="GameLauncherPage_GameUpdateAvailable" xml:space="preserve">
+    <value>Game update available ({0})</value>
+  </data>
   <data name="PlayTimeStatsDialog_PlaytimeStatistics" xml:space="preserve">
     <value>Playtime Statistics</value>
   </data>
