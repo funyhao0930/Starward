@@ -54,6 +54,19 @@ public partial class GachaLogItemEx : GachaLogItem
     public string? RewardId { get; set; }
 
 
+    /// <summary>
+    /// 终末地专用，这一抽属于哪一期卡池，见
+    /// <see cref="Starward.Core.Gacha.Gryphline.GryphlineGachaItem.PoolId"/>
+    /// </summary>
+    public string? PoolId { get; set; }
+
+    /// <summary>
+    /// 终末地专用，是不是赠送的一抽，见
+    /// <see cref="Starward.Core.Gacha.Gryphline.GryphlineGachaItem.IsFree"/>
+    /// </summary>
+    public bool IsFree { get; set; }
+
+
     public double Progress => (double)Pity / (PityMax ?? ((GachaType is GenshinGachaType.WeaponEventWish or StarRailGachaType.LightConeEventWarp or StarRailGachaType.LightConeCollaborationWarp or ZZZGachaType.WEngineChannel or ZZZGachaType.WEngineReverberation or ZZZGachaType.BangbooChannel) ? 80 : 90)) * 100;
 
 

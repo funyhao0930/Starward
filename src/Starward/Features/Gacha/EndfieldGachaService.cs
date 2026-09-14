@@ -108,9 +108,9 @@ internal class EndfieldGachaService : GachaLogService
         using var dapper = DatabaseService.CreateConnection();
         using var t = dapper.BeginTransaction();
         int affect = dapper.Execute("""
-            INSERT OR REPLACE INTO EndfieldGachaItem (Uid, Id, Name, Time, ItemId, ItemType, RankType, GachaType, Count, Lang)
-            VALUES (@Uid, @Id, @Name, @Time, @ItemId, @ItemType, @RankType, @GachaType, @Count, @Lang);
-            """, items, t);
+            INSERT OR REPLACE INTO EndfieldGachaItem (Uid, Id, Name, Time, ItemId, ItemType, RankType, GachaType, Count, Lang, PoolId, IsFree)
+            VALUES (@Uid, @Id, @Name, @Time, @ItemId, @ItemType, @RankType, @GachaType, @Count, @Lang, @PoolId, @IsFree);
+            """, items.OfType<GryphlineGachaItem>().ToList(), t);
         t.Commit();
         return affect;
     }

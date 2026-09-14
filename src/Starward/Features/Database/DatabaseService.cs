@@ -263,6 +263,7 @@ internal static class DatabaseService
         Sql_v23,
         Sql_v24,
         Sql_v25,
+        Sql_v26,
     ];
 
 
@@ -1192,6 +1193,26 @@ internal static class DatabaseService
         DELETE FROM EndfieldGachaItem WHERE RankType = 0 AND (Name IS NULL OR Name = '') AND ItemId = 0;
 
         PRAGMA USER_VERSION = 25;
+        COMMIT TRANSACTION;
+        """;
+
+    /// <summary>
+    /// 终末地记录多存 <c>PoolId</c> 与 <c>IsFree</c>。
+    /// <para/>
+    /// 限定池有两档累计福利，都是赠送一次十连：累计 30 抽送的那次用在本期，
+    /// 不计入任何保底计数；累计 60 抽送的那次要下一期才能用，计入下一期的保底。
+    /// 两者都带 <c>isFree</c>，只能靠属于哪一期来分，因此两列都要存。
+    /// <para/>
+    /// 旧记录这两列为空，墊抽算法暂时还没用到它们，行为与从前一致；
+    /// 重新获取一次记录就会补上。
+    /// </summary>
+    private const string Sql_v26 = """
+        BEGIN TRANSACTION;
+
+        ALTER TABLE EndfieldGachaItem ADD COLUMN PoolId TEXT;
+        ALTER TABLE EndfieldGachaItem ADD COLUMN IsFree INTEGER NOT NULL DEFAULT 0;
+
+        PRAGMA USER_VERSION = 26;
         COMMIT TRANSACTION;
         """;
 
