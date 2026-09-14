@@ -313,7 +313,6 @@ public class GryphlineGachaClient : GachaLogClient
                 ItemId = GachaSyntheticId.ToItemId(weapon ? record.WeaponId : record.CharId),
                 Count = 1,
                 Lang = auth.Language,
-                PoolId = record.PoolId,
             });
         }
         return items;
@@ -321,12 +320,12 @@ public class GryphlineGachaClient : GachaLogClient
 
 
     /// <summary>
-    /// 有 seqId 却没有物品的记录，不是一抽。
+    /// 有 seqId 却没有物品的记录，不是一抽，是累计奖励的赠送记录。
     /// <para/>
     /// 十连的每一批记录时间戳完全相同，绝大多数批次都是整整 10 条；偶尔会多出
-    /// 第 11 条，charId、charName、rarity 全空。一次十连就是十抽，多出来的这条
-    /// 必然不是抽卡结果（推测是跨过某个累计奖励门槛时附带的记录），接口没给任何
-    /// 可显示的内容，留着只会让卡池总数与「已垫」各多算一次。
+    /// 第 11 条，charId、charName、rarity 全空。实测两次都出现在「该期卡池累计
+    /// 恰好 60 抽之后」的那一批里，对得上限定池的 60 抽福利（赠送下期卡池的一次
+    /// 十连）。它没有任何可显示的内容，留着只会让卡池总数与「已垫」各多算一次。
     /// </summary>
     private static bool IsEmptyRecord(GryphlineGachaRecord record, bool weapon)
     {

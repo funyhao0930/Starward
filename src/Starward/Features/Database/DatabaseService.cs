@@ -263,7 +263,6 @@ internal static class DatabaseService
         Sql_v23,
         Sql_v24,
         Sql_v25,
-        Sql_v26,
     ];
 
 
@@ -1183,9 +1182,9 @@ internal static class DatabaseService
     /// 清掉终末地那些没有物品的记录。
     /// <para/>
     /// 寻访接口偶尔会在一次十连的十条之外多给一条 charId、charName、rarity
-    /// 全空的记录。它不是一抽，留着只会让卡池总数与「已垫」多算，
-    /// <see cref="Starward.Core.Gacha.Gryphline.GryphlineGachaClient"/> 现在
-    /// 已经在解析时跳过，这里把先前存进来的删掉。
+    /// 全空的记录，是累计 60 抽福利的赠送记录而不是一抽，留着只会让卡池总数与
+    /// 「已垫」多算。<see cref="Starward.Core.Gacha.Gryphline.GryphlineGachaClient"/>
+    /// 现在已经在解析时跳过，这里把先前存进来的删掉。
     /// </summary>
     private const string Sql_v25 = """
         BEGIN TRANSACTION;
@@ -1193,25 +1192,6 @@ internal static class DatabaseService
         DELETE FROM EndfieldGachaItem WHERE RankType = 0 AND (Name IS NULL OR Name = '') AND ItemId = 0;
 
         PRAGMA USER_VERSION = 25;
-        COMMIT TRANSACTION;
-        """;
-
-    /// <summary>
-    /// 终末地记录多存一个 <c>PoolId</c>。
-    /// <para/>
-    /// 特许寻访是一个卡池编号底下的许多期，而保底「在寻访关闭时清零，不会继承」。
-    /// 只看卡池编号数墊抽会把各期连成一串，算出超过保底上限的数字（实测记录里
-    /// 出现过 82）。接口本来就给了 <c>poolId</c>，存下来按它分段即可。
-    /// <para/>
-    /// 旧记录这一列为空，此时所有记录的 poolId 相等，行为与从前一致，
-    /// 重新获取一次就会补上。
-    /// </summary>
-    private const string Sql_v26 = """
-        BEGIN TRANSACTION;
-
-        ALTER TABLE EndfieldGachaItem ADD COLUMN PoolId TEXT;
-
-        PRAGMA USER_VERSION = 26;
         COMMIT TRANSACTION;
         """;
 
