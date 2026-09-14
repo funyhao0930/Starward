@@ -104,6 +104,13 @@ public static partial class AppConfig
             sc.AddSingleton<GryphlineLauncherClient>();
             sc.AddSingleton<IGameBackgroundProvider, GryphlineBackgroundProvider>();
 
+            // 启动页的横幅与资讯。各家接口的形状同样差别很大，
+            // 由各自的 Provider 换成统一的 GameContent。
+            sc.AddSingleton<LauncherContentProviderRegistry>();
+            sc.AddSingleton<IGameLauncherContentProvider, HoYoLauncherContentProvider>();
+            sc.AddSingleton<IGameLauncherContentProvider, KuroLauncherContentProvider>();
+            sc.AddSingleton<IGameLauncherContentProvider, GryphlineLauncherContentProvider>();
+
             sc.AddSingleton<BackgroundService>();
             sc.AddSingleton<GameLauncherService>();
             sc.AddSingleton<GamePackageService>();

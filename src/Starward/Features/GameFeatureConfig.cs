@@ -33,6 +33,12 @@ internal partial class GameFeatureConfig
 
 
     /// <summary>
+    /// 启动页的横幅与资讯
+    /// </summary>
+    public bool BannerAndPost { get; init; }
+
+
+    /// <summary>
     /// 游戏内通知内容
     /// </summary>
     public bool InGameNoticesWindow { get; init; }
@@ -104,6 +110,7 @@ internal partial class GameFeatureConfig
         return new GameFeatureConfig
         {
             SupportedPages = pages,
+            BannerAndPost = capabilities.HasFlag(GameCapability.Announcement),
             InGameNoticesWindow = capabilities.HasFlag(GameCapability.InGameNotices),
             SupportHardLink = capabilities.HasFlag(GameCapability.HardLink),
             SupportCloudGame = capabilities.HasFlag(GameCapability.CloudGame),

@@ -20,6 +20,10 @@ public class GryphlineLauncherClient
 
     public const string KIND_MAIN_BG_IMAGE = "get_main_bg_image";
 
+    public const string KIND_BANNER = "get_banner";
+
+    public const string KIND_ANNOUNCEMENT = "get_announcement";
+
 
     /// <summary>
     /// 终末地的游戏标识，取自官方启动器网页前端的地址栏参数 <c>app_code</c>。
@@ -110,23 +114,80 @@ public class GryphlineLauncherClient
                 new GryphlineProxyRequest
                 {
                     Kind = KIND_MAIN_BG_IMAGE,
-                    MainBgImageRequest = new GryphlineMainBgImageRequest
-                    {
-                        AppCode = appCode,
-                        Language = language,
-                        // 渠道留空。填对了（本机是 6）与留空得到的素材相同，
-                        // 但渠道是随安装来源变的（官方、Epic、Steam），
-                        // 写死一个值反而会在别的安装上问不到东西。
-                        Channel = "",
-                        SubChannel = "",
-                    },
+                    MainBgImageRequest = MakeRequest(appCode, language),
                 },
             ],
         };
+        GryphlineBatchProxyResponse? result = await PostAsync(request, cancellationToken);
+        return Find(result, KIND_MAIN_BG_IMAGE)?.MainBgImageResponse?.MainBgImage;
+    }
+
+
+    /// <summary>
+    /// 首页的轮播图与公告，一次问完。
+    /// <para/>
+    /// 这正是聚合接口的用处：官方启动器自己也是把首页要的东西并成一个请求。
+    /// 任一项没有结果时对应的返回为 null，调用方按「这一块没有内容」处理。
+    /// </summary>
+    /// <param name="appCode">游戏标识，见 <see cref="ENDFIELD_APP_CODE"/></param>
+    /// <param name="language">完整地区语言代码，见 <see cref="GetLanguageCode"/></param>
+    public async Task<(GryphlineBannerResponse? Banners, GryphlineAnnouncementResponse? Announcements)> GetLauncherContentAsync(
+        string appCode, string language, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(language))
+        {
+            language = DEFAULT_LANGUAGE;
+        }
+        var request = new GryphlineBatchProxyRequest
+        {
+            ProxyRequests =
+            [
+                new GryphlineProxyRequest
+                {
+                    Kind = KIND_BANNER,
+                    BannerRequest = MakeRequest(appCode, language),
+                },
+                new GryphlineProxyRequest
+                {
+                    Kind = KIND_ANNOUNCEMENT,
+                    AnnouncementRequest = MakeRequest(appCode, language),
+                },
+            ],
+        };
+        GryphlineBatchProxyResponse? result = await PostAsync(request, cancellationToken);
+        return (Find(result, KIND_BANNER)?.BannerResponse, Find(result, KIND_ANNOUNCEMENT)?.AnnouncementResponse);
+    }
+
+
+    /// <summary>
+    /// 每个 kind 的请求体都一样，只有 appcode 与语言会变
+    /// </summary>
+    private static GryphlineLauncherRequest MakeRequest(string appCode, string language)
+    {
+        return new GryphlineLauncherRequest
+        {
+            AppCode = appCode,
+            Language = language,
+            // 渠道留空。填对了（本机是 6）与留空得到的素材相同，
+            // 但渠道是随安装来源变的（官方、Epic、Steam），
+            // 写死一个值反而会在别的安装上问不到东西。
+            Channel = "",
+            SubChannel = "",
+        };
+    }
+
+
+    private async Task<GryphlineBatchProxyResponse?> PostAsync(GryphlineBatchProxyRequest request, CancellationToken cancellationToken)
+    {
         HttpResponseMessage response = await _httpClient.PostAsJsonAsync(API_BATCH_PROXY, request, GryphlineLauncherJsonContext.Default.GryphlineBatchProxyRequest, cancellationToken);
         response.EnsureSuccessStatusCode();
-        var result = await response.Content.ReadFromJsonAsync(typeof(GryphlineBatchProxyResponse), GryphlineLauncherJsonContext.Default, cancellationToken) as GryphlineBatchProxyResponse;
-        return result?.ProxyResponses?.FirstOrDefault(x => x.Kind == KIND_MAIN_BG_IMAGE)?.MainBgImageResponse?.MainBgImage;
+        return await response.Content.ReadFromJsonAsync(typeof(GryphlineBatchProxyResponse), GryphlineLauncherJsonContext.Default, cancellationToken) as GryphlineBatchProxyResponse;
+    }
+
+
+    private static GryphlineProxyResponse? Find(GryphlineBatchProxyResponse? response, string kind)
+    {
+        return response?.ProxyResponses?.FirstOrDefault(x => x.Kind == kind);
     }
 
 

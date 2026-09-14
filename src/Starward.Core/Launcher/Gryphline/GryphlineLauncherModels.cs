@@ -6,7 +6,7 @@ namespace Starward.Core.Launcher.Gryphline;
 /// GRYPHLINK 启动器的聚合接口请求体。
 /// <para/>
 /// 官方启动器一次把首页要的东西全问完（侧栏、横幅、公告、背景图……），
-/// 本项目只要背景图，因此只放一个 <c>get_main_bg_image</c>。
+/// 本项目要其中的背景图、横幅与公告。
 /// </summary>
 public class GryphlineBatchProxyRequest
 {
@@ -21,7 +21,7 @@ public class GryphlineProxyRequest
 {
 
     /// <summary>
-    /// 要问的东西，本项目只用 <see cref="GryphlineLauncherClient.KIND_MAIN_BG_IMAGE"/>。
+    /// 要问的东西，见 <see cref="GryphlineLauncherClient"/> 中的 KIND_ 常量。
     /// 接口对不认识的 kind 会返回 INVALID_PARAM。
     /// </summary>
     [JsonPropertyName("kind")]
@@ -29,12 +29,23 @@ public class GryphlineProxyRequest
 
 
     [JsonPropertyName("get_main_bg_image_req")]
-    public GryphlineMainBgImageRequest? MainBgImageRequest { get; set; }
+    public GryphlineLauncherRequest? MainBgImageRequest { get; set; }
+
+
+    [JsonPropertyName("get_banner_req")]
+    public GryphlineLauncherRequest? BannerRequest { get; set; }
+
+
+    [JsonPropertyName("get_announcement_req")]
+    public GryphlineLauncherRequest? AnnouncementRequest { get; set; }
 
 }
 
 
-public class GryphlineMainBgImageRequest
+/// <summary>
+/// 每个 kind 的请求体形状都一样，共用一个类型
+/// </summary>
+public class GryphlineLauncherRequest
 {
 
     /// <summary>
@@ -93,6 +104,130 @@ public class GryphlineProxyResponse
     /// </summary>
     [JsonPropertyName("get_main_bg_image_rsp")]
     public GryphlineMainBgImageResponse? MainBgImageResponse { get; set; }
+
+
+    [JsonPropertyName("get_banner_rsp")]
+    public GryphlineBannerResponse? BannerResponse { get; set; }
+
+
+    [JsonPropertyName("get_announcement_rsp")]
+    public GryphlineAnnouncementResponse? AnnouncementResponse { get; set; }
+
+}
+
+
+public class GryphlineBannerResponse
+{
+
+    [JsonPropertyName("banners")]
+    public List<GryphlineBanner>? Banners { get; set; }
+
+}
+
+
+/// <summary>
+/// 首页轮播图
+/// </summary>
+public class GryphlineBanner
+{
+
+    [JsonPropertyName("id")]
+    public string? Id { get; set; }
+
+
+    [JsonPropertyName("url")]
+    public string? Url { get; set; }
+
+
+    /// <summary>
+    /// 点击后打开的链接
+    /// </summary>
+    [JsonPropertyName("jump_url")]
+    public string? JumpUrl { get; set; }
+
+
+    [JsonPropertyName("md5")]
+    public string? Md5 { get; set; }
+
+
+    /// <summary>
+    /// 链接要带登录令牌才能打开。Starward 不登录鹰角账号，
+    /// 这类链接照常打开，由浏览器去处理登录。
+    /// </summary>
+    [JsonPropertyName("need_token")]
+    public bool NeedToken { get; set; }
+
+}
+
+
+public class GryphlineAnnouncementResponse
+{
+
+    /// <summary>
+    /// 分页。名称已本地化，分类只能按顺序判断，
+    /// 见 <see cref="GryphlineContentMapper"/> 的说明。
+    /// </summary>
+    [JsonPropertyName("tabs")]
+    public List<GryphlineAnnouncementTab>? Tabs { get; set; }
+
+}
+
+
+public class GryphlineAnnouncementTab
+{
+
+    [JsonPropertyName("tabName")]
+    public string? TabName { get; set; }
+
+
+    /// <summary>
+    /// 分页标识。注意它<b>随语言变化</b>（繁中是 60/61/62，英文是 48/49/50），
+    /// 因此不能拿来当分类依据。
+    /// </summary>
+    [JsonPropertyName("tab_id")]
+    public string? TabId { get; set; }
+
+
+    [JsonPropertyName("announcements")]
+    public List<GryphlineAnnouncement>? Announcements { get; set; }
+
+}
+
+
+public class GryphlineAnnouncement
+{
+
+    [JsonPropertyName("id")]
+    public string? Id { get; set; }
+
+
+    /// <summary>
+    /// 标题
+    /// </summary>
+    [JsonPropertyName("content")]
+    public string? Content { get; set; }
+
+
+    [JsonPropertyName("jump_url")]
+    public string? JumpUrl { get; set; }
+
+
+    /// <summary>
+    /// 发布时间，Unix 毫秒的字符串
+    /// </summary>
+    [JsonPropertyName("start_ts")]
+    public string? StartTimestamp { get; set; }
+
+
+    /// <summary>
+    /// 置顶，非 0 时排在本组最前
+    /// </summary>
+    [JsonPropertyName("pin")]
+    public int Pin { get; set; }
+
+
+    [JsonPropertyName("need_token")]
+    public bool NeedToken { get; set; }
 
 }
 

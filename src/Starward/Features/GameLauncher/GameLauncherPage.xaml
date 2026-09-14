@@ -508,7 +508,8 @@
                                  Margin="60,0,0,40"
                                  HorizontalAlignment="Left"
                                  VerticalAlignment="Bottom"
-                                 CurrentGameId="{x:Bind CurrentGameId}" />
+                                 CurrentGameId="{x:Bind CurrentGameId}"
+                                 CurrentGameKey="{x:Bind CurrentGameKey}" />
 
         <!--  右下角按键  -->
         <Grid Margin="0,0,40,0"

@@ -130,6 +130,24 @@ public class KuroLauncherClient
 
 
     /// <summary>
+    /// 首页的轮播图与资讯，两个 CDN 都取不到时返回 null。
+    /// <para/>
+    /// 与背景图同一族路径，按语言分文件。
+    /// </summary>
+    /// <param name="language">官方启动器的语言代码，见 <see cref="GetLanguageCode"/></param>
+    public async Task<KuroLauncherInformation?> GetInformationAsync(string language, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(language))
+        {
+            language = DEFAULT_LANGUAGE;
+        }
+        return await GetFromCdnAsync<KuroLauncherInformation>(
+            host => $"{host}/launcher/{APP_ID}_{APP_KEY}/{GAME_ID}/information/{language}.json",
+            cancellationToken);
+    }
+
+
+    /// <summary>
     /// 游戏配置，其中包含线上的游戏版本号。两个 CDN 都取不到时返回 null。
     /// <para/>
     /// 路径与背景图那一条不同：这里是 <c>launcher/game/{GAME_ID}/{APP_ID}_{APP_KEY}</c>，

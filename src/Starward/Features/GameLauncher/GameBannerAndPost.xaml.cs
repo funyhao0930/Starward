@@ -31,12 +31,21 @@ public sealed partial class GameBannerAndPost : UserControl
     private readonly ILogger<GameBannerAndPost> _logger = AppConfig.GetLogger<GameBannerAndPost>();
 
 
-    private readonly HoYoPlayService _hoYoPlayService = AppConfig.GetService<HoYoPlayService>();
+    private readonly LauncherContentProviderRegistry _contentRegistry = AppConfig.GetService<LauncherContentProviderRegistry>();
 
 
     private readonly GameNoticeService _gameNoticeService = AppConfig.GetService<GameNoticeService>();
 
 
+    /// <summary>
+    /// 横幅与资讯由供应商提供，本控件不认识具体是哪款游戏
+    /// </summary>
+    public GameKey CurrentGameKey { get; set; }
+
+
+    /// <summary>
+    /// 兼容层：只有游戏内通知窗口还需要 HoYoPlay 的游戏标识
+    /// </summary>
     public GameId? CurrentGameId { get; set; }
 
 
@@ -172,13 +181,14 @@ public sealed partial class GameBannerAndPost : UserControl
     {
         try
         {
-            // 只支持启动的游戏没有公告接口
-            if (CurrentGameId is null)
+            // 能力标志说的是「这款游戏有公告接口」，注册表才知道具体渠道接不接得上，
+            // 两道都过了才去请求
+            if (!GameFeatureConfig.FromGameKey(CurrentGameKey).BannerAndPost)
             {
                 ShowBannerAndPost = false;
                 return;
             }
-            var content = await _hoYoPlayService.GetGameContentAsync(CurrentGameId);
+            GameContent? content = await _contentRegistry.GetContentAsync(CurrentGameKey);
             if (content is null || !AppConfig.EnableBannerAndPost)
             {
                 ShowBannerAndPost = false;
@@ -190,7 +200,7 @@ public sealed partial class GameBannerAndPost : UserControl
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Get game launcher content ({CurrentGameId})", CurrentGameId);
+            _logger.LogError(ex, "Get game launcher content ({key})", CurrentGameKey);
         }
     }
 
@@ -201,7 +211,7 @@ public sealed partial class GameBannerAndPost : UserControl
     {
         try
         {
-            if (GameFeatureConfig.FromGameKey(GameKeyResolver.Resolve(CurrentGameId?.GameBiz.Value) ?? default).InGameNoticesWindow)
+            if (GameFeatureConfig.FromGameKey(CurrentGameKey).InGameNoticesWindow)
             {
                 Button_InGameNotices.Visibility = Visibility.Visible;
             }
@@ -221,7 +231,7 @@ public sealed partial class GameBannerAndPost : UserControl
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Get game launcher content ({CurrentGameId})", CurrentGameId);
+            _logger.LogError(ex, "Get game notice alert ({key})", CurrentGameKey);
         }
     }
 

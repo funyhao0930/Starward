@@ -46,6 +46,7 @@ public static class GryphlineGameMapping
                                              | GameCapability.Screenshot
                                              | GameCapability.PlayTime
                                              | GameCapability.Gacha
+                                             | GameCapability.Announcement
                                              | GameCapability.GameSetting;
 
 
