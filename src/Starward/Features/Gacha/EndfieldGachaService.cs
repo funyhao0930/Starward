@@ -56,6 +56,41 @@ internal class EndfieldGachaService : GachaLogService
 
 
     /// <summary>
+    /// 保底规则。不给的话界面会退回按卡池编号推断的那一套，终末地会被当成 90 抽，进度条的分母就错了。
+    /// <para/>
+    /// 干员池：6 星基础概率 0.8%，第 65 抽起每抽递增 5 个百分点，因此概率在第 85 抽
+    /// 前后满 100%。玩家口中的「80 抽保底」不是上限：实测记录里出现过同一期卡池内
+    /// 间隔 82 抽才出 6 星，所以这里取 85，软保底取递增起点 65。
+    /// <para/>
+    /// 武库申领：6 星武器基础概率 4%，最多 4 次申领（40 抽）必出 6 星。没有公开的
+    /// 递增数字，软保底同取 40，也就是一路绿到保底那一抽。
+    /// </summary>
+    protected override (int PityMax, int SoftPity)? GetPityRule(IGachaType type) => type.Value switch
+    {
+        GryphlineGachaType.Weapon => (40, 40),
+        _ => (85, 65),
+    };
+
+
+
+    /// <summary>
+    /// 换一期卡池就重新数墊抽。
+    /// <para/>
+    /// 特许寻访是一个卡池编号底下的许多期，官方写明保底「在寻访关闭时清零，
+    /// 不会继承」，只看编号会把各期连成一串，算出超过保底上限的墊抽数。
+    /// 基础寻访这类常驻池的 poolId 始终不变，因此这条规则对所有池子都成立。
+    /// <para/>
+    /// poolId 是后来才存的，旧记录整列为空，这时所有记录的 poolId 相等，
+    /// 行为与从前一致；重新获取一次记录就会补上。
+    /// </summary>
+    protected override bool IsPityReset(GachaLogItemEx previous, GachaLogItemEx current)
+    {
+        return previous.PoolId != current.PoolId;
+    }
+
+
+
+    /// <summary>
     /// 接口只能从最新往回翻，<paramref name="all"/> 没有意义，永远整池取回。
     /// seqId 是服务器给的，重复获取只会覆盖同样的记录。
     /// </summary>
@@ -89,9 +124,9 @@ internal class EndfieldGachaService : GachaLogService
         using var dapper = DatabaseService.CreateConnection();
         using var t = dapper.BeginTransaction();
         int affect = dapper.Execute("""
-            INSERT OR REPLACE INTO EndfieldGachaItem (Uid, Id, Name, Time, ItemId, ItemType, RankType, GachaType, Count, Lang)
-            VALUES (@Uid, @Id, @Name, @Time, @ItemId, @ItemType, @RankType, @GachaType, @Count, @Lang);
-            """, items, t);
+            INSERT OR REPLACE INTO EndfieldGachaItem (Uid, Id, Name, Time, ItemId, ItemType, RankType, GachaType, Count, Lang, PoolId)
+            VALUES (@Uid, @Id, @Name, @Time, @ItemId, @ItemType, @RankType, @GachaType, @Count, @Lang, @PoolId);
+            """, items.OfType<GryphlineGachaItem>().ToList(), t);
         t.Commit();
         return affect;
     }

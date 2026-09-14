@@ -75,6 +75,16 @@ internal abstract class GachaLogService
     protected virtual (int PityMax, int SoftPity)? GetPityRule(IGachaType type) => null;
 
 
+    /// <summary>
+    /// 从 <paramref name="previous"/> 到 <paramref name="current"/> 之间保底是否清零。
+    /// <para/>
+    /// 默认一个卡池编号就是一条连续的保底序列，米哈游三款与鸣潮都是这样。
+    /// 终末地的特许寻访是一个编号底下的许多期，每期各算保底，见
+    /// <see cref="EndfieldGachaService"/>。
+    /// </summary>
+    protected virtual bool IsPityReset(GachaLogItemEx previous, GachaLogItemEx current) => false;
+
+
 
     /// <summary>
     /// 这款游戏自己对抽卡的叫法。
@@ -116,8 +126,15 @@ internal abstract class GachaLogService
             bool hasNoUp = GachaNoUp.TryGet(CurrentGameBiz, type.Value, out GachaNoUp? noUp);
             int index = 0;
             int pity = 0;
+            GachaLogItemEx? previous = null;
             foreach (var item in l)
             {
+                if (previous is not null && IsPityReset(previous, item))
+                {
+                    index = 0;
+                    pity = 0;
+                }
+                previous = item;
                 item.Index = ++index;
                 item.Pity = ++pity;
                 item.PityMax = pityRule?.PityMax;

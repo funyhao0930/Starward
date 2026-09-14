@@ -313,6 +313,7 @@ public class GryphlineGachaClient : GachaLogClient
                 ItemId = GachaSyntheticId.ToItemId(weapon ? record.WeaponId : record.CharId),
                 Count = 1,
                 Lang = auth.Language,
+                PoolId = record.PoolId,
             });
         }
         return items;

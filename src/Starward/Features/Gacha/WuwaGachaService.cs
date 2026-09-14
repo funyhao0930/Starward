@@ -50,6 +50,23 @@ internal class WuwaGachaService : GachaLogService
 
 
     /// <summary>
+    /// 保底规则。不给的话界面会退回按卡池编号推断的那一套，鸣潮会被当成 90 抽，进度条的分母就错了。
+    /// <para/>
+    /// 五星基础概率 0.8%，1～65 抽固定，第 66 抽起递增，第 79 抽必得，
+    /// 官方与玩家都以「80 抽保底」相称，这里取 80、软保底取 66。
+    /// <para/>
+    /// 新手唤取整池只有 50 抽，第 50 抽必得五星；没有公开的递增数字，
+    /// 软保底同取 50，也就是一路绿到保底那一抽。
+    /// </summary>
+    protected override (int PityMax, int SoftPity)? GetPityRule(IGachaType type) => type.Value switch
+    {
+        KuroGachaType.Beginner => (50, 50),
+        _ => (80, 66),
+    };
+
+
+
+    /// <summary>
     /// 鸣潮的记录没有服务器端 ID，<paramref name="all"/> 没有意义，永远整池取回。
     /// 合成的 ID 是稳定的，重复获取只会覆盖同样的记录，不会产生重复。
     /// </summary>
