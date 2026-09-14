@@ -297,6 +297,10 @@ public class GryphlineGachaClient : GachaLogClient
                 continue;
             }
             bool weapon = gachaType.IsWeapon;
+            if (IsEmptyRecord(record, weapon))
+            {
+                continue;
+            }
             items.Add(new GryphlineGachaItem
             {
                 Uid = uid,
@@ -312,6 +316,21 @@ public class GryphlineGachaClient : GachaLogClient
             });
         }
         return items;
+    }
+
+
+    /// <summary>
+    /// 有 seqId 却没有物品的记录，不是一抽。
+    /// <para/>
+    /// 十连的每一批记录时间戳完全相同，绝大多数批次都是整整 10 条；偶尔会多出
+    /// 第 11 条，charId、charName、rarity 全空。一次十连就是十抽，多出来的这条
+    /// 必然不是抽卡结果（推测是跨过某个累计奖励门槛时附带的记录），接口没给任何
+    /// 可显示的内容，留着只会让卡池总数与「已垫」各多算一次。
+    /// </summary>
+    private static bool IsEmptyRecord(GryphlineGachaRecord record, bool weapon)
+    {
+        return string.IsNullOrEmpty(weapon ? record.WeaponId : record.CharId)
+            && string.IsNullOrEmpty(weapon ? record.WeaponName : record.CharName);
     }
 
 

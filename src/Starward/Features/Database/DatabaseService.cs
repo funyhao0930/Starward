@@ -262,6 +262,7 @@ internal static class DatabaseService
         Sql_v22,
         Sql_v23,
         Sql_v24,
+        Sql_v25,
     ];
 
 
@@ -1174,6 +1175,23 @@ internal static class DatabaseService
         ALTER TABLE NteGachaItem ADD COLUMN RewardId TEXT;
 
         PRAGMA USER_VERSION = 24;
+        COMMIT TRANSACTION;
+        """;
+
+    /// <summary>
+    /// 清掉终末地那些没有物品的记录。
+    /// <para/>
+    /// 寻访接口偶尔会在一次十连的十条之外多给一条 charId、charName、rarity
+    /// 全空的记录。它不是一抽，留着只会让卡池总数与「已垫」多算，
+    /// <see cref="Starward.Core.Gacha.Gryphline.GryphlineGachaClient"/> 现在
+    /// 已经在解析时跳过，这里把先前存进来的删掉。
+    /// </summary>
+    private const string Sql_v25 = """
+        BEGIN TRANSACTION;
+
+        DELETE FROM EndfieldGachaItem WHERE RankType = 0 AND (Name IS NULL OR Name = '') AND ItemId = 0;
+
+        PRAGMA USER_VERSION = 25;
         COMMIT TRANSACTION;
         """;
 
