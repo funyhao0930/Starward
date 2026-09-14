@@ -75,6 +75,15 @@ internal abstract class GachaLogService
     protected virtual (int PityMax, int SoftPity)? GetPityRule(IGachaType type) => null;
 
 
+    /// <summary>
+    /// 这一条算不算进保底计数。默认都算，一条记录就是一抽。
+    /// <para/>
+    /// 不算的记录既不累加墊抽，出了最高稀有度也不把墊抽归零——它完全在保底
+    /// 系统之外。终末地的福利十连就是这样，见 <see cref="EndfieldGachaService"/>。
+    /// </summary>
+    protected virtual bool CountsForPity(GachaLogItemEx item) => true;
+
+
 
     /// <summary>
     /// 这款游戏自己对抽卡的叫法。
@@ -119,12 +128,21 @@ internal abstract class GachaLogService
             foreach (var item in l)
             {
                 item.Index = ++index;
-                item.Pity = ++pity;
+                bool countsForPity = CountsForPity(item);
+                if (countsForPity)
+                {
+                    pity++;
+                }
+                // 不算保底的记录显示当前的墊抽数，既不推进也不归零
+                item.Pity = pity;
                 item.PityMax = pityRule?.PityMax;
                 item.SoftPity = pityRule?.SoftPity;
                 if (item.RankType == TopRankType)
                 {
-                    pity = 0;
+                    if (countsForPity)
+                    {
+                        pity = 0;
+                    }
                     item.HasUpItem = hasNoUp;
                     if (hasNoUp)
                     {
@@ -248,12 +266,13 @@ internal abstract class GachaLogService
                 stats.List_5 = list.Where(x => x.RankType == TopRankType).Reverse().ToList();
                 stats.List_4 = list.Where(x => x.RankType == SecondRankType).Reverse().ToList();
                 stats.Pity_5 = list.Last().Pity;
-                if (list.Last().RankType == TopRankType)
+                // 不算保底的那一抽就算是最高稀有度，墊抽也没有归零
+                if (list.Last().RankType == TopRankType && CountsForPity(list.Last()))
                 {
                     stats.Pity_5 = 0;
                 }
                 stats.Average_5 = (double)(stats.Count - stats.Pity_5) / stats.Count_5;
-                stats.Pity_4 = list.Count - 1 - list.FindLastIndex(x => x.RankType == SecondRankType);
+                stats.Pity_4 = list.Skip(list.FindLastIndex(x => x.RankType == SecondRankType) + 1).Count(CountsForPity);
 
                 if (stats.Count_5_Up > 0)
                 {
@@ -264,11 +283,18 @@ internal abstract class GachaLogService
                 int pity_4 = 0;
                 foreach (var item in list)
                 {
-                    pity_4++;
+                    bool countsForPity = CountsForPity(item);
+                    if (countsForPity)
+                    {
+                        pity_4++;
+                    }
                     if (item.RankType == SecondRankType)
                     {
                         item.Pity = pity_4;
-                        pity_4 = 0;
+                        if (countsForPity)
+                        {
+                            pity_4 = 0;
+                        }
                     }
                 }
 
