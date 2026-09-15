@@ -17,6 +17,12 @@
         <SolidColorBrush x:Key="Rarity3ForegroundBrush">#5EAAED</SolidColorBrush>
         <SolidColorBrush x:Key="Rarity2ForegroundBrush">#3BA272</SolidColorBrush>
 
+        <!--  没有图标时占位块的底色与描边，取上面同一个稀有度色，压到很淡  -->
+        <SolidColorBrush x:Key="Rarity5PlaceholderBrush">#2BFFA500</SolidColorBrush>
+        <SolidColorBrush x:Key="Rarity5PlaceholderBorderBrush">#59FFA500</SolidColorBrush>
+        <SolidColorBrush x:Key="Rarity4PlaceholderBrush">#2BC864E0</SolidColorBrush>
+        <SolidColorBrush x:Key="Rarity4PlaceholderBorderBrush">#59C864E0</SolidColorBrush>
+
         <Style BasedOn="{StaticResource BodyTextBlockStyle}" TargetType="TextBlock">
             <Setter Property="VerticalAlignment" Value="Center" />
             <Setter Property="TextWrapping" Value="NoWrap" />
@@ -185,6 +191,23 @@
                                                 Height="28"
                                                 HorizontalAlignment="Left"
                                                 Source="{x:Bind Icon}" />
+                                <!--  没有图标的游戏（鸣潮、终末地、异环）不留一个空框，见 GachaLogItemEx.HasNoIcon  -->
+                                <Border Width="28"
+                                        Height="28"
+                                        HorizontalAlignment="Left"
+                                        Background="{ThemeResource Rarity5PlaceholderBrush}"
+                                        BorderBrush="{ThemeResource Rarity5PlaceholderBorderBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="6"
+                                        Visibility="{x:Bind HasNoIcon}">
+                                    <TextBlock HorizontalAlignment="Center"
+                                               VerticalAlignment="Center"
+                                               FontSize="13"
+                                               FontWeight="SemiBold"
+                                               Foreground="{ThemeResource Rarity5ForegroundBrush}"
+                                               IsTextScaleFactorEnabled="False"
+                                               Text="{x:Bind IconPlaceholderText}" />
+                                </Border>
                                 <TextBlock Grid.Column="1"
                                            VerticalAlignment="Center"
                                            Text="{x:Bind Name}"
@@ -244,6 +267,22 @@
                                 <sc:CachedImage Width="28"
                                                 Height="28"
                                                 Source="{x:Bind Icon}" />
+                                <!--  同上，四星一档用四星的颜色  -->
+                                <Border Width="28"
+                                        Height="28"
+                                        Background="{ThemeResource Rarity4PlaceholderBrush}"
+                                        BorderBrush="{ThemeResource Rarity4PlaceholderBorderBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="6"
+                                        Visibility="{x:Bind HasNoIcon}">
+                                    <TextBlock HorizontalAlignment="Center"
+                                               VerticalAlignment="Center"
+                                               FontSize="13"
+                                               FontWeight="SemiBold"
+                                               Foreground="{ThemeResource Rarity4ForegroundBrush}"
+                                               IsTextScaleFactorEnabled="False"
+                                               Text="{x:Bind IconPlaceholderText}" />
+                                </Border>
                                 <TextBlock Grid.Column="1"
                                            VerticalAlignment="Center"
                                            Text="{x:Bind Name}"
