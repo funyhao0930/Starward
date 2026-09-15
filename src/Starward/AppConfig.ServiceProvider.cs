@@ -17,6 +17,7 @@ using Starward.Core.Games.Hotta;
 using Starward.Core.Games.Kuro;
 using Starward.Core.HoYoPlay;
 using Starward.Core.Launcher.Gryphline;
+using Starward.Core.Launcher.Hotta;
 using Starward.Core.Launcher.Kuro;
 using Starward.Core.SelfQuery;
 using Starward.Features.Background;
@@ -103,6 +104,8 @@ public static partial class AppConfig
             sc.AddSingleton<IGameBackgroundProvider, KuroBackgroundProvider>();
             sc.AddSingleton<GryphlineLauncherClient>();
             sc.AddSingleton<IGameBackgroundProvider, GryphlineBackgroundProvider>();
+            sc.AddSingleton<HottaLauncherClient>();
+            sc.AddSingleton<IGameBackgroundProvider, HottaBackgroundProvider>();
 
             // 启动页的横幅与资讯。各家接口的形状同样差别很大，
             // 由各自的 Provider 换成统一的 GameContent。

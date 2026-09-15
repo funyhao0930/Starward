@@ -53,6 +53,13 @@ public static class HottaGameMapping
 
 
     /// <summary>
+    /// 游戏本体与资源所在的子目录，相对于安装根目录。
+    /// 官方文件清单里的路径也相对于这一层。
+    /// </summary>
+    public const string GameFolderName = "NTETW";
+
+
+    /// <summary>
     /// <c>[VERSION] Version=1.0.8.0727</c>，本机与官方公布的版本文件都是这个写法
     /// </summary>
     private static readonly Regex VersionRegex = new(@"(?m)^[ \t]*Version[ \t]*=[ \t]*(.+)$", RegexOptions.Compiled);
