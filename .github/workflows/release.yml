@@ -1,0 +1,110 @@
+name: Release
+
+on:
+  push:
+    tags: ["*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "版本號，例如 0.18.2-ncut.1"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ inputs.version || github.ref_name }}
+  cancel-in-progress: false
+
+
+jobs:
+
+  build:
+    name: Build (${{ matrix.arch }})
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x64, arm64]
+    runs-on: windows-2025-vs2026
+    env:
+      Version: ${{ inputs.version || github.ref_name }}
+      Arch: ${{ matrix.arch }}
+      # 本分支沒有自己的更新伺服器，關掉自動更新檢查，免得被上游的版本蓋掉這裡的修改
+      StarwardDisableUpdateCheck: 'true'
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v6
+
+    - name: Install .NET
+      uses: actions/setup-dotnet@v5
+      with:
+        global-json-file: global.json
+
+    - name: Setup MSBuild
+      uses: microsoft/setup-msbuild@v3
+
+    - name: Compile App
+      run: dotnet run publish.cs -- compile --version $env:Version --arch $env:Arch
+
+    - name: Pack (Setup and Portable)
+      run: dotnet run publish.cs -- pack --version $env:Version --arch $env:Arch
+
+    - name: Upload Artifact (Package, ${{ env.Arch }})
+      uses: actions/upload-artifact@v7
+      with:
+        name: package_${{ env.Version }}_${{ env.Arch }}
+        path: |
+          publish/release/package/Starward_Setup_${{ env.Version }}_${{ env.Arch }}.exe
+          publish/release/package/Starward_Portable_${{ env.Version }}_${{ env.Arch }}.7z
+        if-no-files-found: error
+        retention-days: 7
+
+
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    needs: build
+    env:
+      Version: ${{ inputs.version || github.ref_name }}
+
+    steps:
+    - name: Download Artifact (Package, x64)
+      uses: actions/download-artifact@v8
+      with:
+        name: package_${{ env.Version }}_x64
+        path: package
+
+    - name: Download Artifact (Package, arm64)
+      uses: actions/download-artifact@v8
+      with:
+        name: package_${{ env.Version }}_arm64
+        path: package
+
+    - name: Create Checksums
+      run: |
+        cd package
+        sha256sum * > SHA256SUMS.txt
+        cat SHA256SUMS.txt
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v3
+      with:
+        tag_name: ${{ env.Version }}
+        name: ${{ env.Version }}
+        draft: false
+        prerelease: ${{ contains(env.Version, '-') }}
+        generate_release_notes: true
+        files: package/*
+        body: |
+          這是 [Scighost/Starward](https://github.com/Scighost/Starward) 的分支建置，額外支援鳴潮、終末地與異環。
+
+          | 檔案 | 說明 |
+          | --- | --- |
+          | `Starward_Setup_${{ env.Version }}_x64.exe` | 安裝版，Intel／AMD 處理器 |
+          | `Starward_Setup_${{ env.Version }}_arm64.exe` | 安裝版，ARM64 處理器 |
+          | `Starward_Portable_${{ env.Version }}_x64.7z` | 免安裝版，Intel／AMD 處理器 |
+          | `Starward_Portable_${{ env.Version }}_arm64.7z` | 免安裝版，ARM64 處理器 |
+
+          本建置關閉了自動更新檢查，不會被上游版本覆蓋，更新請回來這裡下載。

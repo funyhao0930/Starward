@@ -16,6 +16,7 @@
 		<WindowsPackageType>None</WindowsPackageType>
 		<WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
 		<DefineConstants>DISABLE_XAML_GENERATED_MAIN</DefineConstants>
+		<DefineConstants Condition="'$(StarwardDisableUpdateCheck)' == 'true'">$(DefineConstants);DONOT_CHECK_UPDATE</DefineConstants>
 		<BuiltInComInteropSupport>true</BuiltInComInteropSupport>
 		<ApplicationIcon>../logo.ico</ApplicationIcon>
 		<IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>

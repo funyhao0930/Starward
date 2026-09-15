@@ -14,6 +14,8 @@ permissions:
 jobs:
 
   build-pack:
+    # 這個工作流程只在上游倉庫執行，分支倉庫沒有對應的祕密與物件儲存
+    if: github.repository == 'Scighost/Starward'
     strategy:
       fail-fast: false
       matrix:

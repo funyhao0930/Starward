@@ -13,6 +13,8 @@ permissions:
 jobs:
 
   version:
+    # 這個工作流程只在上游倉庫執行，分支倉庫沒有對應的祕密與物件儲存
+    if: github.repository == 'Scighost/Starward'
     runs-on: windows-latest
     outputs: 
       version: ${{ github.ref_name }}
