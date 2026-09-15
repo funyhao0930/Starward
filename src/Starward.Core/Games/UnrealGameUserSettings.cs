@@ -125,6 +125,14 @@ public static class UnrealGameUserSettings
     }
 
 
-    private static Regex KeyRegex(string key) => new($@"(?m)^[ \t]*{Regex.Escape(key)}[ \t]*=[ \t]*(.*)$");
+    /// <summary>
+    /// 一行 <c>Key=Value</c>。
+    /// <para/>
+    /// 取值用 <c>[^\r\n]*</c> 而不是 <c>(.*)$</c>：官方的 ini 是 CRLF，
+    /// 而 <c>.</c> 会把行尾的回车一起吃掉，替换时就把它丢了。
+    /// 后果有两个：值没变也算「有改动」，于是每次保存都白白备份并改写文件；
+    /// 被改过的那几行行尾还会与文件其余部分不一致。
+    /// </summary>
+    private static Regex KeyRegex(string key) => new($@"(?m)^[ \t]*{Regex.Escape(key)}[ \t]*=[ \t]*([^\r\n]*)");
 
 }

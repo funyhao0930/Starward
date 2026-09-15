@@ -62,7 +62,7 @@ public static class HottaGameMapping
     /// 官方公布版本号的地址，由游戏自己的 Config.ini 给出：
     /// <c>[VERSION] VersionInfoFileURL</c> 与 <c>[UPDATE_CONFIG] BackupVersionURL</c>。
     /// </summary>
-    private static readonly Regex VersionInfoUrlRegex = new(@"(?m)^[ \t]*(?:VersionInfoFileURL|BackupVersionURL)[ \t]*=[ \t]*(https://\S+)[ \t]*$", RegexOptions.Compiled);
+    private static readonly Regex VersionInfoUrlRegex = new(@"(?m)^[ \t]*(?:VersionInfoFileURL|BackupVersionURL)[ \t]*=[ \t]*(https://\S+)[ \t\r]*$", RegexOptions.Compiled);
 
 
     /// <summary>
