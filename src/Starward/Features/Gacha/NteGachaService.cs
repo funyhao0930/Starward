@@ -1,4 +1,4 @@
-using Dapper;
+﻿using Dapper;
 using Microsoft.Extensions.Logging;
 using Starward.Core;
 using Starward.Core.Gacha;
@@ -285,7 +285,7 @@ internal class NteGachaService : GachaLogService
     /// <summary>
     /// 本机没有可以翻出 URL 的缓存
     /// </summary>
-    public override string? GetGachaLogUrlFromWebCache(string? installPath)
+    public override string? GetGachaLogUrlFromWebCache(GameBiz gameBiz, string? installPath)
     {
         return null;
     }

@@ -1,4 +1,4 @@
-using Dapper;
+﻿using Dapper;
 using Microsoft.Extensions.Logging;
 using MiniExcelLibs;
 using Starward.Core;
@@ -159,10 +159,14 @@ internal abstract class GachaLogService
     /// <summary>
     /// 从本机文件中找出带授权信息的抽卡记录 URL。
     /// 藏在哪个文件、长什么样由各游戏的客户端决定。
+    /// <para/>
+    /// 这里必须由调用方给出带服务器的 GameBiz，不能用 <see cref="CurrentGameBiz"/>：
+    /// 后者是这款游戏在设置与数据库里的键（如 hkrpg），而缓存文件的位置分国服、
+    /// 国际服与 B 服（hkrpg_cn / hkrpg_global / hkrpg_bilibili）。
     /// </summary>
-    public virtual string? GetGachaLogUrlFromWebCache(string? installPath)
+    public virtual string? GetGachaLogUrlFromWebCache(GameBiz gameBiz, string? installPath)
     {
-        return _client.FindGachaUrlFromLocalFiles(CurrentGameBiz, installPath);
+        return _client.FindGachaUrlFromLocalFiles(gameBiz, installPath);
     }
 
 
