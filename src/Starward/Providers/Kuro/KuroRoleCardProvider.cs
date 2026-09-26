@@ -46,6 +46,12 @@ internal class KuroRoleCardProvider : IGameRoleCardProvider
     public bool Supports(GameKey key) => key == KuroGameMapping.WutheringWavesGlobal;
 
 
+    /// <summary>
+    /// 与米哈游游戏的实时便笺一样，用体力（结晶波片）当按钮图标
+    /// </summary>
+    public string? IconUri => "ms-appx:///Images/Kuro/WuWa_Waveplate.png";
+
+
 
     public async Task<IReadOnlyList<GameRoleCardRole>> GetRolesAsync(GameKey key, CancellationToken cancellationToken = default)
     {

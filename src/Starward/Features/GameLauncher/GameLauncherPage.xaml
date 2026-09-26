@@ -503,16 +503,13 @@
             </Border.OpacityTransition>
         </Border>
 
-        <!--  游戏通知与角色卡片。角色卡片放在下面：横幅资讯隐藏时只是透明，仍占位，卡片贴底才不会悬在半空  -->
-        <StackPanel Margin="60,0,0,40"
-                    HorizontalAlignment="Left"
-                    VerticalAlignment="Bottom"
-                    Spacing="12">
-            <local:GameBannerAndPost x:Name="GameBannerAndPost"
-                                     CurrentGameId="{x:Bind CurrentGameId}"
-                                     CurrentGameKey="{x:Bind CurrentGameKey}" />
-            <local:GameRoleCard CurrentGameKey="{x:Bind CurrentGameKey}" />
-        </StackPanel>
+        <!--  游戏通知  -->
+        <local:GameBannerAndPost x:Name="GameBannerAndPost"
+                                 Margin="60,0,0,40"
+                                 HorizontalAlignment="Left"
+                                 VerticalAlignment="Bottom"
+                                 CurrentGameId="{x:Bind CurrentGameId}"
+                                 CurrentGameKey="{x:Bind CurrentGameKey}" />
 
         <!--  右下角按键  -->
         <Grid Margin="0,0,40,0"
@@ -758,6 +755,10 @@
             <sfgd:DailyNoteButton Width="40"
                                   Height="40"
                                   CurrentGameId="{x:Bind CurrentGameId}" />
+            <!--  角色卡片，不用米游社账号的游戏（鸣潮）走这一个  -->
+            <local:GameRoleCardButton Width="40"
+                                      Height="40"
+                                      CurrentGameKey="{x:Bind CurrentGameKey}" />
             <!--  通行证授权登录  -->
             <local:GameAuthLoginButton Width="40"
                                        Height="40"

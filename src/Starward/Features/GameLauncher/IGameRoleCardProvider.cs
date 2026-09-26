@@ -11,7 +11,7 @@ namespace Starward.Features.GameLauncher;
 /// <para/>
 /// 米哈游的同类功能是实时便笺（<c>DailyNoteButton</c>），要米游社 / HoYoLAB 账号；
 /// 鸣潮官方启动器首页也有一张，凭证是游戏 SDK 留在本机的登录记录，不用另外登录。
-/// 两者的数据形状、凭证来源都不同，<see cref="GameRoleCard"/> 只认这里的统一模型。
+/// 两者的数据形状、凭证来源都不同，<see cref="GameRoleCardButton"/> 只认这里的统一模型。
 /// <para/>
 /// 定义在应用层而不是 Starward.Core：标签文字与图标要用应用层的多语言资源与图片。
 /// </summary>
@@ -28,6 +28,12 @@ public interface IGameRoleCardProvider
     /// 该游戏有没有角色卡片接口
     /// </summary>
     bool Supports(GameKey key);
+
+
+    /// <summary>
+    /// 启动页侧栏按钮的图标，一般用该游戏的体力图标
+    /// </summary>
+    string? IconUri { get; }
 
 
     /// <summary>

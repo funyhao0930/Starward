@@ -15,16 +15,16 @@ using System.Threading.Tasks;
 namespace Starward.Features.GameLauncher;
 
 /// <summary>
-/// 启动页左下角、横幅资讯下方的角色卡片。
+/// 启动页右边侧栏的角色卡片按钮，点开才显示卡片，与实时便笺（<c>DailyNoteButton</c>）同一个样子。
 /// <para/>
 /// 本控件不认识具体是哪款游戏，数据都经 <see cref="RoleCardProviderRegistry"/> 取得；
-/// 没有 Provider、或者本机查不到任何角色时整张藏起来。
+/// 没有 Provider、或者本机查不到任何角色时连按钮一起藏起来。
 /// </summary>
 [INotifyPropertyChanged]
-public sealed partial class GameRoleCard : UserControl
+public sealed partial class GameRoleCardButton : UserControl
 {
 
-    private readonly ILogger<GameRoleCard> _logger = AppConfig.GetLogger<GameRoleCard>();
+    private readonly ILogger<GameRoleCardButton> _logger = AppConfig.GetLogger<GameRoleCardButton>();
 
     private readonly RoleCardProviderRegistry _registry = AppConfig.GetService<RoleCardProviderRegistry>();
 
@@ -32,8 +32,13 @@ public sealed partial class GameRoleCard : UserControl
 
     private CancellationTokenSource? _loadCts;
 
+    /// <summary>
+    /// 上次查询成功的时间，点开卡片时据此判断要不要重查
+    /// </summary>
+    private DateTimeOffset _lastLoadTime;
 
-    public GameRoleCard()
+
+    public GameRoleCardButton()
     {
         this.InitializeComponent();
         this.Loaded += GameRoleCard_Loaded;
@@ -61,6 +66,12 @@ public sealed partial class GameRoleCard : UserControl
             }
         }
     }
+
+
+    /// <summary>
+    /// 侧栏按钮的图标，由 Provider 给出
+    /// </summary>
+    public string? IconUri { get; set => SetProperty(ref field, value); }
 
 
     public List<GameRoleCardRole>? Roles { get; set => SetProperty(ref field, value); }
@@ -125,6 +136,7 @@ public sealed partial class GameRoleCard : UserControl
                 ResetAndHide();
                 return;
             }
+            IconUri = provider.IconUri;
             IsLoading = true;
             IReadOnlyList<GameRoleCardRole> roles;
             try
@@ -185,12 +197,27 @@ public sealed partial class GameRoleCard : UserControl
             ErrorMessage = null;
             Card = card;
             Stats = card.Stats.Select(x => new GameRoleCardStatItem(x)).ToList();
+            _lastLoadTime = DateTimeOffset.Now;
         }
         catch (GameRoleCardException ex)
         {
             token.ThrowIfCancellationRequested();
             // 保留上一次的等级与 UID，只把数值区换成原因
             ErrorMessage = ex.Message;
+        }
+    }
+
+
+
+    /// <summary>
+    /// 页面加载时已经查过一次；卡片久没打开，数值可能已经过时，打开时补查一次。
+    /// 结晶波片的倒计时由本机推算，这里只管其他会变的数值。
+    /// </summary>
+    private async void Flyout_Card_Opening(object sender, object e)
+    {
+        if (!IsLoading && DateTimeOffset.Now - _lastLoadTime > TimeSpan.FromMinutes(5))
+        {
+            await LoadAsync();
         }
     }
 
