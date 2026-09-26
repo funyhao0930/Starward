@@ -37,11 +37,25 @@ internal class NteGachaService : GachaLogService
 
     protected override string GachaTableName { get; } = "NteGachaItem";
 
+    protected override string? GachaIconTableName => "NteGachaInfo";
+
+
+    private readonly HottaGachaClient _hottaClient;
 
 
     public NteGachaService(ILogger<NteGachaService> logger, HottaGachaClient client) : base(logger, client)
     {
+        _hottaClient = client;
+    }
 
+
+
+    /// <summary>
+    /// 导出文件不带图，图示来自社群的资源仓库 NTE_Assets，见 <see cref="HottaGachaClient.GetGachaIconsAsync"/>
+    /// </summary>
+    public override Task<bool> UpdateGachaIconsAsync(CancellationToken cancellationToken = default)
+    {
+        return UpdateGachaIconsAsync(_hottaClient.GetGachaIconsAsync, cancellationToken);
     }
 
 
@@ -172,6 +186,7 @@ internal class NteGachaService : GachaLogService
                 }
             }
         }
+        FillGachaIcons(list);
         return list;
     }
 

@@ -33,11 +33,25 @@ internal class WuwaGachaService : GachaLogService
 
     protected override string GachaTableName { get; } = "WuwaGachaItem";
 
+    protected override string? GachaIconTableName => "WuwaGachaInfo";
+
+
+    private readonly KuroGachaClient _kuroClient;
 
 
     public WuwaGachaService(ILogger<WuwaGachaService> logger, KuroGachaClient client) : base(logger, client)
     {
+        _kuroClient = client;
+    }
 
+
+
+    /// <summary>
+    /// 接口不给图，图示来自社群站 encore.moe，见 <see cref="KuroGachaClient.GetGachaIconsAsync"/>
+    /// </summary>
+    public override Task<bool> UpdateGachaIconsAsync(CancellationToken cancellationToken = default)
+    {
+        return UpdateGachaIconsAsync(_kuroClient.GetGachaIconsAsync, cancellationToken);
     }
 
 

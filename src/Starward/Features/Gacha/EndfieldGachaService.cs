@@ -41,7 +41,7 @@ internal class EndfieldGachaService : GachaLogService
 
 
 
-    private const string GachaInfoVersionKey = "EndfieldGachaInfoVersion";
+    protected override string? GachaIconTableName => "EndfieldGachaInfo";
 
 
     private readonly GryphlineGachaClient _gryphlineClient;
@@ -55,22 +55,11 @@ internal class EndfieldGachaService : GachaLogService
 
 
     /// <summary>
-    /// 接口不给图，图示来自 <see cref="UpdateGachaInfoAsync"/> 存下的对照表。
-    /// 对照表还没有或查不到的物品保持空白，界面会画稀有度占位块。
+    /// 接口不给图，图示来自社群站 AKEDatabase，见 <see cref="GryphlineGachaClient.GetGachaIconsAsync"/>
     /// </summary>
-    public override List<GachaLogItemEx> GetGachaLogItemEx(long uid)
+    public override Task<bool> UpdateGachaIconsAsync(CancellationToken cancellationToken = default)
     {
-        var list = base.GetGachaLogItemEx(uid);
-        using var dapper = DatabaseService.CreateConnection();
-        var icons = dapper.Query<(int ItemId, string Icon)>("SELECT ItemId, Icon FROM EndfieldGachaInfo;").ToDictionary(x => x.ItemId, x => x.Icon);
-        foreach (var item in list)
-        {
-            if (icons.TryGetValue(item.ItemId, out string? icon))
-            {
-                item.Icon = icon;
-            }
-        }
-        return list;
+        return UpdateGachaIconsAsync(_gryphlineClient.GetGachaIconsAsync, cancellationToken);
     }
 
 
@@ -185,25 +174,11 @@ internal class EndfieldGachaService : GachaLogService
 
 
     /// <summary>
-    /// 名称与稀有度由记录接口一并返回，这里只更新图示对照表。
-    /// 数据源的版本没变就不重新下载，见 <see cref="GryphlineGachaClient.GetGachaIconsAsync"/>。
+    /// 名称与稀有度由记录接口一并返回，没有图鉴要更新。图示见 <see cref="UpdateGachaIconsAsync(CancellationToken)"/>。
     /// </summary>
-    public override async Task<string> UpdateGachaInfoAsync(GameBiz gameBiz, string lang, CancellationToken cancellationToken = default)
+    public override Task<string> UpdateGachaInfoAsync(GameBiz gameBiz, string lang, CancellationToken cancellationToken = default)
     {
-        using var dapper = DatabaseService.CreateConnection();
-        string? knownVersion = dapper.QueryFirstOrDefault<int>("SELECT COUNT(*) FROM EndfieldGachaInfo;") > 0
-            ? DatabaseService.GetValue<string>(GachaInfoVersionKey, out _)
-            : null;
-        (string version, List<GryphlineGachaIcon>? icons) = await _gryphlineClient.GetGachaIconsAsync(knownVersion, cancellationToken);
-        if (icons is not null)
-        {
-            using var t = dapper.BeginTransaction();
-            dapper.Execute("DELETE FROM EndfieldGachaInfo;", transaction: t);
-            dapper.Execute("INSERT OR REPLACE INTO EndfieldGachaInfo (ItemId, Key, Icon) VALUES (@ItemId, @Key, @Icon);", icons, t);
-            t.Commit();
-            DatabaseService.SetValue(GachaInfoVersionKey, version);
-        }
-        return lang;
+        return Task.FromResult(lang);
     }
 
 

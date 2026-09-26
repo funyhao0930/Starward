@@ -256,6 +256,19 @@ public sealed partial class GachaLogPage : PageBase
         {
             _logger.LogError(ex, "Update wiki data {gameBiz}", CurrentGameBiz);
         }
+        try
+        {
+            // 页面是先画出来才更新图示的，对照表变了就重画一次，
+            // 否则第一次打开时的空白图示要等到下次打开才会出现
+            if (await _gachaLogService.UpdateGachaIconsAsync() && IsLoaded)
+            {
+                UpdateGachaTypeStats(SelectUid);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Update gacha icons {gameBiz}", CurrentGameBiz);
+        }
     }
 
 

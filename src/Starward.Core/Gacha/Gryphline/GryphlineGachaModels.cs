@@ -82,15 +82,6 @@ public class GryphlineGachaRecord
 }
 
 
-/// <summary>
-/// 一个干员或武器的图示
-/// </summary>
-/// <param name="ItemId">与记录里的 ItemId 相同，是 <see cref="GachaSyntheticId.ToItemId"/> 散列后的值</param>
-/// <param name="Key">游戏内的原始 ID，如 <c>chr_0005_chen</c>、<c>wpn_sword_0026</c></param>
-/// <param name="Icon">图片 URL</param>
-public record GryphlineGachaIcon(int ItemId, string Key, string Icon);
-
-
 [JsonSerializable(typeof(GryphlineGachaResponse))]
 internal partial class GryphlineGachaJsonContext : JsonSerializerContext
 {

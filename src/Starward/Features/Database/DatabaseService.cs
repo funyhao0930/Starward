@@ -265,6 +265,7 @@ internal static class DatabaseService
         Sql_v25,
         Sql_v26,
         Sql_v27,
+        Sql_v28,
     ];
 
 
@@ -1235,6 +1236,33 @@ internal static class DatabaseService
         );
 
         PRAGMA USER_VERSION = 27;
+        COMMIT TRANSACTION;
+        """;
+
+    /// <summary>
+    /// 鸣潮与异环的物品图示，结构与 <c>EndfieldGachaInfo</c> 相同。
+    /// <para/>
+    /// 鸣潮的 ItemId 就是 resourceId；异环的是 reward_id 散列后的整数，
+    /// 原字符串在记录的 RewardId 里也有一份。
+    /// </summary>
+    private const string Sql_v28 = """
+        BEGIN TRANSACTION;
+
+        CREATE TABLE IF NOT EXISTS WuwaGachaInfo
+        (
+            ItemId INTEGER NOT NULL PRIMARY KEY,
+            Key    TEXT    NOT NULL,
+            Icon   TEXT    NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS NteGachaInfo
+        (
+            ItemId INTEGER NOT NULL PRIMARY KEY,
+            Key    TEXT    NOT NULL,
+            Icon   TEXT    NOT NULL
+        );
+
+        PRAGMA USER_VERSION = 28;
         COMMIT TRANSACTION;
         """;
 

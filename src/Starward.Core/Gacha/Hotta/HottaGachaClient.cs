@@ -11,11 +11,12 @@ namespace Starward.Core.Gacha.Hotta;
 /// 记录走的是游戏自己的 RPC（客户端二进制里的 <c>LotteryRecord_Req/Rsp</c>、
 /// <c>LotteryRecordPageInfo_Req/Rsp</c>），既没有网页版记录页，也就没有可以偷出来的授权 URL；
 /// 官方唯一的网页查询在国服完美账号的个人中心，台服与国际服都没有开放。
-/// 所以本类不发任何请求，只做两件事：
+/// 所以本类不取记录，只做三件事：
 /// <list type="number">
 /// <item>向上层公布卡池列表（<see cref="QueryGachaTypes"/> 是抽卡页面唯一的卡池来源，
 /// 即使没有接口也得有个 <see cref="GachaLogClient"/>）；</item>
-/// <item>把玩家用 nte-exporter 抓包导出的 JSON 读成 <see cref="HottaGachaItem"/>。</item>
+/// <item>把玩家用 nte-exporter 抓包导出的 JSON 读成 <see cref="HottaGachaItem"/>；</item>
+/// <item>从社群的资源仓库取物品图示，见 <see cref="GetGachaIconsAsync"/>。</item>
 /// </list>
 /// 一切与 URL 有关的成员都被改成明确失败或返回空，免得基类那套米哈游流程被误用。
 /// </summary>
@@ -306,6 +307,181 @@ public class HottaGachaClient : GachaLogClient
         }
         time = default;
         return false;
+    }
+
+
+    #endregion
+
+
+    #region 物品图示
+
+
+    /// <summary>
+    /// 图示取自 Waifus-Grace/NTE_Assets，它跟着游戏版本解包，数据表与图片都在 GitHub 上。
+    /// nte-exporter 的名称对照表也是从这里生成的，两边的物品 ID 一致。
+    /// </summary>
+    private const string NTE_ASSETS_REPO = "Waifus-Grace/NTE_Assets";
+
+
+    /// <summary>
+    /// 含有物品图示的数据表，以及各自按优先顺序排列的图示字段。
+    /// 干员、弧盘、道具都有 100px 的小图，外观只有头像或展示图。
+    /// </summary>
+    private static readonly (string Path, string[] Fields)[] IconTables =
+    [
+        ("DataTable/Character/DT_Character.json", ["ItemIconSmall", "ItemIcon", "ItemIconBig"]),
+        ("DataTable/Fork/DT_ForkItemData.json", ["ItemIconSmall", "ItemIcon", "ItemIconBig"]),
+        ("DataTable/Inventory/DT_ItemConfig.json", ["ItemIconSmall", "ItemIcon", "ItemIconBig"]),
+        ("DataTable/Inventory/DT_CapitalItemConfig.json", ["ItemIconSmall", "ItemIcon", "ItemIconBig"]),
+        ("DataTable/Character/Appearance/DT_AppearanceData.json", ["HeadIcon", "ItemIcon", "DisplayIcon", "HeadIconBig"]),
+        ("DataTable/Vehicle/DT_VehicleItemData.json", ["HeadIcon", "ItemIconSmall", "ItemIcon"]),
+    ];
+
+
+    /// <summary>
+    /// 取所有干员、弧盘与道具的图示。
+    /// <para/>
+    /// 版本是仓库 main 分支的最新提交：与 <paramref name="knownVersion"/> 相同时不下载，返回的列表为 null。
+    /// 图片 URL 经 jsDelivr 并钉在这个提交上，内容不会在底下变掉。
+    /// <para/>
+    /// 数据表里的图示是游戏引擎的资源路径（<c>/Game/UI/UI_Icon/Fork/fork_Rose_100.fork_Rose_100</c>），
+    /// 去掉 <c>/Game/UI/</c> 与后缀就是仓库里的 PNG。但引擎不分大小写而 GitHub 分，
+    /// 约有两成路径只差在大小写（<c>Item_100</c> 与 <c>item_100</c>），
+    /// 因此另外取一次仓库的文件树，按不分大小写的方式找出真正的路径。
+    /// <para/>
+    /// 记录里存的 ItemId 是 reward_id 散列后的整数，这里对每个 ID 做同样的散列。
+    /// </summary>
+    public async Task<(string Version, List<GachaItemIcon>? Icons)> GetGachaIconsAsync(string? knownVersion, CancellationToken cancellationToken = default)
+    {
+        string sha;
+        using (var request = CreateGitHubRequest($"https://api.github.com/repos/{NTE_ASSETS_REPO}/commits/main", "application/vnd.github.sha"))
+        using (HttpResponseMessage response = await _httpClient.SendAsync(request, cancellationToken))
+        {
+            response.EnsureSuccessStatusCode();
+            sha = (await response.Content.ReadAsStringAsync(cancellationToken)).Trim();
+        }
+        if (sha.Length != 40 || !sha.All(char.IsAsciiHexDigit))
+        {
+            throw new FormatException("GitHub did not return a commit SHA for NTE_Assets.");
+        }
+        if (sha == knownVersion)
+        {
+            return (sha, null);
+        }
+
+        Dictionary<string, string> files = await GetRepositoryImagesAsync(sha, cancellationToken);
+        var icons = new Dictionary<int, GachaItemIcon>();
+        foreach ((string path, string[] fields) in IconTables)
+        {
+            await using Stream stream = await _httpClient.GetStreamAsync($"https://cdn.jsdelivr.net/gh/{NTE_ASSETS_REPO}@{sha}/{path}", cancellationToken);
+            using JsonDocument document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
+            foreach (JsonProperty row in EnumerateRows(document.RootElement))
+            {
+                int itemId = GachaSyntheticId.ToItemId(row.Name);
+                if (itemId == 0 || icons.ContainsKey(itemId))
+                {
+                    continue;
+                }
+                foreach (string field in fields)
+                {
+                    if (ToRepositoryPath(row.Value, field) is string key && files.TryGetValue(key, out string? file))
+                    {
+                        string url = $"https://cdn.jsdelivr.net/gh/{NTE_ASSETS_REPO}@{sha}/{string.Join('/', file.Split('/').Select(Uri.EscapeDataString))}";
+                        icons[itemId] = new GachaItemIcon(itemId, row.Name, url);
+                        break;
+                    }
+                }
+            }
+        }
+        if (icons.Count == 0)
+        {
+            throw new FormatException("NTE_Assets tables have no item icon.");
+        }
+        return (sha, icons.Values.ToList());
+    }
+
+
+    /// <summary>
+    /// 仓库里所有 PNG 的路径，键不分大小写，值是真正的大小写
+    /// </summary>
+    private async Task<Dictionary<string, string>> GetRepositoryImagesAsync(string sha, CancellationToken cancellationToken)
+    {
+        using var request = CreateGitHubRequest($"https://api.github.com/repos/{NTE_ASSETS_REPO}/git/trees/{sha}?recursive=1", "application/vnd.github+json");
+        using HttpResponseMessage response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        await using Stream stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+        using JsonDocument tree = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
+        if (tree.RootElement.TryGetProperty("truncated", out JsonElement truncated) && truncated.ValueKind == JsonValueKind.True)
+        {
+            throw new FormatException("NTE_Assets file tree is truncated.");
+        }
+        var files = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (JsonElement entry in tree.RootElement.GetProperty("tree").EnumerateArray())
+        {
+            if (entry.TryGetProperty("path", out JsonElement path) && path.GetString() is string value
+                && value.EndsWith(".png", StringComparison.OrdinalIgnoreCase))
+            {
+                files.TryAdd(value, value);
+            }
+        }
+        return files;
+    }
+
+
+    /// <summary>
+    /// GitHub API 没有 User-Agent 会直接拒绝。Starward 的 HttpClient 自带，单独使用本类时补一个
+    /// </summary>
+    private HttpRequestMessage CreateGitHubRequest(string url, string accept)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Get, url);
+        request.Headers.Accept.ParseAdd(accept);
+        if (_httpClient.DefaultRequestHeaders.UserAgent.Count == 0)
+        {
+            request.Headers.UserAgent.ParseAdd("Starward");
+        }
+        return request;
+    }
+
+
+    /// <summary>
+    /// 数据表导出成数组，真正的行在某个元素的 Rows 里，以物品 ID 为键
+    /// </summary>
+    private static IEnumerable<JsonProperty> EnumerateRows(JsonElement root)
+    {
+        IEnumerable<JsonElement> exports = root.ValueKind == JsonValueKind.Array ? root.EnumerateArray() : [root];
+        foreach (JsonElement export in exports)
+        {
+            if (export.ValueKind == JsonValueKind.Object && export.TryGetProperty("Rows", out JsonElement rows) && rows.ValueKind == JsonValueKind.Object)
+            {
+                foreach (JsonProperty row in rows.EnumerateObject())
+                {
+                    yield return row;
+                }
+            }
+        }
+    }
+
+
+    /// <summary>
+    /// <c>/Game/UI/UI_Icon/Fork/fork_Rose_100.fork_Rose_100</c> → <c>UI_Icon/Fork/fork_Rose_100.png</c>
+    /// </summary>
+    private static string? ToRepositoryPath(JsonElement row, string field)
+    {
+        const string prefix = "/Game/UI/";
+        if (row.ValueKind != JsonValueKind.Object
+            || !row.TryGetProperty(field, out JsonElement value) || value.ValueKind != JsonValueKind.Object
+            || !value.TryGetProperty("AssetPathName", out JsonElement asset) || asset.GetString() is not string path
+            || !path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+        path = path[prefix.Length..];
+        int dot = path.LastIndexOf('.');
+        if (dot > path.LastIndexOf('/'))
+        {
+            path = path[..dot];
+        }
+        return path.Length > 0 ? $"{path}.png" : null;
     }
 
 

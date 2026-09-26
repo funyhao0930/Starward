@@ -85,6 +85,80 @@ internal abstract class GachaLogService
 
 
 
+    #region 物品图示
+
+
+    /// <summary>
+    /// 物品图示对照表，列为 ItemId、Key、Icon。
+    /// <para/>
+    /// 米哈游三款的图示跟着图鉴一起存在各自的 Info 表里，不走这里，保持 null。
+    /// 其他厂商的记录接口不给图，图示另外从社群的数据站取，存进这张表，
+    /// 读取记录时由 <see cref="FillGachaIcons"/> 按 ItemId 补上。
+    /// </summary>
+    protected virtual string? GachaIconTableName => null;
+
+
+    /// <summary>
+    /// 更新物品图示对照表，返回对照表有没有变。变了的话界面要重画一次，
+    /// 否则第一次打开时的空白图示要等到下次打开才会出现。
+    /// </summary>
+    public virtual Task<bool> UpdateGachaIconsAsync(CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(false);
+    }
+
+
+    /// <summary>
+    /// 各游戏共用的更新流程：数据源的版本没变就什么都不做，变了才整表替换。
+    /// </summary>
+    /// <param name="fetch">传入已知版本（对照表为空时是 null），版本相同时返回的列表为 null</param>
+    protected async Task<bool> UpdateGachaIconsAsync(Func<string?, CancellationToken, Task<(string Version, List<GachaItemIcon>? Icons)>> fetch, CancellationToken cancellationToken)
+    {
+        string table = GachaIconTableName ?? throw new InvalidOperationException($"{GetType().Name} has no gacha icon table.");
+        string versionKey = $"{table}Version";
+        using var dapper = DatabaseService.CreateConnection();
+        string? knownVersion = dapper.QueryFirstOrDefault<int>($"SELECT COUNT(*) FROM {table};") > 0
+            ? DatabaseService.GetValue<string>(versionKey, out _)
+            : null;
+        (string version, List<GachaItemIcon>? icons) = await fetch(knownVersion, cancellationToken);
+        if (icons is null)
+        {
+            return false;
+        }
+        using var t = dapper.BeginTransaction();
+        dapper.Execute($"DELETE FROM {table};", transaction: t);
+        dapper.Execute($"INSERT OR REPLACE INTO {table} (ItemId, Key, Icon) VALUES (@ItemId, @Key, @Icon);", icons, t);
+        t.Commit();
+        DatabaseService.SetValue(versionKey, version);
+        return true;
+    }
+
+
+    /// <summary>
+    /// 按 ItemId 补上图示。对照表还没有或查不到的物品保持空白，界面会画稀有度占位块。
+    /// </summary>
+    protected void FillGachaIcons(List<GachaLogItemEx> list)
+    {
+        if (GachaIconTableName is not string table || list.Count == 0)
+        {
+            return;
+        }
+        using var dapper = DatabaseService.CreateConnection();
+        var icons = dapper.Query<(int ItemId, string Icon)>($"SELECT ItemId, Icon FROM {table};").ToDictionary(x => x.ItemId, x => x.Icon);
+        foreach (var item in list)
+        {
+            if (icons.TryGetValue(item.ItemId, out string? icon))
+            {
+                item.Icon = icon;
+            }
+        }
+    }
+
+
+    #endregion
+
+
+
     /// <summary>
     /// 这款游戏自己对抽卡的叫法。
     /// <para/>
@@ -151,6 +225,7 @@ internal abstract class GachaLogService
                 }
             }
         }
+        FillGachaIcons(list);
         return list;
     }
 

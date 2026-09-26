@@ -1,6 +1,8 @@
 using System.Globalization;
 using System.Net.Http.Json;
+using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Web;
 
@@ -374,6 +376,74 @@ public class KuroGachaClient : GachaLogClient
             return value;
         }
         return DateTime.MinValue;
+    }
+
+
+    #endregion
+
+
+    #region 物品图示
+
+
+    /// <summary>
+    /// 唤取接口只给 resourceId，不给图，库街区也没有公开的图鉴接口。
+    /// 图示取自社群站 encore.moe，它跟着游戏版本解包，列表带 ID 与图片 URL，图片由它自己托管。
+    /// </summary>
+    private const string ENCORE_API_URL = "https://api.encore.moe/en";
+
+
+    /// <summary>
+    /// 取所有共鸣者与武器的图示。
+    /// <para/>
+    /// 记录里的 ItemId 就是 resourceId，与 encore.moe 的 Id 相同，不需要散列。
+    /// 两份列表加起来不到 70KB，但数据站没有版本号，因此每次都取回，
+    /// 用内容的散列当版本：与 <paramref name="knownVersion"/> 相同时返回的列表为 null。
+    /// <para/>
+    /// 图片是 WebP，与启动器背景一样需要系统装有 WebP 图像扩展。
+    /// </summary>
+    public async Task<(string Version, List<GachaItemIcon>? Icons)> GetGachaIconsAsync(string? knownVersion, CancellationToken cancellationToken = default)
+    {
+        var icons = new List<GachaItemIcon>();
+        using (JsonDocument roles = await GetJsonDocumentAsync($"{ENCORE_API_URL}/character", cancellationToken))
+        {
+            AddIcons(icons, roles.RootElement, "roleList", "RoleHeadIcon");
+        }
+        using (JsonDocument weapons = await GetJsonDocumentAsync($"{ENCORE_API_URL}/weapon", cancellationToken))
+        {
+            AddIcons(icons, weapons.RootElement, "weapons", "Icon");
+        }
+        if (icons.Count == 0)
+        {
+            throw new FormatException("encore.moe returned no character or weapon.");
+        }
+        icons = icons.DistinctBy(x => x.ItemId).OrderBy(x => x.ItemId).ToList();
+        string version = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(string.Join('\n', icons.Select(x => $"{x.ItemId}|{x.Icon}")))));
+        return version == knownVersion ? (version, null) : (version, icons);
+    }
+
+
+    private async Task<JsonDocument> GetJsonDocumentAsync(string url, CancellationToken cancellationToken)
+    {
+        await using Stream stream = await _httpClient.GetStreamAsync(url, cancellationToken);
+        return await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
+    }
+
+
+    private static void AddIcons(List<GachaItemIcon> icons, JsonElement root, string listName, string iconName)
+    {
+        if (!root.TryGetProperty(listName, out JsonElement list) || list.ValueKind != JsonValueKind.Array)
+        {
+            throw new FormatException($"encore.moe response has no {listName}.");
+        }
+        foreach (JsonElement item in list.EnumerateArray())
+        {
+            if (item.TryGetProperty("Id", out JsonElement id) && id.TryGetInt32(out int itemId)
+                && item.TryGetProperty(iconName, out JsonElement icon) && icon.GetString() is string url
+                && url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+            {
+                icons.Add(new GachaItemIcon(itemId, itemId.ToString(CultureInfo.InvariantCulture), url));
+            }
+        }
     }
 
 

@@ -379,7 +379,7 @@ public class GryphlineGachaClient : GachaLogClient
     /// 记录里存的 ItemId 是 <see cref="GachaSyntheticId.ToItemId"/> 散列后的整数，
     /// 原始字符串没有保存，因此这里对数据表的每个 ID 做同样的散列，反过来对上旧记录。
     /// </summary>
-    public async Task<(string Version, List<GryphlineGachaIcon>? Icons)> GetGachaIconsAsync(string? knownVersion, CancellationToken cancellationToken = default)
+    public async Task<(string Version, List<GachaItemIcon>? Icons)> GetGachaIconsAsync(string? knownVersion, CancellationToken cancellationToken = default)
     {
         string manifestText = await _httpClient.GetStringAsync($"{AKEDATA_BASE_URL}/manifest.json", cancellationToken);
         using JsonDocument manifest = JsonDocument.Parse(manifestText);
@@ -395,7 +395,7 @@ public class GryphlineGachaClient : GachaLogClient
         {
             throw new FormatException("AKEDatabase ItemTable is not an object.");
         }
-        var icons = new List<GryphlineGachaIcon>();
+        var icons = new List<GachaItemIcon>();
         foreach (JsonProperty property in itemTable.RootElement.EnumerateObject())
         {
             string key = property.Name;
@@ -411,7 +411,7 @@ public class GryphlineGachaClient : GachaLogClient
             }
             if (icon is not null)
             {
-                icons.Add(new GryphlineGachaIcon(GachaSyntheticId.ToItemId(key), key, icon));
+                icons.Add(new GachaItemIcon(GachaSyntheticId.ToItemId(key), key, icon));
             }
         }
         if (icons.Count == 0)
