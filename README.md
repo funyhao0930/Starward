@@ -115,4 +115,4 @@ dotnet test tests/Starward.Core.Tests -c Release
 
 ## 截圖
 
-<img width="1200" src="https://github.com/user-attachments/assets/d1704d44-fadd-4672-aade-c09584b7f16c" />
+![鳴潮的啟動頁：官方背景、橫幅與公告、DX11 與停用 DLSS 的啟動選項](./docs/images/screenshot-wuwa.webp)
