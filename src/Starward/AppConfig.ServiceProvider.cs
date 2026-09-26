@@ -114,6 +114,11 @@ public static partial class AppConfig
             sc.AddSingleton<IGameLauncherContentProvider, KuroLauncherContentProvider>();
             sc.AddSingleton<IGameLauncherContentProvider, GryphlineLauncherContentProvider>();
 
+            // 启动页的角色卡片，米哈游那边是实时便笺，另有一套
+            sc.AddSingleton<RoleCardProviderRegistry>();
+            sc.AddSingleton<KuroPlayerClient>();
+            sc.AddSingleton<IGameRoleCardProvider, KuroRoleCardProvider>();
+
             sc.AddSingleton<BackgroundService>();
             sc.AddSingleton<GameLauncherService>();
             sc.AddSingleton<GamePackageService>();

@@ -2871,6 +2871,168 @@ namespace Starward.Language {
         }
         
         /// <summary>
+        ///   查找类似 Full 的本地化字符串。
+        /// </summary>
+        public static string GameRoleCard_Full {
+            get {
+                return ResourceManager.GetString("GameRoleCard_Full", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 {0}h {1}min 的本地化字符串。
+        /// </summary>
+        public static string GameRoleCard_HoursMinutes {
+            get {
+                return ResourceManager.GetString("GameRoleCard_HoursMinutes", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Activity 的本地化字符串。
+        /// </summary>
+        public static string GameRoleCard_Kuro_Activity {
+            get {
+                return ResourceManager.GetString("GameRoleCard_Kuro_Activity", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 It may take a few seconds for the data to finish loading. Please wait... 的本地化字符串。
+        /// </summary>
+        public static string GameRoleCard_Kuro_Footnote {
+            get {
+                return ResourceManager.GetString("GameRoleCard_Kuro_Footnote", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Pioneer Podcast 的本地化字符串。
+        /// </summary>
+        public static string GameRoleCard_Kuro_PioneerPodcast {
+            get {
+                return ResourceManager.GetString("GameRoleCard_Kuro_PioneerPodcast", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Level {0} 的本地化字符串。
+        /// </summary>
+        public static string GameRoleCard_Kuro_PodcastLevel {
+            get {
+                return ResourceManager.GetString("GameRoleCard_Kuro_PodcastLevel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 UID 的本地化字符串。
+        /// </summary>
+        public static string GameRoleCard_Kuro_Uid {
+            get {
+                return ResourceManager.GetString("GameRoleCard_Kuro_Uid", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Union Level 的本地化字符串。
+        /// </summary>
+        public static string GameRoleCard_Kuro_UnionLevel {
+            get {
+                return ResourceManager.GetString("GameRoleCard_Kuro_UnionLevel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Waveplate 的本地化字符串。
+        /// </summary>
+        public static string GameRoleCard_Kuro_Waveplate {
+            get {
+                return ResourceManager.GetString("GameRoleCard_Kuro_Waveplate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Waveplate Crystal 的本地化字符串。
+        /// </summary>
+        public static string GameRoleCard_Kuro_WaveplateCrystal {
+            get {
+                return ResourceManager.GetString("GameRoleCard_Kuro_WaveplateCrystal", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Login expired. Please log in to the game again. 的本地化字符串。
+        /// </summary>
+        public static string GameRoleCard_LoginExpired {
+            get {
+                return ResourceManager.GetString("GameRoleCard_LoginExpired", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 No character created yet 的本地化字符串。
+        /// </summary>
+        public static string GameRoleCard_NoCharacter {
+            get {
+                return ResourceManager.GetString("GameRoleCard_NoCharacter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 No login record found. Please try again after logging into the game. 的本地化字符串。
+        /// </summary>
+        public static string GameRoleCard_NoLoginRecord {
+            get {
+                return ResourceManager.GetString("GameRoleCard_NoLoginRecord", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Not open 的本地化字符串。
+        /// </summary>
+        public static string GameRoleCard_NotOpen {
+            get {
+                return ResourceManager.GetString("GameRoleCard_NotOpen", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Refresh failed. Please try again. 的本地化字符串。
+        /// </summary>
+        public static string GameRoleCard_RefreshFailed {
+            get {
+                return ResourceManager.GetString("GameRoleCard_RefreshFailed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Server maintenance in progress. Please try again later. 的本地化字符串。
+        /// </summary>
+        public static string GameRoleCard_ServerMaintenance {
+            get {
+                return ResourceManager.GetString("GameRoleCard_ServerMaintenance", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Switch character 的本地化字符串。
+        /// </summary>
+        public static string GameRoleCard_SwitchRole {
+            get {
+                return ResourceManager.GetString("GameRoleCard_SwitchRole", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 To be unlocked 的本地化字符串。
+        /// </summary>
+        public static string GameRoleCard_ToBeUnlocked {
+            get {
+                return ResourceManager.GetString("GameRoleCard_ToBeUnlocked", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Press both thumbstick buttons simultaneously to activate controller-based keyboard and mouse simulation. 的本地化字符串。
         /// </summary>
         public static string GamepadControlSetting_BothThumbsticksDesc {

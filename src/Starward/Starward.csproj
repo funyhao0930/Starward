@@ -78,6 +78,11 @@
 		</Content>
 	</ItemGroup>
 
+	<!-- Assets 来自上游的 Starward.Assets 包且整个目录被忽略，本分支自己加的图片放这里 -->
+	<ItemGroup>
+		<Content Include="Images\**" CopyToOutputDirectory="PreserveNewest" />
+	</ItemGroup>
+
 	<Target Name="RemoveDlls" AfterTargets="Publish">
 		<Delete Files="$(PublishDir)DirectML.dll" />
 		<Delete Files="$(PublishDir)onnxruntime.dll" />

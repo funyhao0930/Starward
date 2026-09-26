@@ -2801,4 +2801,58 @@ Puede enviar los datos exportados al siguiente repositorio:</value>
   <data name="PlayTimeStatsDialog_StatsTip" xml:space="preserve">
     <value>Las estadísticas se basan en el tiempo de ejecución del juego, no en el tiempo de juego real, y solo sirven como referencia.</value>
   </data>
+  <data name="GameRoleCard_Kuro_UnionLevel" xml:space="preserve">
+    <value>Nivel de Unión</value>
+  </data>
+  <data name="GameRoleCard_Kuro_Uid" xml:space="preserve">
+    <value>UID</value>
+  </data>
+  <data name="GameRoleCard_Kuro_Waveplate" xml:space="preserve">
+    <value>Placa Ondulada</value>
+  </data>
+  <data name="GameRoleCard_Kuro_WaveplateCrystal" xml:space="preserve">
+    <value>Cristal Ondulado</value>
+  </data>
+  <data name="GameRoleCard_Kuro_Activity" xml:space="preserve">
+    <value>Actividad</value>
+  </data>
+  <data name="GameRoleCard_Kuro_PioneerPodcast" xml:space="preserve">
+    <value>Podcast Pionero</value>
+  </data>
+  <data name="GameRoleCard_Kuro_PodcastLevel" xml:space="preserve">
+    <value>LV {0}</value>
+  </data>
+  <data name="GameRoleCard_Kuro_Footnote" xml:space="preserve">
+    <value>Puede haber un retraso en la actualización de datos. Espera un momento...</value>
+  </data>
+  <data name="GameRoleCard_NoLoginRecord" xml:space="preserve">
+    <value>No se encontró registro de inicio de sesión. Intenta de nuevo después de iniciar sesión.</value>
+  </data>
+  <data name="GameRoleCard_LoginExpired" xml:space="preserve">
+    <value>Inicio de sesión caducado. Vuelve a iniciar sesión en el juego.</value>
+  </data>
+  <data name="GameRoleCard_NoCharacter" xml:space="preserve">
+    <value>Aún no tienes personajes creados.</value>
+  </data>
+  <data name="GameRoleCard_ServerMaintenance" xml:space="preserve">
+    <value>Servidor en mantenimiento. Inténtalo de nuevo más tarde.</value>
+  </data>
+  <data name="GameRoleCard_RefreshFailed" xml:space="preserve">
+    <value>Error al actualizar. Inténtalo de nuevo.</value>
+  </data>
+  <data name="GameRoleCard_ToBeUnlocked" xml:space="preserve">
+    <value>Por desbloquear</value>
+  </data>
+  <data name="GameRoleCard_NotOpen" xml:space="preserve">
+    <value>No disponible</value>
+  </data>
+  <data name="GameRoleCard_Full" xml:space="preserve">
+    <value>Llena</value>
+  </data>
+  <data name="GameRoleCard_HoursMinutes" xml:space="preserve">
+    <value>{0} h {1} min</value>
+  </data>
+  <data name="GameRoleCard_SwitchRole" xml:space="preserve">
+    <value>Cambiar personaje</value>
+  </data>
 </root>

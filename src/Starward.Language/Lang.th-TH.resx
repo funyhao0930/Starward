@@ -2798,4 +2798,58 @@
   <data name="PlayTimeStatsDialog_StatsTip" xml:space="preserve">
     <value>สถิติอ้างอิงจากเวลาที่เกมทำงาน ไม่ใช่เวลาเล่นจริง และใช้เพื่อการอ้างอิงเท่านั้น</value>
   </data>
+  <data name="GameRoleCard_Kuro_UnionLevel" xml:space="preserve">
+    <value>เลเวลยูเนียน</value>
+  </data>
+  <data name="GameRoleCard_Kuro_Uid" xml:space="preserve">
+    <value>UID</value>
+  </data>
+  <data name="GameRoleCard_Kuro_Waveplate" xml:space="preserve">
+    <value>คริสตัลพลังงาน</value>
+  </data>
+  <data name="GameRoleCard_Kuro_WaveplateCrystal" xml:space="preserve">
+    <value>คริสตัลพลังงานสำรอง</value>
+  </data>
+  <data name="GameRoleCard_Kuro_Activity" xml:space="preserve">
+    <value>ค่าแอ็กทีฟ</value>
+  </data>
+  <data name="GameRoleCard_Kuro_PioneerPodcast" xml:space="preserve">
+    <value>พอดแคสต์ผู้บุกเบิก</value>
+  </data>
+  <data name="GameRoleCard_Kuro_PodcastLevel" xml:space="preserve">
+    <value>Lv {0}</value>
+  </data>
+  <data name="GameRoleCard_Kuro_Footnote" xml:space="preserve">
+    <value>ผลการค้นหาอาจล่าช้า กรุณารอสักครู่</value>
+  </data>
+  <data name="GameRoleCard_NoLoginRecord" xml:space="preserve">
+    <value>ไม่พบข้อมูลการเข้าสู่ระบบ กรุณาเข้าสู่ระบบเกมแล้วลองใหม่อีกครั้ง</value>
+  </data>
+  <data name="GameRoleCard_LoginExpired" xml:space="preserve">
+    <value>การเข้าสู่ระบบหมดอายุ กรุณาเข้าสู่ระบบเกมใหม่อีกครั้ง</value>
+  </data>
+  <data name="GameRoleCard_NoCharacter" xml:space="preserve">
+    <value>ยังไม่มีตัวละคร</value>
+  </data>
+  <data name="GameRoleCard_ServerMaintenance" xml:space="preserve">
+    <value>เซิร์ฟเวอร์อยู่ระหว่างการบำรุงรักษา กรุณาลองใหม่อีกครั้งในภายหลัง</value>
+  </data>
+  <data name="GameRoleCard_RefreshFailed" xml:space="preserve">
+    <value>รีเฟรชล้มเหลว กรุณาลองอีกครั้ง</value>
+  </data>
+  <data name="GameRoleCard_ToBeUnlocked" xml:space="preserve">
+    <value>ยังไม่ปลดล็อก</value>
+  </data>
+  <data name="GameRoleCard_NotOpen" xml:space="preserve">
+    <value>ยังไม่เปิด</value>
+  </data>
+  <data name="GameRoleCard_Full" xml:space="preserve">
+    <value>เต็ม</value>
+  </data>
+  <data name="GameRoleCard_HoursMinutes" xml:space="preserve">
+    <value>{0}ชม.{1}นาที</value>
+  </data>
+  <data name="GameRoleCard_SwitchRole" xml:space="preserve">
+    <value>สลับตัวละคร</value>
+  </data>
 </root>

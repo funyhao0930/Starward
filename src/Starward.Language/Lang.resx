@@ -2840,4 +2840,58 @@ You are welcome to submit the exported data to the following repository:</value>
   <data name="NteGachaService_SomeRecordsCouldNotBeRead" xml:space="preserve">
     <value>{0} records could not be read (unrecognised pool or timestamp) and were skipped.</value>
   </data>
+  <data name="GameRoleCard_Kuro_UnionLevel" xml:space="preserve">
+    <value>Union Level</value>
+  </data>
+  <data name="GameRoleCard_Kuro_Uid" xml:space="preserve">
+    <value>UID</value>
+  </data>
+  <data name="GameRoleCard_Kuro_Waveplate" xml:space="preserve">
+    <value>Waveplate</value>
+  </data>
+  <data name="GameRoleCard_Kuro_WaveplateCrystal" xml:space="preserve">
+    <value>Waveplate Crystal</value>
+  </data>
+  <data name="GameRoleCard_Kuro_Activity" xml:space="preserve">
+    <value>Activity</value>
+  </data>
+  <data name="GameRoleCard_Kuro_PioneerPodcast" xml:space="preserve">
+    <value>Pioneer Podcast</value>
+  </data>
+  <data name="GameRoleCard_Kuro_PodcastLevel" xml:space="preserve">
+    <value>Level {0}</value>
+  </data>
+  <data name="GameRoleCard_Kuro_Footnote" xml:space="preserve">
+    <value>It may take a few seconds for the data to finish loading. Please wait...</value>
+  </data>
+  <data name="GameRoleCard_NoLoginRecord" xml:space="preserve">
+    <value>No login record found. Please try again after logging into the game.</value>
+  </data>
+  <data name="GameRoleCard_LoginExpired" xml:space="preserve">
+    <value>Login expired. Please log in to the game again.</value>
+  </data>
+  <data name="GameRoleCard_NoCharacter" xml:space="preserve">
+    <value>No character created yet</value>
+  </data>
+  <data name="GameRoleCard_ServerMaintenance" xml:space="preserve">
+    <value>Server maintenance in progress. Please try again later.</value>
+  </data>
+  <data name="GameRoleCard_RefreshFailed" xml:space="preserve">
+    <value>Refresh failed. Please try again.</value>
+  </data>
+  <data name="GameRoleCard_ToBeUnlocked" xml:space="preserve">
+    <value>To be unlocked</value>
+  </data>
+  <data name="GameRoleCard_NotOpen" xml:space="preserve">
+    <value>Not open</value>
+  </data>
+  <data name="GameRoleCard_Full" xml:space="preserve">
+    <value>Full</value>
+  </data>
+  <data name="GameRoleCard_HoursMinutes" xml:space="preserve">
+    <value>{0}h {1}min</value>
+  </data>
+  <data name="GameRoleCard_SwitchRole" xml:space="preserve">
+    <value>Switch character</value>
+  </data>
 </root>

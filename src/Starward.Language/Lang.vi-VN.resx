@@ -2801,4 +2801,58 @@ Bạn có chấp nhận rủi ro và tiếp tục?</value>
   <data name="PlayTimeStatsDialog_StatsTip" xml:space="preserve">
     <value>Thống kê dựa trên thời gian chạy của trò chơi, không phải thời gian chơi thực tế, và chỉ mang tính chất tham khảo.</value>
   </data>
+  <data name="GameRoleCard_Kuro_UnionLevel" xml:space="preserve">
+    <value>Union Level</value>
+  </data>
+  <data name="GameRoleCard_Kuro_Uid" xml:space="preserve">
+    <value>UID</value>
+  </data>
+  <data name="GameRoleCard_Kuro_Waveplate" xml:space="preserve">
+    <value>Waveplate</value>
+  </data>
+  <data name="GameRoleCard_Kuro_WaveplateCrystal" xml:space="preserve">
+    <value>Waveplate Crystal</value>
+  </data>
+  <data name="GameRoleCard_Kuro_Activity" xml:space="preserve">
+    <value>Activity</value>
+  </data>
+  <data name="GameRoleCard_Kuro_PioneerPodcast" xml:space="preserve">
+    <value>Pioneer Podcast</value>
+  </data>
+  <data name="GameRoleCard_Kuro_PodcastLevel" xml:space="preserve">
+    <value>Cấp {0}</value>
+  </data>
+  <data name="GameRoleCard_Kuro_Footnote" xml:space="preserve">
+    <value>Dữ liệu có thể được cập nhật chậm, vui lòng chờ.</value>
+  </data>
+  <data name="GameRoleCard_NoLoginRecord" xml:space="preserve">
+    <value>Không tìm thấy thông tin đăng nhập. Hãy đăng nhập vào trò chơi rồi thử lại.</value>
+  </data>
+  <data name="GameRoleCard_LoginExpired" xml:space="preserve">
+    <value>Phiên đăng nhập đã hết hạn. Hãy đăng nhập lại vào trò chơi.</value>
+  </data>
+  <data name="GameRoleCard_NoCharacter" xml:space="preserve">
+    <value>Chưa tạo nhân vật</value>
+  </data>
+  <data name="GameRoleCard_ServerMaintenance" xml:space="preserve">
+    <value>Máy chủ đang bảo trì. Vui lòng thử lại sau.</value>
+  </data>
+  <data name="GameRoleCard_RefreshFailed" xml:space="preserve">
+    <value>Làm mới thất bại. Vui lòng thử lại.</value>
+  </data>
+  <data name="GameRoleCard_ToBeUnlocked" xml:space="preserve">
+    <value>Chưa mở khóa</value>
+  </data>
+  <data name="GameRoleCard_NotOpen" xml:space="preserve">
+    <value>Chưa mở</value>
+  </data>
+  <data name="GameRoleCard_Full" xml:space="preserve">
+    <value>Đầy</value>
+  </data>
+  <data name="GameRoleCard_HoursMinutes" xml:space="preserve">
+    <value>{0} giờ {1} phút</value>
+  </data>
+  <data name="GameRoleCard_SwitchRole" xml:space="preserve">
+    <value>Đổi nhân vật</value>
+  </data>
 </root>

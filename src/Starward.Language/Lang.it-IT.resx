@@ -2804,4 +2804,58 @@ Sei invitato a inviare i dati esportati al seguente repository:</value>
   <data name="PlayTimeStatsDialog_StatsTip" xml:space="preserve">
     <value>Le statistiche si basano sul tempo di esecuzione del gioco, non sul tempo di gioco effettivo, e servono solo come riferimento.</value>
   </data>
+  <data name="GameRoleCard_Kuro_UnionLevel" xml:space="preserve">
+    <value>Union Level</value>
+  </data>
+  <data name="GameRoleCard_Kuro_Uid" xml:space="preserve">
+    <value>UID</value>
+  </data>
+  <data name="GameRoleCard_Kuro_Waveplate" xml:space="preserve">
+    <value>Waveplate</value>
+  </data>
+  <data name="GameRoleCard_Kuro_WaveplateCrystal" xml:space="preserve">
+    <value>Waveplate Crystal</value>
+  </data>
+  <data name="GameRoleCard_Kuro_Activity" xml:space="preserve">
+    <value>Activity</value>
+  </data>
+  <data name="GameRoleCard_Kuro_PioneerPodcast" xml:space="preserve">
+    <value>Pioneer Podcast</value>
+  </data>
+  <data name="GameRoleCard_Kuro_PodcastLevel" xml:space="preserve">
+    <value>Livello {0}</value>
+  </data>
+  <data name="GameRoleCard_Kuro_Footnote" xml:space="preserve">
+    <value>I dati potrebbero essere aggiornati con qualche ritardo.</value>
+  </data>
+  <data name="GameRoleCard_NoLoginRecord" xml:space="preserve">
+    <value>Nessun accesso trovato. Accedi al gioco e riprova.</value>
+  </data>
+  <data name="GameRoleCard_LoginExpired" xml:space="preserve">
+    <value>Accesso scaduto. Accedi di nuovo al gioco.</value>
+  </data>
+  <data name="GameRoleCard_NoCharacter" xml:space="preserve">
+    <value>Nessun personaggio ancora creato</value>
+  </data>
+  <data name="GameRoleCard_ServerMaintenance" xml:space="preserve">
+    <value>Manutenzione del server in corso. Riprova più tardi.</value>
+  </data>
+  <data name="GameRoleCard_RefreshFailed" xml:space="preserve">
+    <value>Aggiornamento non riuscito. Riprova.</value>
+  </data>
+  <data name="GameRoleCard_ToBeUnlocked" xml:space="preserve">
+    <value>Da sbloccare</value>
+  </data>
+  <data name="GameRoleCard_NotOpen" xml:space="preserve">
+    <value>Non disponibile</value>
+  </data>
+  <data name="GameRoleCard_Full" xml:space="preserve">
+    <value>Pieno</value>
+  </data>
+  <data name="GameRoleCard_HoursMinutes" xml:space="preserve">
+    <value>{0} h {1} min</value>
+  </data>
+  <data name="GameRoleCard_SwitchRole" xml:space="preserve">
+    <value>Cambia personaggio</value>
+  </data>
 </root>
