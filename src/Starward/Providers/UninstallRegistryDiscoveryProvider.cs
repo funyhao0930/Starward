@@ -86,6 +86,32 @@ internal abstract class UninstallRegistryDiscoveryProvider : IGameDiscoveryProvi
     }
 
 
+    /// <summary>
+    /// 厂商公布的版本号说的是什么东西，默认是官方启动器自身的版本。
+    /// 与 <see cref="GetLocalVersionAsync"/> 同样的理由，必须在这里声明为 virtual。
+    /// </summary>
+    public virtual GameVersionSource LatestVersionSource => GameVersionSource.OfficialLauncher;
+
+
+    /// <summary>
+    /// 本机是否落后于厂商公布的版本，默认按版本号比较。
+    /// 与 <see cref="GetLocalVersionAsync"/> 同样的理由，必须在这里声明为 virtual。
+    /// </summary>
+    public virtual async ValueTask<GameUpdateInfo?> GetUpdateInfoAsync(GameKey key, string installPath, Version? localVersion, CancellationToken cancellationToken = default)
+    {
+        if (localVersion is null)
+        {
+            return null;
+        }
+        Version? latest = await GetLatestVersionAsync(key, installPath, cancellationToken);
+        if (latest is null)
+        {
+            return null;
+        }
+        return new GameUpdateInfo(latest, latest > localVersion);
+    }
+
+
 
     public ValueTask<GameInstallation?> GetInstallationAsync(GameKey key, CancellationToken cancellationToken = default)
     {

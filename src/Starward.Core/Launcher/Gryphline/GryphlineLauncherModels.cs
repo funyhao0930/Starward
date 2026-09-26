@@ -39,6 +39,48 @@ public class GryphlineProxyRequest
     [JsonPropertyName("get_announcement_req")]
     public GryphlineLauncherRequest? AnnouncementRequest { get; set; }
 
+
+    [JsonPropertyName("get_latest_game_req")]
+    public GryphlineLatestGameRequest? LatestGameRequest { get; set; }
+
+}
+
+
+/// <summary>
+/// 查询最新游戏包的请求体。
+/// <para/>
+/// 与背景、公告那一族不同，这支走的是不带 web 的 batch_proxy，
+/// 而且渠道必须填对：留空或填错整个 proxy_rsps 都不返回，
+/// 不像背景图那样留空也能拿到默认素材。
+/// </summary>
+public class GryphlineLatestGameRequest
+{
+
+    [JsonPropertyName("appcode")]
+    public string AppCode { get; set; } = "";
+
+
+    /// <summary>
+    /// 启动器自己的标识，与游戏的 appcode 不是同一个
+    /// </summary>
+    [JsonPropertyName("launcher_appcode")]
+    public string LauncherAppCode { get; set; } = "";
+
+
+    [JsonPropertyName("channel")]
+    public string Channel { get; set; } = "";
+
+
+    [JsonPropertyName("sub_channel")]
+    public string SubChannel { get; set; } = "";
+
+
+    /// <summary>
+    /// 本机版本号。留空时返回整包安装的信息，Starward 读不到本机版本号，因此总是留空。
+    /// </summary>
+    [JsonPropertyName("version")]
+    public string Version { get; set; } = "";
+
 }
 
 
@@ -112,6 +154,52 @@ public class GryphlineProxyResponse
 
     [JsonPropertyName("get_announcement_rsp")]
     public GryphlineAnnouncementResponse? AnnouncementResponse { get; set; }
+
+
+    [JsonPropertyName("get_latest_game_rsp")]
+    public GryphlineLatestGame? LatestGameResponse { get; set; }
+
+}
+
+
+/// <summary>
+/// 最新游戏包。下载相关的字段（分卷列表、补丁）这里不建模，需要实现下载器时再补。
+/// </summary>
+public class GryphlineLatestGame
+{
+
+    /// <summary>
+    /// 线上的游戏版本号，形如 <c>1.5.3</c>
+    /// </summary>
+    [JsonPropertyName("version")]
+    public string? Version { get; set; }
+
+
+    /// <summary>
+    /// 请求里的版本号是最新版时为 0，留空时为 1（整包安装）
+    /// </summary>
+    [JsonPropertyName("action")]
+    public int Action { get; set; }
+
+
+    [JsonPropertyName("pkg")]
+    public GryphlineGamePackage? Package { get; set; }
+
+}
+
+
+public class GryphlineGamePackage
+{
+
+    /// <summary>
+    /// 这一版安装清单 <c>game_files</c> 的 MD5。
+    /// <para/>
+    /// 官方启动器装完会把同一份清单放在游戏目录里，内容逐字节一致，
+    /// 所以本机那份的 MD5 与它相等就说明已经是这一版。
+    /// 这是判断「要不要更新」唯一可靠的办法：本机的版本文件 config.ini 是加密的。
+    /// </summary>
+    [JsonPropertyName("game_files_md5")]
+    public string? GameFilesMd5 { get; set; }
 
 }
 

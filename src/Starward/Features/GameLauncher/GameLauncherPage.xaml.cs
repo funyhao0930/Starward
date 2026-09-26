@@ -437,7 +437,9 @@ public sealed partial class GameLauncherPage : PageBase
         try
         {
             OfficialLauncherUpdateText = null;
-            if (string.IsNullOrWhiteSpace(GameInstallPath) || localGameVersion is null)
+            // 本机版本号读不到时不能就此放弃：终末地的版本文件是加密的，
+            // 它改比安装清单的校验值，要不要更新由供应商自己判断
+            if (string.IsNullOrWhiteSpace(GameInstallPath))
             {
                 return;
             }
@@ -446,13 +448,14 @@ public sealed partial class GameLauncherPage : PageBase
             {
                 return;
             }
-            Version? latest = await discovery.GetLatestVersionAsync(CurrentGameKey, GameInstallPath);
-            if (latest is null)
+            GameUpdateInfo? update = await discovery.GetUpdateInfoAsync(CurrentGameKey, GameInstallPath, localGameVersion);
+            if (update is null)
             {
                 return;
             }
-            _logger.LogInformation("Published version of ({key}): local {local}, latest {latest}, source {source}.", CurrentGameKey, localGameVersion, latest, discovery.LatestVersionSource);
-            if (latest > localGameVersion)
+            Version latest = update.LatestVersion;
+            _logger.LogInformation("Published version of ({key}): local {local}, latest {latest}, update {update}, source {source}.", CurrentGameKey, localGameVersion, latest, update.UpdateAvailable, discovery.LatestVersionSource);
+            if (update.UpdateAvailable)
             {
                 // 各家公布的版本号说的不是同一个东西，措辞跟着供应商走，
                 // 见 IGameDiscoveryProvider.LatestVersionSource

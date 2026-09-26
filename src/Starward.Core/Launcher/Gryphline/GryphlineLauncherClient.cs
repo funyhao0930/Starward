@@ -18,6 +18,32 @@ public class GryphlineLauncherClient
     private const string API_BATCH_PROXY = "https://launcher.gryphline.com/api/proxy/web/batch_proxy";
 
 
+    /// <summary>
+    /// 游戏包那一族走的是不带 web 的聚合接口，与背景、公告不同
+    /// </summary>
+    private const string API_GAME_BATCH_PROXY = "https://launcher.gryphline.com/api/proxy/batch_proxy";
+
+
+    public const string KIND_LATEST_GAME = "get_latest_game";
+
+
+    /// <summary>
+    /// 国际服 GRYPHLINK 启动器自己的标识。
+    /// 启动器的构建路径里就写着它（<c>publish-launcher-184\TiaytKBUIEdoEwRT\1.6.0.1607</c>）。
+    /// </summary>
+    public const string GLOBAL_LAUNCHER_APP_CODE = "TiaytKBUIEdoEwRT";
+
+
+    /// <summary>
+    /// 国际服官方渠道。
+    /// <para/>
+    /// 查游戏包时渠道必须填对，留空或填错都拿不到结果。本机的渠道记在加密的日志里，
+    /// 读不出来，因此只能按官方渠道问：Epic、Steam 等其他来源的安装会问不到，
+    /// 这时安静地不提示，而不是报一个不属于它的版本。
+    /// </summary>
+    public const string GLOBAL_OFFICIAL_CHANNEL = "6";
+
+
     public const string KIND_MAIN_BG_IMAGE = "get_main_bg_image";
 
     public const string KIND_BANNER = "get_banner";
@@ -160,6 +186,36 @@ public class GryphlineLauncherClient
 
 
     /// <summary>
+    /// 最新游戏包，问不到时返回 null。
+    /// <para/>
+    /// 渠道填错时接口不报错，只是 proxy_rsps 整个缺席，这里同样按「问不到」返回 null。
+    /// </summary>
+    /// <param name="appCode">游戏标识，见 <see cref="ENDFIELD_APP_CODE"/></param>
+    public async Task<GryphlineLatestGame?> GetLatestGameAsync(string appCode, CancellationToken cancellationToken = default)
+    {
+        var request = new GryphlineBatchProxyRequest
+        {
+            ProxyRequests =
+            [
+                new GryphlineProxyRequest
+                {
+                    Kind = KIND_LATEST_GAME,
+                    LatestGameRequest = new GryphlineLatestGameRequest
+                    {
+                        AppCode = appCode,
+                        LauncherAppCode = GLOBAL_LAUNCHER_APP_CODE,
+                        Channel = GLOBAL_OFFICIAL_CHANNEL,
+                        SubChannel = GLOBAL_OFFICIAL_CHANNEL,
+                    },
+                },
+            ],
+        };
+        GryphlineBatchProxyResponse? result = await PostAsync(API_GAME_BATCH_PROXY, request, cancellationToken);
+        return Find(result, KIND_LATEST_GAME)?.LatestGameResponse;
+    }
+
+
+    /// <summary>
     /// 每个 kind 的请求体都一样，只有 appcode 与语言会变
     /// </summary>
     private static GryphlineLauncherRequest MakeRequest(string appCode, string language)
@@ -177,9 +233,15 @@ public class GryphlineLauncherClient
     }
 
 
-    private async Task<GryphlineBatchProxyResponse?> PostAsync(GryphlineBatchProxyRequest request, CancellationToken cancellationToken)
+    private Task<GryphlineBatchProxyResponse?> PostAsync(GryphlineBatchProxyRequest request, CancellationToken cancellationToken)
     {
-        HttpResponseMessage response = await _httpClient.PostAsJsonAsync(API_BATCH_PROXY, request, GryphlineLauncherJsonContext.Default.GryphlineBatchProxyRequest, cancellationToken);
+        return PostAsync(API_BATCH_PROXY, request, cancellationToken);
+    }
+
+
+    private async Task<GryphlineBatchProxyResponse?> PostAsync(string url, GryphlineBatchProxyRequest request, CancellationToken cancellationToken)
+    {
+        HttpResponseMessage response = await _httpClient.PostAsJsonAsync(url, request, GryphlineLauncherJsonContext.Default.GryphlineBatchProxyRequest, cancellationToken);
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync(typeof(GryphlineBatchProxyResponse), GryphlineLauncherJsonContext.Default, cancellationToken) as GryphlineBatchProxyResponse;
     }

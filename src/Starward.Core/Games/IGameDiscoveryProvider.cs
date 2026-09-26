@@ -51,7 +51,38 @@ public interface IGameDiscoveryProvider : IGameProvider
     /// </summary>
     GameVersionSource LatestVersionSource => GameVersionSource.OfficialLauncher;
 
+
+    /// <summary>
+    /// 本机是否落后于厂商公布的版本，返回 null 表示无法判断。
+    /// <para/>
+    /// 默认按版本号比较：读得到本机版本号、也拿得到最新版本号时，后者较大即为有更新。
+    /// 但不是每款游戏都读得到本机版本号——终末地的版本文件是加密的，
+    /// 它得改用别的依据（安装清单的校验值）判断，因此交给实现覆盖。
+    /// </summary>
+    /// <param name="localVersion"><see cref="GetLocalVersionAsync"/> 的结果，可以为 null</param>
+    async ValueTask<GameUpdateInfo?> GetUpdateInfoAsync(GameKey key, string installPath, Version? localVersion, CancellationToken cancellationToken = default)
+    {
+        if (localVersion is null)
+        {
+            return null;
+        }
+        Version? latest = await GetLatestVersionAsync(key, installPath, cancellationToken);
+        if (latest is null)
+        {
+            return null;
+        }
+        return new GameUpdateInfo(latest, latest > localVersion);
+    }
+
 }
+
+
+/// <summary>
+/// 厂商公布的版本，以及本机是否已经落后
+/// </summary>
+/// <param name="LatestVersion">厂商公布的版本号，用于提示文字</param>
+/// <param name="UpdateAvailable">本机是否落后于它</param>
+public sealed record GameUpdateInfo(Version LatestVersion, bool UpdateAvailable);
 
 
 /// <summary>
