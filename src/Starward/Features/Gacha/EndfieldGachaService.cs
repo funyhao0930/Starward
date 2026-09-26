@@ -41,9 +41,36 @@ internal class EndfieldGachaService : GachaLogService
 
 
 
+    private const string GachaInfoVersionKey = "EndfieldGachaInfoVersion";
+
+
+    private readonly GryphlineGachaClient _gryphlineClient;
+
+
     public EndfieldGachaService(ILogger<EndfieldGachaService> logger, GryphlineGachaClient client) : base(logger, client)
     {
+        _gryphlineClient = client;
+    }
 
+
+
+    /// <summary>
+    /// 接口不给图，图示来自 <see cref="UpdateGachaInfoAsync"/> 存下的对照表。
+    /// 对照表还没有或查不到的物品保持空白，界面会画稀有度占位块。
+    /// </summary>
+    public override List<GachaLogItemEx> GetGachaLogItemEx(long uid)
+    {
+        var list = base.GetGachaLogItemEx(uid);
+        using var dapper = DatabaseService.CreateConnection();
+        var icons = dapper.Query<(int ItemId, string Icon)>("SELECT ItemId, Icon FROM EndfieldGachaInfo;").ToDictionary(x => x.ItemId, x => x.Icon);
+        foreach (var item in list)
+        {
+            if (icons.TryGetValue(item.ItemId, out string? icon))
+            {
+                item.Icon = icon;
+            }
+        }
+        return list;
     }
 
 
@@ -158,11 +185,25 @@ internal class EndfieldGachaService : GachaLogService
 
 
     /// <summary>
-    /// 没有物品图鉴接口，名称与稀有度都由记录接口一并返回
+    /// 名称与稀有度由记录接口一并返回，这里只更新图示对照表。
+    /// 数据源的版本没变就不重新下载，见 <see cref="GryphlineGachaClient.GetGachaIconsAsync"/>。
     /// </summary>
-    public override Task<string> UpdateGachaInfoAsync(GameBiz gameBiz, string lang, CancellationToken cancellationToken = default)
+    public override async Task<string> UpdateGachaInfoAsync(GameBiz gameBiz, string lang, CancellationToken cancellationToken = default)
     {
-        return Task.FromResult(lang);
+        using var dapper = DatabaseService.CreateConnection();
+        string? knownVersion = dapper.QueryFirstOrDefault<int>("SELECT COUNT(*) FROM EndfieldGachaInfo;") > 0
+            ? DatabaseService.GetValue<string>(GachaInfoVersionKey, out _)
+            : null;
+        (string version, List<GryphlineGachaIcon>? icons) = await _gryphlineClient.GetGachaIconsAsync(knownVersion, cancellationToken);
+        if (icons is not null)
+        {
+            using var t = dapper.BeginTransaction();
+            dapper.Execute("DELETE FROM EndfieldGachaInfo;", transaction: t);
+            dapper.Execute("INSERT OR REPLACE INTO EndfieldGachaInfo (ItemId, Key, Icon) VALUES (@ItemId, @Key, @Icon);", icons, t);
+            t.Commit();
+            DatabaseService.SetValue(GachaInfoVersionKey, version);
+        }
+        return lang;
     }
 
 

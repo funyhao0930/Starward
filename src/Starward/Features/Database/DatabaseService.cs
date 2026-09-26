@@ -264,6 +264,7 @@ internal static class DatabaseService
         Sql_v24,
         Sql_v25,
         Sql_v26,
+        Sql_v27,
     ];
 
 
@@ -1214,6 +1215,26 @@ internal static class DatabaseService
         ALTER TABLE EndfieldGachaItem ADD COLUMN IsFree INTEGER NOT NULL DEFAULT 0;
 
         PRAGMA USER_VERSION = 26;
+        COMMIT TRANSACTION;
+        """;
+
+    /// <summary>
+    /// 终末地的干员与武器图示。
+    /// <para/>
+    /// 以记录里的 ItemId（散列后的整数）为主键，读取时直接对上；
+    /// <c>Key</c> 留着原始的 charId / weaponId，散列不可逆，以后要用只能从这里找。
+    /// </summary>
+    private const string Sql_v27 = """
+        BEGIN TRANSACTION;
+
+        CREATE TABLE IF NOT EXISTS EndfieldGachaInfo
+        (
+            ItemId INTEGER NOT NULL PRIMARY KEY,
+            Key    TEXT    NOT NULL,
+            Icon   TEXT    NOT NULL
+        );
+
+        PRAGMA USER_VERSION = 27;
         COMMIT TRANSACTION;
         """;
 

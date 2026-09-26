@@ -1,5 +1,6 @@
 using System.Net.Http.Json;
 using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Web;
 
@@ -346,6 +347,103 @@ public class GryphlineGachaClient : GachaLogClient
     {
         long sequence = long.TryParse(seqId, out long value) ? value : GachaSyntheticId.Fnv1a(seqId) >> 1;
         return sequence * 2 + (weapon ? 1 : 0);
+    }
+
+
+    #endregion
+
+
+
+    #region 物品图示
+
+
+    /// <summary>
+    /// 寻访接口只给 charId / weaponId，不给图；官方也没有公开的图鉴接口。
+    /// 图示取自社群站 AKEDatabase，它跟着游戏版本解包，数据表与图片都直接公开。
+    /// </summary>
+    private const string AKEDATA_BASE_URL = "https://data.akedata.wiki";
+
+    private const string AKEDATA_SPRITE_URL = $"{AKEDATA_BASE_URL}/public/images/assets/beyond/dynamicassets/gameplay/ui/sprites";
+
+
+    /// <summary>
+    /// 取所有干员与武器的图示。
+    /// <para/>
+    /// 数据表约 3MB，先读清单比对版本：<paramref name="knownVersion"/> 与最新版本相同时
+    /// 不下载数据表，返回的列表为 null。
+    /// <para/>
+    /// 干员用头像 <c>charremoteicon/icon_{charId}</c>：数据表里的 iconId 是背包里的物品图，
+    /// 不是头像。武器用数据表里的 iconId，它大多与 weaponId 相同，但有少数两把是互换的，
+    /// 直接拿 weaponId 拼会拿错图。
+    /// <para/>
+    /// 记录里存的 ItemId 是 <see cref="GachaSyntheticId.ToItemId"/> 散列后的整数，
+    /// 原始字符串没有保存，因此这里对数据表的每个 ID 做同样的散列，反过来对上旧记录。
+    /// </summary>
+    public async Task<(string Version, List<GryphlineGachaIcon>? Icons)> GetGachaIconsAsync(string? knownVersion, CancellationToken cancellationToken = default)
+    {
+        string manifestText = await _httpClient.GetStringAsync($"{AKEDATA_BASE_URL}/manifest.json", cancellationToken);
+        using JsonDocument manifest = JsonDocument.Parse(manifestText);
+        (string version, string tableCfgPath) = GetLatestTableCfg(manifest.RootElement);
+        if (version == knownVersion)
+        {
+            return (version, null);
+        }
+
+        await using Stream stream = await _httpClient.GetStreamAsync($"{AKEDATA_BASE_URL}/{tableCfgPath.Trim('/')}/ItemTable.json", cancellationToken);
+        using JsonDocument itemTable = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
+        if (itemTable.RootElement.ValueKind != JsonValueKind.Object)
+        {
+            throw new FormatException("AKEDatabase ItemTable is not an object.");
+        }
+        var icons = new List<GryphlineGachaIcon>();
+        foreach (JsonProperty property in itemTable.RootElement.EnumerateObject())
+        {
+            string key = property.Name;
+            string? icon = null;
+            if (key.StartsWith("chr_", StringComparison.Ordinal))
+            {
+                icon = $"{AKEDATA_SPRITE_URL}/charremoteicon/icon_{Uri.EscapeDataString(key)}.png";
+            }
+            else if (key.StartsWith("wpn_", StringComparison.Ordinal))
+            {
+                string iconId = GetString(property.Value, "iconId") is { Length: > 0 } id ? id : key;
+                icon = $"{AKEDATA_SPRITE_URL}/itemicon/{Uri.EscapeDataString(iconId)}.png";
+            }
+            if (icon is not null)
+            {
+                icons.Add(new GryphlineGachaIcon(GachaSyntheticId.ToItemId(key), key, icon));
+            }
+        }
+        if (icons.Count == 0)
+        {
+            throw new FormatException("AKEDatabase ItemTable has no character or weapon.");
+        }
+        return (version, icons);
+    }
+
+
+    private static (string Version, string TableCfgPath) GetLatestTableCfg(JsonElement manifest)
+    {
+        string version = GetString(manifest, "latest");
+        if (version.Length > 0 && manifest.TryGetProperty("versions", out JsonElement versions) && versions.ValueKind == JsonValueKind.Array)
+        {
+            foreach (JsonElement item in versions.EnumerateArray())
+            {
+                if (GetString(item, "id") == version && GetString(item, "tableCfgPath") is { Length: > 0 } path)
+                {
+                    return (version, path);
+                }
+            }
+        }
+        throw new FormatException("AKEDatabase manifest has no table path for the latest version.");
+    }
+
+
+    private static string GetString(JsonElement element, string name)
+    {
+        return element.ValueKind == JsonValueKind.Object
+            && element.TryGetProperty(name, out JsonElement value)
+            && value.ValueKind == JsonValueKind.String ? value.GetString() ?? "" : "";
     }
 
 
