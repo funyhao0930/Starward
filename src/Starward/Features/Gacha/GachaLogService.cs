@@ -99,8 +99,9 @@ internal abstract class GachaLogService
 
 
     /// <summary>
-    /// 更新物品图示对照表，返回对照表有没有变。变了的话界面要重画一次，
+    /// 更新物品图示对照表，返回记录能显示的图示有没有变。变了的话界面要重画一次，
     /// 否则第一次打开时的空白图示要等到下次打开才会出现。
+    /// 页面在 <see cref="UpdateGachaInfoAsync"/> 之后紧接着调用它。
     /// </summary>
     public virtual Task<bool> UpdateGachaIconsAsync(CancellationToken cancellationToken = default)
     {

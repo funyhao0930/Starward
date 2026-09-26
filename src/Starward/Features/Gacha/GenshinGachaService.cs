@@ -197,7 +197,64 @@ internal class GenshinGachaService : GachaLogService
         dapper.Execute(insertSql, data.AllWeapon, t);
         t.Commit();
         UpdateGachaItemId();
+        await UpdateGachaItemIdByRecordLanguageAsync(gameBiz, data.Language, cancellationToken);
         return data.Language;
+    }
+
+
+    /// <summary>
+    /// 补上其他语言的记录的 ItemId。
+    /// <para/>
+    /// 有些来源的记录不带 item_id（旧版导出、部分工具的 UIGF），存进来是 0，只能按名称对回图鉴。
+    /// 但图鉴只存当前界面语言的名称：先用简体抓的记录，界面换成繁体之后就再也对不上，
+    /// 这些记录的图示也就一直是空的。这里按记录自己的语言另取一份图鉴，只拿来对名称，
+    /// 不写进图鉴表，免得把当前语言的名称盖掉。
+    /// <para/>
+    /// 同一个名称对应多个 ID 的（旅行者的两种性别）无法判断，跳过；它也不会从卡池里出来。
+    /// </summary>
+    private bool _itemIdFilled;
+
+
+    /// <summary>
+    /// 原神的图示随图鉴一起更新，没有另外的对照表；但刚补上 ItemId 的记录现在有图了，
+    /// 页面得重画才看得到。页面在 <see cref="UpdateGachaInfoAsync"/> 之后紧接着调用这里。
+    /// </summary>
+    public override Task<bool> UpdateGachaIconsAsync(CancellationToken cancellationToken = default)
+    {
+        bool filled = _itemIdFilled;
+        _itemIdFilled = false;
+        return Task.FromResult(filled);
+    }
+
+
+    private async Task UpdateGachaItemIdByRecordLanguageAsync(GameBiz gameBiz, string infoLanguage, CancellationToken cancellationToken)
+    {
+        using var dapper = DatabaseService.CreateConnection();
+        var langs = dapper.Query<string>("SELECT DISTINCT Lang FROM GenshinGachaItem WHERE ItemId = 0 AND Lang IS NOT NULL AND Lang <> '';")
+                          .Where(x => LanguageUtil.FilterLanguage(x) != infoLanguage)
+                          .ToList();
+        foreach (string lang in langs)
+        {
+            try
+            {
+                var wiki = await _client.GetGenshinGachaInfoAsync(gameBiz, lang, cancellationToken);
+                var ids = wiki.AllAvatar.Concat(wiki.AllWeapon)
+                              .GroupBy(x => x.Name)
+                              .Where(x => x.Select(y => y.Id).Distinct().Count() == 1)
+                              .Select(x => new { Name = x.Key, x.First().Id, Lang = lang })
+                              .ToList();
+                using var t = dapper.BeginTransaction();
+                if (dapper.Execute("UPDATE GenshinGachaItem SET ItemId = @Id WHERE ItemId = 0 AND Name = @Name AND Lang = @Lang;", ids, t) > 0)
+                {
+                    _itemIdFilled = true;
+                }
+                t.Commit();
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                _logger.LogWarning(ex, "Update item id of {lang} gacha records", lang);
+            }
+        }
     }
 
 
