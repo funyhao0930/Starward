@@ -102,6 +102,16 @@ public sealed partial class GameRoleCardButton : UserControl
 
     public bool IsLoading { get; set => SetProperty(ref field, value); }
 
+    /// <summary>
+    /// 要先登录的游戏还没登录（或凭证失效），卡片换成登录入口
+    /// </summary>
+    public bool NeedsLogin { get; set => SetProperty(ref field, value); }
+
+    /// <summary>
+    /// 已经在 Starward 里登录过，可以登出
+    /// </summary>
+    public bool CanLogout { get; set => SetProperty(ref field, value); }
+
 
 
     private async void GameRoleCard_Loaded(object sender, RoutedEventArgs e)
@@ -137,11 +147,25 @@ public sealed partial class GameRoleCardButton : UserControl
                 return;
             }
             IconUri = provider.IconUri;
+            NeedsLogin = false;
+            CanLogout = provider.RequiresLogin && provider.IsLoggedIn(CurrentGameKey);
+            // 要登录的游戏还没登录时照样显示按钮，否则玩家找不到登录入口
+            if (provider.RequiresLogin && !provider.IsLoggedIn(CurrentGameKey))
+            {
+                ShowLogin(provider.LoginPrompt);
+                return;
+            }
             IsLoading = true;
             IReadOnlyList<GameRoleCardRole> roles;
             try
             {
                 roles = await provider.GetRolesAsync(CurrentGameKey, token);
+            }
+            catch (GameRoleCardLoginRequiredException ex)
+            {
+                token.ThrowIfCancellationRequested();
+                ShowLogin(ex.Message);
+                return;
             }
             catch (GameRoleCardException ex)
             {
@@ -159,6 +183,12 @@ public sealed partial class GameRoleCardButton : UserControl
             token.ThrowIfCancellationRequested();
             if (roles.Count == 0)
             {
+                if (provider.RequiresLogin)
+                {
+                    // 存着的凭证解不开（数据文件夹被搬到别的电脑）时也会走到这里
+                    ShowLogin(provider.LoginPrompt);
+                    return;
+                }
                 ResetAndHide();
                 return;
             }
@@ -199,11 +229,81 @@ public sealed partial class GameRoleCardButton : UserControl
             Stats = card.Stats.Select(x => new GameRoleCardStatItem(x)).ToList();
             _lastLoadTime = DateTimeOffset.Now;
         }
+        catch (GameRoleCardLoginRequiredException ex)
+        {
+            token.ThrowIfCancellationRequested();
+            ShowLogin(ex.Message);
+        }
         catch (GameRoleCardException ex)
         {
             token.ThrowIfCancellationRequested();
             // 保留上一次的等级与 UID，只把数值区换成原因
             ErrorMessage = ex.Message;
+        }
+    }
+
+
+
+    /// <summary>
+    /// 卡片换成登录入口：一句说明加一个登录按钮
+    /// </summary>
+    private void ShowLogin(string? message)
+    {
+        Roles = null;
+        SelectedRole = null;
+        Card = null;
+        Stats = null;
+        ErrorMessage = message ?? "";
+        NeedsLogin = true;
+        OnPropertyChanged(nameof(CanSwitchRole));
+        this.Visibility = Visibility.Visible;
+    }
+
+
+
+    [RelayCommand]
+    private async Task LoginAsync()
+    {
+        try
+        {
+            if (_registry.GetProvider(CurrentGameKey) is not IGameRoleCardProvider provider)
+            {
+                return;
+            }
+            // 登录窗口是另开的，卡片留着会挡在前面
+            Flyout_Card.Hide();
+            if (await provider.LoginAsync(CurrentGameKey, XamlRoot))
+            {
+                await LoadAsync();
+            }
+        }
+        catch (GameRoleCardException ex)
+        {
+            ErrorMessage = ex.Message;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Login role card ({key})", CurrentGameKey);
+        }
+    }
+
+
+
+    [RelayCommand]
+    private async Task LogoutAsync()
+    {
+        try
+        {
+            if (_registry.GetProvider(CurrentGameKey) is not IGameRoleCardProvider provider)
+            {
+                return;
+            }
+            provider.Logout(CurrentGameKey);
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Logout role card ({key})", CurrentGameKey);
         }
     }
 
@@ -302,6 +402,8 @@ public sealed partial class GameRoleCardButton : UserControl
     private void ResetAndHide()
     {
         this.Visibility = Visibility.Collapsed;
+        NeedsLogin = false;
+        CanLogout = false;
         Roles = null;
         SelectedRole = null;
         Card = null;

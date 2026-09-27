@@ -118,6 +118,8 @@ public static partial class AppConfig
             sc.AddSingleton<RoleCardProviderRegistry>();
             sc.AddSingleton<KuroPlayerClient>();
             sc.AddSingleton<IGameRoleCardProvider, KuroRoleCardProvider>();
+            sc.AddSingleton<SkportClient>();
+            sc.AddSingleton<IGameRoleCardProvider, GryphlineRoleCardProvider>();
 
             sc.AddSingleton<BackgroundService>();
             sc.AddSingleton<GameLauncherService>();

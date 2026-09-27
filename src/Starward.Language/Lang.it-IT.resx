@@ -2858,4 +2858,40 @@ Sei invitato a inviare i dati esportati al seguente repository:</value>
   <data name="GameRoleCard_SwitchRole" xml:space="preserve">
     <value>Cambia personaggio</value>
   </data>
+  <data name="GameRoleCard_Gryphline_Sanity" xml:space="preserve">
+    <value>Sanità</value>
+  </data>
+  <data name="GameRoleCard_Gryphline_DailyMission" xml:space="preserve">
+    <value>Missioni giornaliere</value>
+  </data>
+  <data name="GameRoleCard_Gryphline_BattlePass" xml:space="preserve">
+    <value>Pass</value>
+  </data>
+  <data name="GameRoleCard_Gryphline_AuthorityLevel" xml:space="preserve">
+    <value>Livello di autorità</value>
+  </data>
+  <data name="GameRoleCard_Gryphline_LoginPrompt" xml:space="preserve">
+    <value>Accedi con il tuo account Gryphline per vedere sanità, missioni giornaliere e il tuo pass.</value>
+  </data>
+  <data name="GameRoleCard_Gryphline_LoginExpired" xml:space="preserve">
+    <value>L'accesso a Gryphline è scaduto. Accedi di nuovo.</value>
+  </data>
+  <data name="GameRoleCard_Gryphline_NoRole" xml:space="preserve">
+    <value>Questo account Gryphline non ha personaggi di Endfield collegati su SKPORT.</value>
+  </data>
+  <data name="GameRoleCard_Gryphline_Footnote" xml:space="preserve">
+    <value>I dati provengono da SKPORT e possono essere in ritardo di qualche minuto rispetto al gioco.</value>
+  </data>
+  <data name="GameRoleCard_Login" xml:space="preserve">
+    <value>Accedi</value>
+  </data>
+  <data name="GameRoleCard_Logout" xml:space="preserve">
+    <value>Esci</value>
+  </data>
+  <data name="GryphlineLoginWindow_Title" xml:space="preserve">
+    <value>Accedi con Gryphline</value>
+  </data>
+  <data name="GryphlineLoginWindow_Hint" xml:space="preserve">
+    <value>Accedi dalla pagina ufficiale qui sotto; la finestra si chiuderà da sola al termine. La password si inserisce solo nella pagina ufficiale; Starward conserva soltanto il token di accesso, cifrato per questo utente di Windows.</value>
+  </data>
 </root>

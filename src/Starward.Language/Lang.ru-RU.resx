@@ -2878,4 +2878,40 @@ ChatGPT может допускать ошибки. Проверьте важн�
   <data name="GameRoleCard_SwitchRole" xml:space="preserve">
     <value>Сменить персонажа</value>
   </data>
+  <data name="GameRoleCard_Gryphline_Sanity" xml:space="preserve">
+    <value>Рассудок</value>
+  </data>
+  <data name="GameRoleCard_Gryphline_DailyMission" xml:space="preserve">
+    <value>Ежедневные задания</value>
+  </data>
+  <data name="GameRoleCard_Gryphline_BattlePass" xml:space="preserve">
+    <value>Пропуск</value>
+  </data>
+  <data name="GameRoleCard_Gryphline_AuthorityLevel" xml:space="preserve">
+    <value>Уровень полномочий</value>
+  </data>
+  <data name="GameRoleCard_Gryphline_LoginPrompt" xml:space="preserve">
+    <value>Войдите в аккаунт Gryphline, чтобы видеть рассудок, ежедневные задания и пропуск.</value>
+  </data>
+  <data name="GameRoleCard_Gryphline_LoginExpired" xml:space="preserve">
+    <value>Вход в Gryphline истёк. Войдите снова.</value>
+  </data>
+  <data name="GameRoleCard_Gryphline_NoRole" xml:space="preserve">
+    <value>К этому аккаунту Gryphline в SKPORT не привязан персонаж Endfield.</value>
+  </data>
+  <data name="GameRoleCard_Gryphline_Footnote" xml:space="preserve">
+    <value>Данные берутся из SKPORT и могут отставать от игры на несколько минут.</value>
+  </data>
+  <data name="GameRoleCard_Login" xml:space="preserve">
+    <value>Войти</value>
+  </data>
+  <data name="GameRoleCard_Logout" xml:space="preserve">
+    <value>Выйти</value>
+  </data>
+  <data name="GryphlineLoginWindow_Title" xml:space="preserve">
+    <value>Вход через Gryphline</value>
+  </data>
+  <data name="GryphlineLoginWindow_Hint" xml:space="preserve">
+    <value>Войдите на официальной странице ниже — после входа окно закроется само. Пароль вводится только на официальной странице; Starward хранит лишь токен входа, зашифрованный для текущего пользователя Windows.</value>
+  </data>
 </root>

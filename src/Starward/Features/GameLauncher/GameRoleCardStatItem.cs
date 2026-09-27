@@ -26,6 +26,18 @@ public partial class GameRoleCardStatItem : ObservableObject
 
     public string? IconUri => _stat.IconUri;
 
+    /// <summary>
+    /// 给 FontIcon 用，不能是 null：没有字形的数值框虽然收起来了，绑定照样会求值
+    /// </summary>
+    public string Glyph => _stat.Glyph ?? "";
+
+    /// <summary>
+    /// 有图片时画图片，否则画字形
+    /// </summary>
+    public bool HasImage => !string.IsNullOrWhiteSpace(_stat.IconUri);
+
+    public bool HasGlyph => !HasImage && !string.IsNullOrWhiteSpace(_stat.Glyph);
+
     public bool IsLocked => _stat.IsLocked;
 
 

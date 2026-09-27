@@ -21,7 +21,9 @@
         <Image Margin="4" Source="{x:Bind IconUri}" />
 
         <Button.Flyout>
-            <Flyout Opening="Flyout_Card_Opening" Placement="LeftEdgeAlignedTop">
+            <Flyout x:Name="Flyout_Card"
+                    Opening="Flyout_Card_Opening"
+                    Placement="LeftEdgeAlignedTop">
 
                 <Grid Width="340" RowSpacing="8">
 
@@ -37,6 +39,7 @@
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition />
+                            <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <Button Name="Button_SwitchRole"
@@ -101,6 +104,20 @@
                                           Height="16"
                                           IsActive="{x:Bind IsLoading}" />
                         </Grid>
+                        <!--  只有要在 Starward 里登录的游戏（终末地）才有登出  -->
+                        <Button Grid.Column="3"
+                                Width="28"
+                                Height="28"
+                                Padding="0"
+                                Command="{x:Bind LogoutCommand}"
+                                Style="{ThemeResource DateTimePickerFlyoutButtonStyle}"
+                                ToolTipService.ToolTip="{x:Bind lang:Lang.GameRoleCard_Logout}"
+                                Visibility="{x:Bind CanLogout}">
+                            <FontIcon FontSize="14"
+                                      Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                      Glyph="&#xF3B1;"
+                                      IsTextScaleFactorEnabled="False" />
+                        </Button>
                     </Grid>
 
                     <!--  等级与 UID  -->
@@ -163,7 +180,20 @@
                                             <Image Width="36"
                                                    Height="36"
                                                    VerticalAlignment="Center"
-                                                   Source="{x:Bind IconUri}" />
+                                                   Source="{x:Bind IconUri}"
+                                                   Visibility="{x:Bind HasImage}" />
+                                            <!--  没有图片的数值（终末地的每日任务、通行证）画字形，底板压淡，与图片同样大小  -->
+                                            <Border Width="36"
+                                                    Height="36"
+                                                    VerticalAlignment="Center"
+                                                    Background="{ThemeResource SubtleFillColorSecondaryBrush}"
+                                                    CornerRadius="8"
+                                                    Visibility="{x:Bind HasGlyph}">
+                                                <FontIcon FontSize="18"
+                                                          Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                          Glyph="{x:Bind Glyph}"
+                                                          IsTextScaleFactorEnabled="False" />
+                                            </Border>
                                             <StackPanel Grid.Column="1"
                                                         VerticalAlignment="Center"
                                                         Spacing="0">
@@ -192,13 +222,22 @@
                                     </DataTemplate>
                                 </ItemsRepeater.ItemTemplate>
                             </ItemsRepeater>
-                            <TextBlock MinHeight="40"
-                                       VerticalAlignment="Center"
-                                       FontSize="13"
-                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                       Text="{x:Bind ErrorMessage}"
-                                       TextWrapping="Wrap"
-                                       Visibility="{x:Bind ErrorMessage, Converter={StaticResource ObjectToVisibilityConverter}}" />
+                            <StackPanel VerticalAlignment="Center"
+                                        Spacing="10"
+                                        Visibility="{x:Bind ErrorMessage, Converter={StaticResource ObjectToVisibilityConverter}}">
+                                <TextBlock MinHeight="40"
+                                           VerticalAlignment="Center"
+                                           FontSize="13"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                           Text="{x:Bind ErrorMessage}"
+                                           TextWrapping="Wrap" />
+                                <!--  要登录的游戏还没登录、或凭证失效时的入口  -->
+                                <Button HorizontalAlignment="Stretch"
+                                        Command="{x:Bind LoginCommand}"
+                                        Content="{x:Bind lang:Lang.GameRoleCard_Login}"
+                                        Style="{ThemeResource AccentButtonStyle}"
+                                        Visibility="{x:Bind NeedsLogin}" />
+                            </StackPanel>
                         </Grid>
                     </Border>
 

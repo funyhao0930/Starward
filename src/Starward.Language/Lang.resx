@@ -2894,4 +2894,40 @@ You are welcome to submit the exported data to the following repository:</value>
   <data name="GameRoleCard_SwitchRole" xml:space="preserve">
     <value>Switch character</value>
   </data>
+  <data name="GameRoleCard_Gryphline_Sanity" xml:space="preserve">
+    <value>Sanity</value>
+  </data>
+  <data name="GameRoleCard_Gryphline_DailyMission" xml:space="preserve">
+    <value>Daily Missions</value>
+  </data>
+  <data name="GameRoleCard_Gryphline_BattlePass" xml:space="preserve">
+    <value>Pass</value>
+  </data>
+  <data name="GameRoleCard_Gryphline_AuthorityLevel" xml:space="preserve">
+    <value>Authority Level</value>
+  </data>
+  <data name="GameRoleCard_Gryphline_LoginPrompt" xml:space="preserve">
+    <value>Sign in with your Gryphline account to see Sanity, daily missions and your pass.</value>
+  </data>
+  <data name="GameRoleCard_Gryphline_LoginExpired" xml:space="preserve">
+    <value>Your Gryphline sign-in has expired. Please sign in again.</value>
+  </data>
+  <data name="GameRoleCard_Gryphline_NoRole" xml:space="preserve">
+    <value>This Gryphline account has no Arknights: Endfield character bound to SKPORT.</value>
+  </data>
+  <data name="GameRoleCard_Gryphline_Footnote" xml:space="preserve">
+    <value>Data comes from SKPORT and may lag behind the game by a few minutes.</value>
+  </data>
+  <data name="GameRoleCard_Login" xml:space="preserve">
+    <value>Sign in</value>
+  </data>
+  <data name="GameRoleCard_Logout" xml:space="preserve">
+    <value>Sign out</value>
+  </data>
+  <data name="GryphlineLoginWindow_Title" xml:space="preserve">
+    <value>Sign in with Gryphline</value>
+  </data>
+  <data name="GryphlineLoginWindow_Hint" xml:space="preserve">
+    <value>Sign in on the page below. This window closes by itself once you are signed in. Your password is entered on the official page only; Starward keeps just the sign-in token, encrypted for this Windows user.</value>
+  </data>
 </root>

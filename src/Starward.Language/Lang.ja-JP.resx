@@ -2857,4 +2857,40 @@
   <data name="GameRoleCard_SwitchRole" xml:space="preserve">
     <value>キャラクター切替</value>
   </data>
+  <data name="GameRoleCard_Gryphline_Sanity" xml:space="preserve">
+    <value>理性</value>
+  </data>
+  <data name="GameRoleCard_Gryphline_DailyMission" xml:space="preserve">
+    <value>デイリー任務</value>
+  </data>
+  <data name="GameRoleCard_Gryphline_BattlePass" xml:space="preserve">
+    <value>パス</value>
+  </data>
+  <data name="GameRoleCard_Gryphline_AuthorityLevel" xml:space="preserve">
+    <value>権限レベル</value>
+  </data>
+  <data name="GameRoleCard_Gryphline_LoginPrompt" xml:space="preserve">
+    <value>Gryphline アカウントでログインすると、理性・デイリー任務・パスをここで確認できます。</value>
+  </data>
+  <data name="GameRoleCard_Gryphline_LoginExpired" xml:space="preserve">
+    <value>Gryphline のログインが無効になりました。もう一度ログインしてください。</value>
+  </data>
+  <data name="GameRoleCard_Gryphline_NoRole" xml:space="preserve">
+    <value>この Gryphline アカウントには SKPORT に紐づいたエンドフィールドのキャラクターがありません。</value>
+  </data>
+  <data name="GameRoleCard_Gryphline_Footnote" xml:space="preserve">
+    <value>データは SKPORT から取得しており、ゲーム内より数分遅れることがあります。</value>
+  </data>
+  <data name="GameRoleCard_Login" xml:space="preserve">
+    <value>ログイン</value>
+  </data>
+  <data name="GameRoleCard_Logout" xml:space="preserve">
+    <value>ログアウト</value>
+  </data>
+  <data name="GryphlineLoginWindow_Title" xml:space="preserve">
+    <value>Gryphline にログイン</value>
+  </data>
+  <data name="GryphlineLoginWindow_Hint" xml:space="preserve">
+    <value>下の公式ページでログインしてください。ログインが完了するとこのウィンドウは自動で閉じます。パスワードは公式ページでのみ入力され、Starward はログイン用トークンだけを現在の Windows ユーザーで暗号化して保存します。</value>
+  </data>
 </root>

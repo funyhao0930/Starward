@@ -2852,4 +2852,40 @@
   <data name="GameRoleCard_SwitchRole" xml:space="preserve">
     <value>สลับตัวละคร</value>
   </data>
+  <data name="GameRoleCard_Gryphline_Sanity" xml:space="preserve">
+    <value>Sanity</value>
+  </data>
+  <data name="GameRoleCard_Gryphline_DailyMission" xml:space="preserve">
+    <value>ภารกิจประจำวัน</value>
+  </data>
+  <data name="GameRoleCard_Gryphline_BattlePass" xml:space="preserve">
+    <value>บัตรผ่าน</value>
+  </data>
+  <data name="GameRoleCard_Gryphline_AuthorityLevel" xml:space="preserve">
+    <value>ระดับสิทธิ์</value>
+  </data>
+  <data name="GameRoleCard_Gryphline_LoginPrompt" xml:space="preserve">
+    <value>ลงชื่อเข้าใช้บัญชี Gryphline เพื่อดู Sanity ภารกิจประจำวัน และบัตรผ่าน</value>
+  </data>
+  <data name="GameRoleCard_Gryphline_LoginExpired" xml:space="preserve">
+    <value>การลงชื่อเข้าใช้ Gryphline หมดอายุแล้ว โปรดลงชื่อเข้าใช้อีกครั้ง</value>
+  </data>
+  <data name="GameRoleCard_Gryphline_NoRole" xml:space="preserve">
+    <value>บัญชี Gryphline นี้ไม่มีตัวละคร Endfield ที่ผูกไว้กับ SKPORT</value>
+  </data>
+  <data name="GameRoleCard_Gryphline_Footnote" xml:space="preserve">
+    <value>ข้อมูลมาจาก SKPORT และอาจช้ากว่าในเกมไม่กี่นาที</value>
+  </data>
+  <data name="GameRoleCard_Login" xml:space="preserve">
+    <value>ลงชื่อเข้าใช้</value>
+  </data>
+  <data name="GameRoleCard_Logout" xml:space="preserve">
+    <value>ออกจากระบบ</value>
+  </data>
+  <data name="GryphlineLoginWindow_Title" xml:space="preserve">
+    <value>ลงชื่อเข้าใช้ด้วย Gryphline</value>
+  </data>
+  <data name="GryphlineLoginWindow_Hint" xml:space="preserve">
+    <value>ลงชื่อเข้าใช้ในหน้าทางการด้านล่าง หน้าต่างจะปิดเองเมื่อเสร็จ รหัสผ่านกรอกในหน้าทางการเท่านั้น Starward เก็บเพียงโทเค็นการลงชื่อเข้าใช้ซึ่งเข้ารหัสไว้สำหรับผู้ใช้ Windows นี้</value>
+  </data>
 </root>

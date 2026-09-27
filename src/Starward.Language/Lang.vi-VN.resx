@@ -2855,4 +2855,40 @@ Bạn có chấp nhận rủi ro và tiếp tục?</value>
   <data name="GameRoleCard_SwitchRole" xml:space="preserve">
     <value>Đổi nhân vật</value>
   </data>
+  <data name="GameRoleCard_Gryphline_Sanity" xml:space="preserve">
+    <value>Lý trí</value>
+  </data>
+  <data name="GameRoleCard_Gryphline_DailyMission" xml:space="preserve">
+    <value>Nhiệm vụ hằng ngày</value>
+  </data>
+  <data name="GameRoleCard_Gryphline_BattlePass" xml:space="preserve">
+    <value>Thẻ thông hành</value>
+  </data>
+  <data name="GameRoleCard_Gryphline_AuthorityLevel" xml:space="preserve">
+    <value>Cấp quyền hạn</value>
+  </data>
+  <data name="GameRoleCard_Gryphline_LoginPrompt" xml:space="preserve">
+    <value>Đăng nhập tài khoản Gryphline để xem Lý trí, nhiệm vụ hằng ngày và thẻ thông hành.</value>
+  </data>
+  <data name="GameRoleCard_Gryphline_LoginExpired" xml:space="preserve">
+    <value>Phiên đăng nhập Gryphline đã hết hạn. Vui lòng đăng nhập lại.</value>
+  </data>
+  <data name="GameRoleCard_Gryphline_NoRole" xml:space="preserve">
+    <value>Tài khoản Gryphline này chưa liên kết nhân vật Endfield nào trên SKPORT.</value>
+  </data>
+  <data name="GameRoleCard_Gryphline_Footnote" xml:space="preserve">
+    <value>Dữ liệu lấy từ SKPORT và có thể chậm hơn trong game vài phút.</value>
+  </data>
+  <data name="GameRoleCard_Login" xml:space="preserve">
+    <value>Đăng nhập</value>
+  </data>
+  <data name="GameRoleCard_Logout" xml:space="preserve">
+    <value>Đăng xuất</value>
+  </data>
+  <data name="GryphlineLoginWindow_Title" xml:space="preserve">
+    <value>Đăng nhập Gryphline</value>
+  </data>
+  <data name="GryphlineLoginWindow_Hint" xml:space="preserve">
+    <value>Đăng nhập trên trang chính thức bên dưới, cửa sổ sẽ tự đóng khi xong. Mật khẩu chỉ nhập trên trang chính thức; Starward chỉ lưu mã đăng nhập, được mã hóa cho người dùng Windows hiện tại.</value>
+  </data>
 </root>

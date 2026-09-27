@@ -1,3 +1,4 @@
+using Microsoft.UI.Xaml;
 using Starward.Core.Games;
 using System;
 using System.Collections.Generic;
@@ -48,6 +49,39 @@ public interface IGameRoleCardProvider
     /// 失败时抛出 <see cref="GameRoleCardException"/>，其消息可以直接显示给用户。
     /// </summary>
     Task<GameRoleCardData> GetCardAsync(GameKey key, GameRoleCardRole role, CancellationToken cancellationToken = default);
+
+
+    /// <summary>
+    /// 要先在 Starward 里登录才查得到。
+    /// <para/>
+    /// 鸣潮的凭证是游戏自己留在本机的，不用登录；终末地没有这样的凭证，只能请玩家登录鹰角通行证。
+    /// 需要登录的游戏在还没登录时也要显示按钮，卡片里放登录入口，否则玩家根本找不到这个功能。
+    /// </summary>
+    bool RequiresLogin => false;
+
+
+    /// <summary>
+    /// 是否已经登录。只看本机有没有存下凭证，不代表凭证一定还有效。
+    /// </summary>
+    bool IsLoggedIn(GameKey key) => true;
+
+
+    /// <summary>
+    /// 还没登录时卡片上的说明，告诉玩家登录之后能看到什么
+    /// </summary>
+    string? LoginPrompt => null;
+
+
+    /// <summary>
+    /// 请玩家登录，成功返回 true，取消或失败返回 false
+    /// </summary>
+    Task<bool> LoginAsync(GameKey key, XamlRoot xamlRoot, CancellationToken cancellationToken = default) => Task.FromResult(false);
+
+
+    /// <summary>
+    /// 删掉本机存下的凭证
+    /// </summary>
+    void Logout(GameKey key) { }
 
 }
 
@@ -135,6 +169,12 @@ public class GameRoleCardStat
 
     public string? IconUri { get; set; }
 
+    /// <summary>
+    /// 没有图片时改画的字形图标（Segoe Fluent Icons）。
+    /// 有些数值是界面上的概念而不是道具，游戏的道具图里根本没有它们。
+    /// </summary>
+    public string? Glyph { get; set; }
+
     public int Current { get; set; }
 
     public int Max { get; set; }
@@ -171,6 +211,21 @@ public class GameRoleCardException : Exception
 {
 
     public GameRoleCardException(string message, Exception? innerException = null) : base(message, innerException)
+    {
+
+    }
+
+}
+
+
+
+/// <summary>
+/// 凭证已经失效，要请玩家重新登录。卡片据此换成登录入口，而不是只显示一句错误。
+/// </summary>
+public class GameRoleCardLoginRequiredException : GameRoleCardException
+{
+
+    public GameRoleCardLoginRequiredException(string message, Exception? innerException = null) : base(message, innerException)
     {
 
     }

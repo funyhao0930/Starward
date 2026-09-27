@@ -3022,6 +3022,114 @@ namespace Starward.Language {
                 return ResourceManager.GetString("GameRoleCard_SwitchRole", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   查找类似 Sanity 的本地化字符串。
+        /// </summary>
+        public static string GameRoleCard_Gryphline_Sanity {
+            get {
+                return ResourceManager.GetString("GameRoleCard_Gryphline_Sanity", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 Daily Missions 的本地化字符串。
+        /// </summary>
+        public static string GameRoleCard_Gryphline_DailyMission {
+            get {
+                return ResourceManager.GetString("GameRoleCard_Gryphline_DailyMission", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 Pass 的本地化字符串。
+        /// </summary>
+        public static string GameRoleCard_Gryphline_BattlePass {
+            get {
+                return ResourceManager.GetString("GameRoleCard_Gryphline_BattlePass", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 Authority Level 的本地化字符串。
+        /// </summary>
+        public static string GameRoleCard_Gryphline_AuthorityLevel {
+            get {
+                return ResourceManager.GetString("GameRoleCard_Gryphline_AuthorityLevel", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 Sign in with your Gryphline account to see Sanity, daily mis 的本地化字符串。
+        /// </summary>
+        public static string GameRoleCard_Gryphline_LoginPrompt {
+            get {
+                return ResourceManager.GetString("GameRoleCard_Gryphline_LoginPrompt", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 Your Gryphline sign-in has expired. Please sign in again. 的本地化字符串。
+        /// </summary>
+        public static string GameRoleCard_Gryphline_LoginExpired {
+            get {
+                return ResourceManager.GetString("GameRoleCard_Gryphline_LoginExpired", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 This Gryphline account has no Arknights: Endfield character  的本地化字符串。
+        /// </summary>
+        public static string GameRoleCard_Gryphline_NoRole {
+            get {
+                return ResourceManager.GetString("GameRoleCard_Gryphline_NoRole", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 Data comes from SKPORT and may lag behind the game by a few  的本地化字符串。
+        /// </summary>
+        public static string GameRoleCard_Gryphline_Footnote {
+            get {
+                return ResourceManager.GetString("GameRoleCard_Gryphline_Footnote", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 Sign in 的本地化字符串。
+        /// </summary>
+        public static string GameRoleCard_Login {
+            get {
+                return ResourceManager.GetString("GameRoleCard_Login", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 Sign out 的本地化字符串。
+        /// </summary>
+        public static string GameRoleCard_Logout {
+            get {
+                return ResourceManager.GetString("GameRoleCard_Logout", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 Sign in with Gryphline 的本地化字符串。
+        /// </summary>
+        public static string GryphlineLoginWindow_Title {
+            get {
+                return ResourceManager.GetString("GryphlineLoginWindow_Title", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 Sign in on the page below. This window closes by itself once 的本地化字符串。
+        /// </summary>
+        public static string GryphlineLoginWindow_Hint {
+            get {
+                return ResourceManager.GetString("GryphlineLoginWindow_Hint", resourceCulture);
+            }
+        }
         
         /// <summary>
         ///   查找类似 To be unlocked 的本地化字符串。

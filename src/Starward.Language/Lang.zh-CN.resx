@@ -2894,4 +2894,40 @@
   <data name="GameRoleCard_SwitchRole" xml:space="preserve">
     <value>切换角色</value>
   </data>
+  <data name="GameRoleCard_Gryphline_Sanity" xml:space="preserve">
+    <value>理智</value>
+  </data>
+  <data name="GameRoleCard_Gryphline_DailyMission" xml:space="preserve">
+    <value>每日任务</value>
+  </data>
+  <data name="GameRoleCard_Gryphline_BattlePass" xml:space="preserve">
+    <value>通行证</value>
+  </data>
+  <data name="GameRoleCard_Gryphline_AuthorityLevel" xml:space="preserve">
+    <value>权限等阶</value>
+  </data>
+  <data name="GameRoleCard_Gryphline_LoginPrompt" xml:space="preserve">
+    <value>登录鹰角通行证后，即可在这里查看理智、每日任务与通行证。</value>
+  </data>
+  <data name="GameRoleCard_Gryphline_LoginExpired" xml:space="preserve">
+    <value>鹰角通行证的登录已失效，请重新登录。</value>
+  </data>
+  <data name="GameRoleCard_Gryphline_NoRole" xml:space="preserve">
+    <value>这个鹰角通行证在 SKPORT 上没有绑定终末地角色。</value>
+  </data>
+  <data name="GameRoleCard_Gryphline_Footnote" xml:space="preserve">
+    <value>数据来自 SKPORT，可能比游戏内晚几分钟。</value>
+  </data>
+  <data name="GameRoleCard_Login" xml:space="preserve">
+    <value>登录</value>
+  </data>
+  <data name="GameRoleCard_Logout" xml:space="preserve">
+    <value>登出</value>
+  </data>
+  <data name="GryphlineLoginWindow_Title" xml:space="preserve">
+    <value>登录鹰角通行证</value>
+  </data>
+  <data name="GryphlineLoginWindow_Hint" xml:space="preserve">
+    <value>在下方的官方页面登录，登录完成后窗口会自动关闭。密码只在官方页面输入，Starward 只保存登录凭证，并以当前 Windows 用户的身份加密存放。</value>
+  </data>
 </root>

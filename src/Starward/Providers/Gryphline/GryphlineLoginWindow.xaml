@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<sf:WindowEx x:Class="Starward.Providers.Gryphline.GryphlineLoginWindow"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:lang="using:Starward.Language"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:sf="using:Starward.Frameworks"
+             mc:Ignorable="d">
+
+    <Grid Background="{ThemeResource SolidBackgroundFillColorBaseBrush}"
+          Loaded="Grid_Loaded"
+          RowSpacing="0">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition />
+        </Grid.RowDefinitions>
+
+        <!--  说明：登录完成会自动关闭，以及凭证怎么存  -->
+        <Grid Padding="16,12,16,12"
+              Background="{ThemeResource LayerFillColorDefaultBrush}"
+              BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+              BorderThickness="0,0,0,1"
+              ColumnSpacing="10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition />
+            </Grid.ColumnDefinitions>
+            <FontIcon VerticalAlignment="Top"
+                      FontSize="16"
+                      Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                      Glyph="&#xE72E;" />
+            <TextBlock Grid.Column="1"
+                       FontSize="13"
+                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                       Text="{x:Bind lang:Lang.GryphlineLoginWindow_Hint}"
+                       TextWrapping="Wrap" />
+        </Grid>
+
+        <ProgressRing Grid.Row="1"
+                      Width="40"
+                      Height="40"
+                      HorizontalAlignment="Center"
+                      VerticalAlignment="Center"
+                      IsActive="True" />
+        <WebView2 x:Name="webview"
+                  Grid.Row="1"
+                  Visibility="Collapsed" />
+    </Grid>
+
+</sf:WindowEx>

@@ -2855,4 +2855,40 @@ Puede enviar los datos exportados al siguiente repositorio:</value>
   <data name="GameRoleCard_SwitchRole" xml:space="preserve">
     <value>Cambiar personaje</value>
   </data>
+  <data name="GameRoleCard_Gryphline_Sanity" xml:space="preserve">
+    <value>Cordura</value>
+  </data>
+  <data name="GameRoleCard_Gryphline_DailyMission" xml:space="preserve">
+    <value>Misiones diarias</value>
+  </data>
+  <data name="GameRoleCard_Gryphline_BattlePass" xml:space="preserve">
+    <value>Pase</value>
+  </data>
+  <data name="GameRoleCard_Gryphline_AuthorityLevel" xml:space="preserve">
+    <value>Nivel de autoridad</value>
+  </data>
+  <data name="GameRoleCard_Gryphline_LoginPrompt" xml:space="preserve">
+    <value>Inicia sesión con tu cuenta de Gryphline para ver la cordura, las misiones diarias y tu pase.</value>
+  </data>
+  <data name="GameRoleCard_Gryphline_LoginExpired" xml:space="preserve">
+    <value>Tu sesión de Gryphline ha caducado. Vuelve a iniciar sesión.</value>
+  </data>
+  <data name="GameRoleCard_Gryphline_NoRole" xml:space="preserve">
+    <value>Esta cuenta de Gryphline no tiene ningún personaje de Endfield vinculado en SKPORT.</value>
+  </data>
+  <data name="GameRoleCard_Gryphline_Footnote" xml:space="preserve">
+    <value>Los datos provienen de SKPORT y pueden ir unos minutos por detrás del juego.</value>
+  </data>
+  <data name="GameRoleCard_Login" xml:space="preserve">
+    <value>Iniciar sesión</value>
+  </data>
+  <data name="GameRoleCard_Logout" xml:space="preserve">
+    <value>Cerrar sesión</value>
+  </data>
+  <data name="GryphlineLoginWindow_Title" xml:space="preserve">
+    <value>Iniciar sesión con Gryphline</value>
+  </data>
+  <data name="GryphlineLoginWindow_Hint" xml:space="preserve">
+    <value>Inicia sesión en la página oficial de abajo; la ventana se cerrará sola al terminar. La contraseña solo se introduce en la página oficial; Starward guarda únicamente el token de sesión, cifrado para este usuario de Windows.</value>
+  </data>
 </root>

@@ -2856,4 +2856,40 @@ Sie sind herzlich eingeladen, die exportierten Daten an das folgende Repository 
   <data name="GameRoleCard_SwitchRole" xml:space="preserve">
     <value>Charakter wechseln</value>
   </data>
+  <data name="GameRoleCard_Gryphline_Sanity" xml:space="preserve">
+    <value>Vernunft</value>
+  </data>
+  <data name="GameRoleCard_Gryphline_DailyMission" xml:space="preserve">
+    <value>Tägliche Missionen</value>
+  </data>
+  <data name="GameRoleCard_Gryphline_BattlePass" xml:space="preserve">
+    <value>Pass</value>
+  </data>
+  <data name="GameRoleCard_Gryphline_AuthorityLevel" xml:space="preserve">
+    <value>Befugnisstufe</value>
+  </data>
+  <data name="GameRoleCard_Gryphline_LoginPrompt" xml:space="preserve">
+    <value>Melde dich mit deinem Gryphline-Konto an, um Vernunft, tägliche Missionen und deinen Pass zu sehen.</value>
+  </data>
+  <data name="GameRoleCard_Gryphline_LoginExpired" xml:space="preserve">
+    <value>Deine Gryphline-Anmeldung ist abgelaufen. Bitte melde dich erneut an.</value>
+  </data>
+  <data name="GameRoleCard_Gryphline_NoRole" xml:space="preserve">
+    <value>Mit diesem Gryphline-Konto ist auf SKPORT kein Endfield-Charakter verknüpft.</value>
+  </data>
+  <data name="GameRoleCard_Gryphline_Footnote" xml:space="preserve">
+    <value>Die Daten stammen von SKPORT und können dem Spiel einige Minuten hinterherhinken.</value>
+  </data>
+  <data name="GameRoleCard_Login" xml:space="preserve">
+    <value>Anmelden</value>
+  </data>
+  <data name="GameRoleCard_Logout" xml:space="preserve">
+    <value>Abmelden</value>
+  </data>
+  <data name="GryphlineLoginWindow_Title" xml:space="preserve">
+    <value>Mit Gryphline anmelden</value>
+  </data>
+  <data name="GryphlineLoginWindow_Hint" xml:space="preserve">
+    <value>Melde dich auf der offiziellen Seite unten an. Das Fenster schließt sich danach von selbst. Dein Passwort gibst du nur auf der offiziellen Seite ein; Starward speichert nur das Anmelde-Token, verschlüsselt für diesen Windows-Benutzer.</value>
+  </data>
 </root>
