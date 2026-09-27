@@ -24,7 +24,13 @@ public partial class GameRoleCardStatItem : ObservableObject
 
     public string Name => _stat.Name;
 
-    public string? IconUri => _stat.IconUri;
+    /// <summary>
+    /// 给 Image.Source 用，不能是 null：没有图片的数值（改画字形）那张图虽然收起来了，
+    /// 绑定照样会求值，而把 null 转成 ImageSource 会让 WinUI 抛「参数错误」，整个应用直接闪退。
+    /// </summary>
+    public string IconUri => string.IsNullOrWhiteSpace(_stat.IconUri) ? TransparentImage : _stat.IconUri;
+
+    private const string TransparentImage = "ms-appx:///Assets/Image/Transparent.png";
 
     /// <summary>
     /// 给 FontIcon 用，不能是 null：没有字形的数值框虽然收起来了，绑定照样会求值

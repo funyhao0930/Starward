@@ -61,9 +61,33 @@ internal static class GryphlineAccountStore
     }
 
 
+    /// <summary>
+    /// 登出：删掉令牌，并请下一次打开登录窗口时把网页的登录状态也清掉。
+    /// <para/>
+    /// 网页那边的 Cookie 只有开着 WebView2 才删得了，这里只能先记一笔。
+    /// 不清的话，登录窗口一打开就会拿到刚登出的那个账号，换不了人。
+    /// </summary>
     public static void Clear()
     {
         AppConfig.SetValue<string?>(null, SettingKey);
+        AppConfig.SetValue(true, ClearWebLoginKey);
+    }
+
+
+    private const string ClearWebLoginKey = "gryphline_skport_clear_web_login";
+
+
+    /// <summary>
+    /// 有没有待处理的「清掉网页登录状态」请求，读了就清掉这个请求
+    /// </summary>
+    public static bool ConsumeClearWebLoginRequest()
+    {
+        if (!AppConfig.GetValue(false, ClearWebLoginKey))
+        {
+            return false;
+        }
+        AppConfig.SetValue(false, ClearWebLoginKey);
+        return true;
     }
 
 }
