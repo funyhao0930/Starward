@@ -7,8 +7,10 @@ using Polly;
 using Polly.Extensions.Http;
 using Serilog;
 using Starward.Core.HoYoPlay;
+using Starward.Core.Launcher.Kuro;
 using Starward.RPC.Env;
 using Starward.RPC.GameInstall;
+using Starward.RPC.GameInstall.Kuro;
 using Starward.Setup.Core;
 using System;
 using System.IO;
@@ -114,6 +116,11 @@ public static class RpcRunner
         builder.Services.AddSingleton<GameInstallService>();
         builder.Services.AddSingleton<GameInstallHelper>();
         builder.Services.AddScoped<GameUninstallService>();
+
+        // 非米哈游游戏的安装器，GameInstallService 按供应商取用
+        builder.Services.AddHttpClient<KuroLauncherClient>().AddPolicyHandler(GetHttpRetryPolicy());
+        builder.Services.AddSingleton<KuroDirDiffPatcher>();
+        builder.Services.AddSingleton<IGameInstallVendor, KuroGameInstaller>();
 
 
 

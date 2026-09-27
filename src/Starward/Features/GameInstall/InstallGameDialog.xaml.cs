@@ -37,6 +37,8 @@ public sealed partial class InstallGameDialog : ContentDialog
 
     private readonly GameInstallService _gameInstallService = AppConfig.GetService<GameInstallService>();
 
+    private readonly GamePackageInfoProviderRegistry _packageInfoRegistry = AppConfig.GetService<GamePackageInfoProviderRegistry>();
+
 
     public InstallGameDialog()
     {
@@ -69,16 +71,69 @@ public sealed partial class InstallGameDialog : ContentDialog
 
 
 
+    /// <summary>
+    /// 非米哈游游戏由各家的 Provider 提供安装包信息
+    /// </summary>
+    private IGamePackageInfoProvider? _vendorProvider;
+
+
+    /// <summary>
+    /// 非米哈游游戏的安装包大小
+    /// </summary>
+    private GamePackageSize? _vendorSize;
+
+
+    /// <summary>
+    /// 自动创建的子目录名。米哈游游戏沿用 GameBiz（hk4e_cn 等），其他游戏用官方的默认目录名。
+    /// </summary>
+    private string DefaultFolderName => CurrentGameId?.GameBiz.Value
+                                        ?? _vendorProvider?.GetDefaultFolderName(CurrentGameKey)
+                                        ?? CurrentGameKey.GameId;
+
+
+
     private void InstallGameDialog_Loaded(object sender, RoutedEventArgs e)
     {
-        if (RequiredGameId is null)
+        if (CurrentGameId is not null)
         {
-            _logger.LogWarning("RequiredGameId is null.");
-            this.Hide();
-            return;
+            SetDefaultInstallationPath();
+            _ = GetGamePackageAsync();
         }
-        SetDefaultInstallationPath();
-        _ = GetGamePackageAsync();
+        else if (_packageInfoRegistry.GetProvider(CurrentGameKey) is IGamePackageInfoProvider provider)
+        {
+            _vendorProvider = provider;
+            SetDefaultInstallationPath();
+            _ = GetVendorPackageAsync(provider);
+        }
+        else
+        {
+            _logger.LogWarning("Installing is not supported for {key}.", CurrentGameKey);
+            this.Hide();
+        }
+    }
+
+
+
+    /// <summary>
+    /// 非米哈游游戏没有语音包可选，也不能硬链接，只需要知道多大
+    /// </summary>
+    private async Task GetVendorPackageAsync(IGamePackageInfoProvider provider)
+    {
+        try
+        {
+            _vendorSize = await provider.GetInstallSizeAsync(CurrentGameKey);
+            if (_vendorSize is null)
+            {
+                _logger.LogWarning("Package size of ({key}) is not available.", CurrentGameKey);
+                return;
+            }
+            ComputePackageSize();
+            CheckCanStartInstallation();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Get vendor game package ({key}).", CurrentGameKey);
+        }
     }
 
 
@@ -98,7 +153,7 @@ public sealed partial class InstallGameDialog : ContentDialog
             string? defaultFolder = AppConfig.DefaultGameInstallationPath;
             if (Directory.Exists(defaultFolder))
             {
-                SetInstallationPath(Path.GetFullPath(Path.Combine(defaultFolder, RequiredGameId.GameBiz)));
+                SetInstallationPath(Path.GetFullPath(Path.Combine(defaultFolder, DefaultFolderName)));
                 return;
             }
             string baseFolder = "";
@@ -120,12 +175,16 @@ public sealed partial class InstallGameDialog : ContentDialog
                 {
                     baseFolder = defaultPath;
                 }
-                else
+                else if (CurrentGameId is not null)
                 {
                     baseFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "miHoYo");
                 }
+                else
+                {
+                    baseFolder = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
+                }
             }
-            string target = Path.Combine(baseFolder, RequiredGameId.GameBiz);
+            string target = Path.Combine(baseFolder, DefaultFolderName);
             if (Path.IsPathFullyQualified(target))
             {
                 SetInstallationPath(Path.GetFullPath(target));
@@ -244,7 +303,7 @@ public sealed partial class InstallGameDialog : ContentDialog
         {
             if (value)
             {
-                SetInstallationPath(Path.Combine(_selectPath, RequiredGameId.GameBiz));
+                SetInstallationPath(Path.Combine(_selectPath, DefaultFolderName));
             }
             else
             {
@@ -261,7 +320,11 @@ public sealed partial class InstallGameDialog : ContentDialog
         {
             long size = 0;
             List<string?> langs = Segmented_SelectLanguage.SelectedItems.Cast<SegmentedItem>().Select(x => x.Tag as string).ToList();
-            if (_gamePackage is not null)
+            if (_vendorSize is not null)
+            {
+                size = _vendorSize.InstallBytes;
+            }
+            else if (_gamePackage is not null)
             {
                 size += _gamePackage.Main.Major!.GamePackages.Sum(x => x.DecompressedSize);
                 foreach (string? lang in langs)
@@ -315,7 +378,7 @@ public sealed partial class InstallGameDialog : ContentDialog
         {
             ErrorMessage = null;
             Button_StartInstallation.IsEnabled = false;
-            if (_gamePackage is not null || _gameSophonChunkBuild is not null)
+            if (_gamePackage is not null || _gameSophonChunkBuild is not null || _vendorSize is not null)
             {
                 if (DriveHelper.GetDriveType(InstallationPath) is DriveType.Network && !new Uri(InstallationPath).IsUnc)
                 {
@@ -353,7 +416,7 @@ public sealed partial class InstallGameDialog : ContentDialog
                 _selectPath = path;
                 if (AutomaticallyCreateSubfolderForInstall)
                 {
-                    path = Path.Combine(path, RequiredGameId.GameBiz);
+                    path = Path.Combine(path, DefaultFolderName);
                 }
                 SetInstallationPath(path);
             }
@@ -412,12 +475,16 @@ public sealed partial class InstallGameDialog : ContentDialog
     {
         try
         {
-            GameInstallContext? task = await _gameInstallService.StartInstallAsync(RequiredGameId, InstallationPath, _audioLanguage);
+            if (InstallGameIds.Resolve(CurrentGameKey) is not GameId installGameId)
+            {
+                return;
+            }
+            GameInstallContext? task = await _gameInstallService.StartInstallAsync(installGameId, InstallationPath, _audioLanguage);
             if (task is not null && task.State is not GameInstallState.Stop and not GameInstallState.Error)
             {
                 GameLauncherService.ChangeGameInstallPath(CurrentGameKey, InstallationPath);
                 WeakReferenceMessenger.Default.Send(new GameInstallTaskStartedMessage(task));
-                if (_selectPath is not null && InstallationPath.EndsWith(RequiredGameId.GameBiz))
+                if (_selectPath is not null && InstallationPath.EndsWith(DefaultFolderName))
                 {
                     AppConfig.DefaultGameInstallationPath = _selectPath;
                 }

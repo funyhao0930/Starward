@@ -133,6 +133,11 @@ internal partial class GamePackageService
     /// <returns></returns>
     public async Task<AudioLanguage> GetAudioLanguageAsync(GameId gameId, string? installPath = null)
     {
+        if (!InstallGameIds.IsHoYo(gameId))
+        {
+            // 语音包是 HoYoPlay 的概念，其他游戏的语音随游戏本体一起下载
+            return AudioLanguage.None;
+        }
         GameConfig? config = await _hoYoPlayService.GetGameConfigAsync(gameId);
         if (string.IsNullOrWhiteSpace(config?.AudioPackageScanDir))
         {

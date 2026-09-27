@@ -29,11 +29,13 @@ public class CapabilityGateTests
 
 
     /// <summary>
-    /// 米哈游游戏有在线安装包接口，三款只支持启动的游戏没有。
-    /// 这正是背景图、音频语言、游戏资源等区块的判断依据。
+    /// 米哈游游戏都能安装；鸣潮由 Starward 自己的下载器安装，其余两款仍只支持启动。
+    /// <para/>
+    /// 注意「能安装」已经不等于「有 HoYoPlay 接口」：音频语言、游戏资源、DX12 开关等
+    /// HoYoPlay 专属的区块要另外判断是不是米哈游游戏。
     /// </summary>
     [Fact]
-    public void SupportsCapability_SeparatesHoYoFromLaunchOnlyGames()
+    public void SupportsCapability_KnowsWhichGamesStarwardCanInstall()
     {
         GameProviderRegistry registry = CreateRegistry();
 
@@ -42,7 +44,7 @@ public class CapabilityGateTests
             Assert.True(registry.SupportsCapability(key, GameCapability.Install));
         }
 
-        Assert.False(registry.SupportsCapability(KuroGameMapping.WutheringWavesGlobal, GameCapability.Install));
+        Assert.True(registry.SupportsCapability(KuroGameMapping.WutheringWavesGlobal, GameCapability.Install));
         Assert.False(registry.SupportsCapability(HottaGameMapping.NevernessToEvernessTaiwan, GameCapability.Install));
         Assert.False(registry.SupportsCapability(GryphlineGameMapping.EndfieldDefault, GameCapability.Install));
     }

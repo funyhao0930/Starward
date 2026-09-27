@@ -12,6 +12,8 @@
 
   <ItemGroup>
     <PackageReference Include="xunit.v3" Version="3.1.0" />
+    <!-- 只给测试用：鸣潮差分包的路径清单是 zstd 压缩的，Core 本身不依赖任何解压库 -->
+    <PackageReference Include="ZstdSharp.Port" Version="0.8.8" />
   </ItemGroup>
 
   <ItemGroup>

@@ -163,12 +163,31 @@ public class KuroLauncherClient
 
 
     /// <summary>
+    /// 文件清单（indexFile.json / resource.json）。
+    /// <para/>
+    /// 清单放在下载 CDN 上，不在取配置的 CDN 上：<paramref name="cdnBases"/> 取自
+    /// <see cref="KuroLauncherGameResource.CdnList"/>，见 <see cref="KuroDownloadPlanner.GetCdnBases"/>。
+    /// </summary>
+    /// <param name="relativePath">清单相对于 CDN 根目录的路径，例如 <see cref="KuroLauncherGameConfig.IndexFile"/></param>
+    public async Task<KuroResourceIndex?> GetResourceIndexAsync(IReadOnlyList<string> cdnBases, string relativePath, CancellationToken cancellationToken = default)
+    {
+        return await GetFromCdnAsync<KuroResourceIndex>(cdnBases, host => KuroDownloadPlanner.Combine(host, relativePath), cancellationToken);
+    }
+
+
+    /// <summary>
     /// 依次尝试每个 CDN。主 CDN 挂掉时安静地换备援，两个都不行才让调用方知道。
     /// </summary>
-    private async Task<T?> GetFromCdnAsync<T>(Func<string, string> urlFactory, CancellationToken cancellationToken) where T : class
+    private Task<T?> GetFromCdnAsync<T>(Func<string, string> urlFactory, CancellationToken cancellationToken) where T : class
+    {
+        return GetFromCdnAsync<T>(Hosts, urlFactory, cancellationToken);
+    }
+
+
+    private async Task<T?> GetFromCdnAsync<T>(IReadOnlyList<string> hosts, Func<string, string> urlFactory, CancellationToken cancellationToken) where T : class
     {
         Exception? lastException = null;
-        foreach (string host in Hosts)
+        foreach (string host in hosts)
         {
             cancellationToken.ThrowIfCancellationRequested();
             try

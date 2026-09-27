@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Polly;
 using Polly.Retry;
 using Starward.Core;
+using Starward.Core.Games;
 using Starward.Core.HoYoPlay;
 using Starward.RPC.Env;
 using System;
@@ -38,18 +39,24 @@ internal class GameInstallService
     private readonly ConcurrentDictionary<GameId, GameInstallContext> _tasks = new();
 
 
+    /// <summary>
+    /// 非米哈游游戏的安装器，按供应商取
+    /// </summary>
+    private readonly Dictionary<string, IGameInstallVendor> _vendors;
+
+
     public event EventHandler<GameInstallContext>? TaskStateChanged;
 
     public GameInstallContext? CurrentTask { get; private set; }
 
 
 
-    public GameInstallService(ILogger<GameInstallService> logger, IServiceProvider serviceProvider, GameInstallHelper gameInstallHelper)
+    public GameInstallService(ILogger<GameInstallService> logger, IServiceProvider serviceProvider, GameInstallHelper gameInstallHelper, IEnumerable<IGameInstallVendor> vendors)
     {
         _logger = logger;
         _serviceProvider = serviceProvider;
         _gameInstallHelper = gameInstallHelper;
-        _gameInstallHelper = gameInstallHelper;
+        _vendors = vendors.ToDictionary(x => x.ProviderId, StringComparer.OrdinalIgnoreCase);
         _polly = new ResiliencePipelineBuilder().AddRetry(new RetryStrategyOptions
         {
             MaxRetryAttempts = 5,
@@ -219,6 +226,21 @@ internal class GameInstallService
                 HardLinkPath: {hardLinkPath}
                 """, context.Operation, context.GameId.Id, context.GameId.GameBiz, context.InstallPath, context.AudioLanguage, context.HardLinkPath);
             Directory.CreateDirectory(context.InstallPath);
+            if (TryGetVendor(context, out IGameInstallVendor? vendor, out GameKey vendorKey))
+            {
+                // 其他供应商的安装器自己处理准备与执行，下面米哈游专属的步骤
+                // （语音包、渠道 SDK、config.ini、废弃文件清单）都与它们无关
+                await vendor.ExecuteAsync(context, vendorKey, cancellationToken);
+                context.State = GameInstallState.Finish;
+                _logger.LogInformation("GameInstallTask Finished, GameBiz: {game_biz}, Operation: {operation}", context.GameId.GameBiz, context.Operation);
+                ChangeToAnotherTask(context);
+                return;
+            }
+            if (GameKeyResolver.Resolve(context.GameId.GameBiz.Value) is GameKey other && !other.IsProvider(GameProviderIds.HoYo))
+            {
+                // 不交给下面米哈游的流程：它会在 LauncherId 那里变成难以理解的空引用
+                throw new NotSupportedException($"No installer for {other}.");
+            }
             GamePackageService gamePackageService = _serviceProvider.GetRequiredService<GamePackageService>();
             if (context.AudioLanguage is not AudioLanguage.None)
             {
@@ -285,6 +307,28 @@ internal class GameInstallService
         ChangeToAnotherTask(context);
     }
 
+
+
+
+    /// <summary>
+    /// 任务是否属于某个非米哈游的供应商。
+    /// <para/>
+    /// 这些游戏经 RPC 传过来时，GameBiz 与 Id 都是 GameKey 的正规字符串（例如 kuro:wuwa:global），
+    /// 米哈游游戏则是旧的 GameBiz（hk4e_cn），两者由 <see cref="GameKeyResolver"/> 分辨。
+    /// </summary>
+    private bool TryGetVendor(GameInstallContext context, [NotNullWhen(true)] out IGameInstallVendor? vendor, out GameKey key)
+    {
+        vendor = null;
+        key = default;
+        if (GameKeyResolver.Resolve(context.GameId.GameBiz.Value) is GameKey resolved
+            && !resolved.IsProvider(GameProviderIds.HoYo)
+            && _vendors.TryGetValue(resolved.ProviderId, out vendor))
+        {
+            key = resolved;
+            return true;
+        }
+        return false;
+    }
 
 
 

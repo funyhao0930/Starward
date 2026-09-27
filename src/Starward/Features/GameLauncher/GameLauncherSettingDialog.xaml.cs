@@ -87,6 +87,12 @@ public sealed partial class GameLauncherSettingDialog : ContentDialog
                                                         $"Game '{CurrentGameKey}' has no HoYoPlay game id.");
 
 
+    /// <summary>
+    /// 安装器使用的游戏标识，所有能由 Starward 安装的游戏都有，见 <see cref="InstallGameIds"/>
+    /// </summary>
+    private GameId? InstallGameId => InstallGameIds.Resolve(CurrentGameKey);
+
+
 
     public GameBiz CurrentGameBiz { get; set; }
 
@@ -155,7 +161,9 @@ public sealed partial class GameLauncherSettingDialog : ContentDialog
 
     private async void GameLauncherSettingDialog_Loaded(object sender, RoutedEventArgs e)
     {
-        CurrentGameBiz = RequiredGameId?.GameBiz ?? GameBiz.None;
+        // 不能用 RequiredGameId：它对非米哈游游戏会直接抛出，整个对话框就初始化不起来了。
+        // 存储键与页面一致，米哈游是旧的 GameBiz，其他游戏是 GameKey 的正规字符串。
+        CurrentGameBiz = CurrentGameId?.GameBiz ?? new GameBiz(CurrentGameKey.IsValid ? GameKeyResolver.ToSettingsKey(CurrentGameKey) : "");
         CheckCanRepairGame();
         await InitializeBasicInfoAsync();
         InitializeStartArgument();
@@ -267,8 +275,7 @@ public sealed partial class GameLauncherSettingDialog : ContentDialog
     {
         try
         {
-            if (GameKeyResolver.Resolve(RequiredGameId.GameBiz.Value) is GameKey gameKey
-                && _providerRegistry.GetGame(gameKey) is GameDescriptor descriptor)
+            if (_providerRegistry.GetGame(CurrentGameKey) is GameDescriptor descriptor)
             {
                 CurrentGameBizIcon = new GameBizIcon(descriptor);
             }
@@ -276,7 +283,8 @@ public sealed partial class GameLauncherSettingDialog : ContentDialog
             GameSize = GetSize(InstallPath);
             if (await _gameLauncherService.GetGameProcessAsync(CurrentGameKey) is null)
             {
-                UninstallAndRepairEnabled = InstallPath != null && !storageRemoved;
+                // 修复与卸载都要经过安装器，只支持启动的游戏没有安装器可用
+                UninstallAndRepairEnabled = InstallPath != null && !storageRemoved && SupportsInstall;
             }
             else
             {
@@ -307,17 +315,25 @@ public sealed partial class GameLauncherSettingDialog : ContentDialog
 
 
     /// <summary>
-    /// 该游戏是否有 HoYoPlay 那样的在线安装包接口。
-    /// 只支持启动的游戏没有，音频语言与游戏资源等区块对它们没有意义。
+    /// 该游戏能不能由 Starward 安装、修复、卸载
     /// </summary>
-    private bool SupportsPackageApi => _providerRegistry.SupportsCapability(CurrentGameKey, GameCapability.Install);
+    private bool SupportsInstall => _providerRegistry.SupportsCapability(CurrentGameKey, GameCapability.Install);
+
+
+    /// <summary>
+    /// 该游戏是否走 HoYoPlay 的在线安装包接口。
+    /// 音频语言与游戏资源这两个区块只对它们有意义，其他游戏的语音随本体一起下载。
+    /// </summary>
+    private bool IsHoYoPlayGame => CurrentGameId is not null && SupportsInstall;
 
     private async Task InitializeAudioLanguageAsync()
     {
         try
         {
-            if (!SupportsPackageApi)
+            if (!IsHoYoPlayGame)
             {
+                // 没有语音包可选，修复按钮直接开始
+                _hasAudioPackages = false;
                 return;
             }
             GameConfig? config = await _hoyoPlayService.GetGameConfigAsync(RequiredGameId);
@@ -439,7 +455,7 @@ public sealed partial class GameLauncherSettingDialog : ContentDialog
     /// </summary>
     private void CheckCanRepairGame()
     {
-        if (_gameInstallService.GetGameInstallTask(RequiredGameId) is GameInstallContext task)
+        if (InstallGameId is GameId installGameId && _gameInstallService.GetGameInstallTask(installGameId) is GameInstallContext task)
         {
             if (task.State is not GameInstallState.Stop and not GameInstallState.Finish)
             {
@@ -480,7 +496,7 @@ public sealed partial class GameLauncherSettingDialog : ContentDialog
     {
         try
         {
-            if (!Directory.Exists(InstallPath))
+            if (!Directory.Exists(InstallPath) || InstallGameId is not GameId installGameId)
             {
                 return;
             }
@@ -496,7 +512,7 @@ public sealed partial class GameLauncherSettingDialog : ContentDialog
                     _ => AudioLanguage.None,
                 };
             }
-            GameInstallContext? task = await _gameInstallService.StartRepairAsync(RequiredGameId, InstallPath, audio);
+            GameInstallContext? task = await _gameInstallService.StartRepairAsync(installGameId, InstallPath, audio);
             if (task is not null && task.State is not GameInstallState.Stop and not GameInstallState.Error)
             {
                 WeakReferenceMessenger.Default.Send(new GameInstallTaskStartedMessage(task));
@@ -574,15 +590,18 @@ public sealed partial class GameLauncherSettingDialog : ContentDialog
                 await InitializeBasicInfoAsync();
                 return;
             }
-            if (Directory.Exists(InstallPath))
+            if (Directory.Exists(InstallPath) && InstallGameId is GameId installGameId)
             {
-                if (await _gameInstallService.StartUninstallAsync(RequiredGameId, InstallPath))
+                if (await _gameInstallService.StartUninstallAsync(installGameId, InstallPath))
                 {
                     _logger.LogInformation("""
                         Uninstall game finished:
                         GameId: {gameId} {gameBiz}
                         InstallPath: {installPath}
-                        """, RequiredGameId.Id, RequiredGameId.GameBiz, InstallPath);
+                        """, installGameId.Id, installGameId.GameBiz, InstallPath);
+                    // 米哈游游戏的整个安装目录都删掉了，路径自然失效；
+                    // 鸣潮这类游戏的安装路径是官方启动器的根目录，删完游戏它还在，要主动忘掉
+                    GameLauncherService.ChangeGameInstallPath(CurrentGameKey, null);
                     Grid_UninstallWarning.Visibility = Visibility.Collapsed;
                     WeakReferenceMessenger.Default.Send(new GameInstallPathChangedMessage());
                     CheckCanRepairGame();
@@ -617,7 +636,7 @@ public sealed partial class GameLauncherSettingDialog : ContentDialog
     {
         try
         {
-            if (_gameInstallService.GetGameInstallTask(RequiredGameId) is GameInstallContext task)
+            if (InstallGameId is GameId installGameId && _gameInstallService.GetGameInstallTask(installGameId) is GameInstallContext task)
             {
                 if (task.State is not GameInstallState.Stop and not GameInstallState.Finish)
                 {
@@ -1024,7 +1043,7 @@ public sealed partial class GameLauncherSettingDialog : ContentDialog
     {
         try
         {
-            if (!SupportsPackageApi)
+            if (!IsHoYoPlayGame)
             {
                 return;
             }

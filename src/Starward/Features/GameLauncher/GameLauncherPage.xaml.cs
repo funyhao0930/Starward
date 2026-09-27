@@ -50,6 +50,8 @@ public sealed partial class GameLauncherPage : PageBase
 
     private readonly IGameProviderRegistry _providerRegistry = AppConfig.GetService<IGameProviderRegistry>();
 
+    private readonly GamePackageInfoProviderRegistry _packageInfoRegistry = AppConfig.GetService<GamePackageInfoProviderRegistry>();
+
 
     private readonly Microsoft.UI.Dispatching.DispatcherQueueTimer _dispatchTimer;
 
@@ -171,9 +173,20 @@ public sealed partial class GameLauncherPage : PageBase
 
 
     /// <summary>
-    /// 该游戏是否有 HoYoPlay 那样的在线接口。只支持启动的游戏没有。
+    /// 该游戏是否走 HoYoPlay 的接口（版本、区服、DX12 开关都从那里来）。
+    /// <para/>
+    /// 以前用「能不能安装」判断，那时只有米哈游游戏能安装；现在鸣潮等游戏也由 Starward 安装，
+    /// 但它们的安装包信息来自各家自己的接口，见 <see cref="VendorPackageInfoProvider"/>。
     /// </summary>
-    private bool SupportsPackageApi => _providerRegistry.SupportsCapability(CurrentGameKey, GameCapability.Install);
+    private bool IsHoYoPlayGame => CurrentGameId is not null && _providerRegistry.SupportsCapability(CurrentGameKey, GameCapability.Install);
+
+
+    /// <summary>
+    /// 由 Starward 自己的下载器安装的非米哈游游戏，提供版本、预下载等信息；其他游戏为 null
+    /// </summary>
+    private IGamePackageInfoProvider? VendorPackageInfoProvider => !IsHoYoPlayGame && _providerRegistry.SupportsCapability(CurrentGameKey, GameCapability.Install)
+                                                                  ? _packageInfoRegistry.GetProvider(CurrentGameKey)
+                                                                  : null;
 
 
     /// <summary>
@@ -184,7 +197,7 @@ public sealed partial class GameLauncherPage : PageBase
     {
         try
         {
-            if (!SupportsPackageApi)
+            if (!IsHoYoPlayGame)
             {
                 return;
             }
@@ -397,7 +410,13 @@ public sealed partial class GameLauncherPage : PageBase
                 return;
             }
             await CheckGameRunningAsync();
-            if (!SupportsPackageApi)
+            if (VendorPackageInfoProvider is IGamePackageInfoProvider vendor)
+            {
+                // Starward 自己能更新的游戏，按钮直接接到下载器上
+                await CheckVendorPackageStateAsync(vendor);
+                return;
+            }
+            if (!IsHoYoPlayGame)
             {
                 // VersionCheck 说的是「读得到本地版本号」，上面已经用过了；
                 // 下面要问的是官方的最新版本，那是下载接口的一部分，没有下载器就到此为止。
@@ -481,6 +500,51 @@ public sealed partial class GameLauncherPage : PageBase
 
 
     /// <summary>
+    /// 非米哈游游戏最近一次查到的安装包状态
+    /// </summary>
+    private GamePackageState? _vendorPackageState;
+
+
+    /// <summary>
+    /// 非米哈游游戏的更新与预下载，信息来自各家的 <see cref="IGamePackageInfoProvider"/>
+    /// </summary>
+    private async Task CheckVendorPackageStateAsync(IGamePackageInfoProvider provider)
+    {
+        try
+        {
+            OfficialLauncherUpdateText = null;
+            if (string.IsNullOrWhiteSpace(GameInstallPath))
+            {
+                return;
+            }
+            _vendorPackageState = await provider.GetStateAsync(CurrentGameKey, GameInstallPath);
+            if (_vendorPackageState is null)
+            {
+                return;
+            }
+            _logger.LogInformation("Package state of ({key}): local {local}, latest {latest}, update {update}, predownload {predownload} (finished {finished}).",
+                                   CurrentGameKey, _vendorPackageState.LocalVersion, _vendorPackageState.LatestVersion, _vendorPackageState.UpdateAvailable,
+                                   _vendorPackageState.PredownloadVersion, _vendorPackageState.PredownloadFinished);
+            if (_vendorPackageState.UpdateAvailable)
+            {
+                GameState = GameState.UpdateGame;
+                return;
+            }
+            if (_vendorPackageState.PredownloadVersion is not null)
+            {
+                IsPredownloadButtonEnabled = true;
+                IsPredownloadFinished = _vendorPackageState.PredownloadFinished;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Check package state ({key})", CurrentGameKey);
+        }
+    }
+
+
+
+    /// <summary>
     /// 检查 DX12 配置
     /// </summary>
     /// <returns></returns>
@@ -488,7 +552,7 @@ public sealed partial class GameLauncherPage : PageBase
     {
         try
         {
-            if (!SupportsPackageApi)
+            if (!IsHoYoPlayGame)
             {
                 return;
             }
@@ -774,13 +838,13 @@ public sealed partial class GameLauncherPage : PageBase
     {
         try
         {
-            if (!Directory.Exists(GameInstallPath))
+            if (!Directory.Exists(GameInstallPath) || InstallGameId is not GameId installGameId)
             {
                 CheckGameVersion();
                 return;
             }
-            AudioLanguage audio = await _gamePackageService.GetAudioLanguageAsync(RequiredGameId, GameInstallPath);
-            var task = await _gameInstallService.StartInstallAsync(RequiredGameId, GameInstallPath, audio);
+            AudioLanguage audio = await _gamePackageService.GetAudioLanguageAsync(installGameId, GameInstallPath);
+            var task = await _gameInstallService.StartInstallAsync(installGameId, GameInstallPath, audio);
             if (task is not null)
             {
                 _gameInstallTask = task;
@@ -815,7 +879,7 @@ public sealed partial class GameLauncherPage : PageBase
         {
             if (_gameInstallTask is null)
             {
-                await new PreDownloadDialog { CurrentGameId = this.RequiredGameId, XamlRoot = this.XamlRoot }.ShowAsync();
+                await new PreDownloadDialog { CurrentGameKey = this.CurrentGameKey, XamlRoot = this.XamlRoot }.ShowAsync();
             }
             else if (_gameInstallTask.Operation is GameInstallOperation.Predownload)
             {
@@ -863,10 +927,13 @@ public sealed partial class GameLauncherPage : PageBase
     {
         try
         {
-            if (localGameVersion is not null && latestGameVersion > localGameVersion)
+            bool updateAvailable = IsHoYoPlayGame
+                                 ? localGameVersion is not null && latestGameVersion > localGameVersion
+                                 : _vendorPackageState?.UpdateAvailable is true;
+            if (updateAvailable && InstallGameId is GameId installGameId)
             {
-                AudioLanguage audio = await _gamePackageService.GetAudioLanguageAsync(RequiredGameId, GameInstallPath);
-                GameInstallContext? task = await _gameInstallService.StartUpdateAsync(RequiredGameId, GameInstallPath!, audio);
+                AudioLanguage audio = await _gamePackageService.GetAudioLanguageAsync(installGameId, GameInstallPath);
+                GameInstallContext? task = await _gameInstallService.StartUpdateAsync(installGameId, GameInstallPath!, audio);
                 if (task is not null)
                 {
                     _gameInstallTask = task;
@@ -938,7 +1005,10 @@ public sealed partial class GameLauncherPage : PageBase
     {
         try
         {
-            _gameInstallTask ??= _gameInstallService.GetGameInstallTask(RequiredGameId);
+            if (InstallGameId is GameId installGameId)
+            {
+                _gameInstallTask ??= _gameInstallService.GetGameInstallTask(installGameId);
+            }
             if (_gameInstallTask is not null)
             {
                 if (_gameInstallTask.Operation is GameInstallOperation.Predownload)
@@ -955,7 +1025,7 @@ public sealed partial class GameLauncherPage : PageBase
 
     private void OnGameInstallTaskStarted(object _, GameInstallTaskStartedMessage message)
     {
-        if (message.InstallTask.GameId == RequiredGameId)
+        if (InstallGameId is GameId installGameId && message.InstallTask.GameId == installGameId)
         {
             _gameInstallTask = message.InstallTask;
             _dispatchTimer.Start();

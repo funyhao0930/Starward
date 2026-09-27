@@ -6,9 +6,12 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Starward.Core;
+using Starward.Core.Games;
 using Starward.Core.HoYoPlay;
+using Starward.Features.GameLauncher;
 using Starward.Features.HoYoPlay;
 using Starward.Helpers;
+using Starward.Providers.HoYo;
 using Starward.RPC.GameInstall;
 using System;
 using System.Collections.Generic;
@@ -42,6 +45,8 @@ public sealed partial class PreDownloadDialog : ContentDialog
 
     private readonly HttpClient _httpClient = AppConfig.GetService<HttpClient>();
 
+    private readonly GamePackageInfoProviderRegistry _packageInfoRegistry = AppConfig.GetService<GamePackageInfoProviderRegistry>();
+
     public PreDownloadDialog()
     {
         this.InitializeComponent();
@@ -49,19 +54,85 @@ public sealed partial class PreDownloadDialog : ContentDialog
     }
 
 
-    public GameId CurrentGameId { get; set; }
+    /// <summary>
+    /// 当前游戏，对话框的唯一身份来源
+    /// </summary>
+    public GameKey CurrentGameKey { get; set; }
+
+
+    /// <summary>
+    /// 米哈游游戏的 HoYoPlay 标识，只在 <see cref="GetGamePackageAsync"/> 这条路上使用
+    /// </summary>
+    private GameId CurrentGameId { get; set; }
+
+
+    /// <summary>
+    /// 非米哈游游戏的预下载信息已经取得
+    /// </summary>
+    private bool _vendorReady;
 
 
 
     private void PreDownloadDialog_Loaded(object sender, RoutedEventArgs e)
     {
-        if (CurrentGameId is null)
+        if (HoYoGameIds.Resolve(CurrentGameKey) is GameId gameId)
         {
-            _logger.LogWarning("CurrentGameId is null.");
-            this.Hide();
-            return;
+            CurrentGameId = gameId;
+            _ = GetGamePackageAsync();
         }
-        _ = GetGamePackageAsync();
+        else if (_packageInfoRegistry.GetProvider(CurrentGameKey) is IGamePackageInfoProvider provider)
+        {
+            _ = GetVendorPackageAsync(provider);
+        }
+        else
+        {
+            _logger.LogWarning("Predownload is not supported for {key}.", CurrentGameKey);
+            this.Hide();
+        }
+    }
+
+
+
+    /// <summary>
+    /// 非米哈游游戏的预下载：各家的补丁只有一种，大小由 <see cref="IGamePackageInfoProvider"/> 给出，
+    /// 没有米哈游那样的语音包与分类可选
+    /// </summary>
+    private async Task GetVendorPackageAsync(IGamePackageInfoProvider provider)
+    {
+        try
+        {
+            string? installPath = GameLauncherService.GetGameInstallPath(CurrentGameKey);
+            if (installPath is null)
+            {
+                _logger.LogWarning("InstallPath of ({key}) is null.", CurrentGameKey);
+                TextBlock_PredownloadUnavailable.Visibility = Visibility.Visible;
+                return;
+            }
+            GamePackageState? state = await provider.GetStateAsync(CurrentGameKey, installPath);
+            if (state?.PredownloadVersion is null || state.LocalVersion is null)
+            {
+                _logger.LogWarning("Predownload of ({key}) is not available.", CurrentGameKey);
+                TextBlock_PredownloadUnavailable.Visibility = Visibility.Visible;
+                return;
+            }
+            _installationPath = installPath;
+            _localGameVersion = state.LocalVersion;
+            _audioLanguage = AudioLanguage.None;
+            AvailableSpaceBytes = DriveHelper.GetDriveAvailableSpace(installPath);
+            PackageSizeBytes = state.PredownloadBytes;
+            // 预下载的东西先放在暂存目录，正式更新时才打进游戏目录
+            UnzipSpaceBytes = state.PredownloadBytes;
+            if (AvailableSpaceBytes > 0 && UnzipSpaceBytes > AvailableSpaceBytes)
+            {
+                TextBlock_AvailableSpace.Foreground = App.Current.Resources["SystemFillColorCautionBrush"] as Brush;
+            }
+            _vendorReady = true;
+            CheckCanPreDownload();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Get vendor predownload package ({key}).", CurrentGameKey);
+        }
     }
 
 
@@ -317,7 +388,7 @@ public sealed partial class PreDownloadDialog : ContentDialog
     {
         try
         {
-            if (_gamePackage is not null || _gameSophonChunkBuild is not null || _gameSophonPatchBuild is not null)
+            if (_gamePackage is not null || _gameSophonChunkBuild is not null || _gameSophonPatchBuild is not null || _vendorReady)
             {
                 if (Path.IsPathFullyQualified(_installationPath) && !string.IsNullOrWhiteSpace(_localGameVersion))
                 {
@@ -344,7 +415,12 @@ public sealed partial class PreDownloadDialog : ContentDialog
     {
         try
         {
-            GameInstallContext? task = await _gameInstallService.StartPredownloadAsync(CurrentGameId, _installationPath, _audioLanguage);
+            GameId? gameId = _vendorReady ? InstallGameIds.Resolve(CurrentGameKey) : CurrentGameId;
+            if (gameId is null)
+            {
+                return;
+            }
+            GameInstallContext? task = await _gameInstallService.StartPredownloadAsync(gameId, _installationPath, _audioLanguage);
             if (task is not null && task.State is not GameInstallState.Stop and not GameInstallState.Error)
             {
                 WeakReferenceMessenger.Default.Send(new GameInstallTaskStartedMessage(task));

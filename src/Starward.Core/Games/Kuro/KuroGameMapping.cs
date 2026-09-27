@@ -3,8 +3,8 @@ namespace Starward.Core.Games.Kuro;
 /// <summary>
 /// 库洛游戏（鸣潮）。
 /// <para/>
-/// 本阶段只支持启动、搜索、截图与游玩时间，不实现下载与更新，
-/// 所有资料都来自本机的官方启动器目录与注册表，没有调用任何在线接口。
+/// 安装、更新、修复与预下载走官方启动器同一套在线配置（见 <see cref="Launcher.Kuro.KuroLauncherClient"/>），
+/// 下载在 RPC 进程里完成；搜索、截图与游玩时间仍只读本机的官方启动器目录与注册表。
 /// </summary>
 public static class KuroGameMapping
 {
@@ -52,11 +52,14 @@ public static class KuroGameMapping
 
 
     /// <summary>
-    /// 本供应商支持的功能。没有实现下载器，因此不包含 Install、Update、Repair。
+    /// 本供应商支持的功能
     /// </summary>
     public const GameCapability Capabilities = GameCapability.Launch
                                              | GameCapability.Discovery
                                              | GameCapability.VersionCheck
+                                             | GameCapability.Install
+                                             | GameCapability.Update
+                                             | GameCapability.Repair
                                              | GameCapability.Screenshot
                                              | GameCapability.PlayTime
                                              | GameCapability.Gacha

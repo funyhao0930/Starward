@@ -132,6 +132,13 @@ public class GameInstallContext
     internal List<GameInstallFile>? TaskFiles { get; set; }
 
 
+    /// <summary>
+    /// 非米哈游游戏由各家的 <see cref="IGameInstallVendor"/> 自己准备任务，
+    /// 准备好的计划放在这里，暂停后继续时不必重新向服务器要一遍
+    /// </summary>
+    internal object? VendorState { get; set; }
+
+
 
     public long networkDownloadBytes = 0;
 

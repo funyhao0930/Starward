@@ -1,7 +1,9 @@
 using Microsoft.Extensions.Logging;
 using Starward.Core;
+using Starward.Core.Games;
 using Starward.Core.HoYoPlay;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -18,11 +20,14 @@ internal class GameUninstallService
 
     private readonly HoYoPlayClient _hoYoPlayClient;
 
+    private readonly IEnumerable<IGameInstallVendor> _vendors;
 
-    public GameUninstallService(ILogger<GameUninstallService> logger, HoYoPlayClient hoYoPlayClient)
+
+    public GameUninstallService(ILogger<GameUninstallService> logger, HoYoPlayClient hoYoPlayClient, IEnumerable<IGameInstallVendor> vendors)
     {
         _logger = logger;
         _hoYoPlayClient = hoYoPlayClient;
+        _vendors = vendors;
     }
 
 
@@ -40,6 +45,12 @@ internal class GameUninstallService
         {
             _logger.LogError("Game folder is the root of drive.");
             throw new InvalidOperationException("Game folder is the root of drive.");
+        }
+        if (GameKeyResolver.Resolve(request.GameBiz) is GameKey key && !key.IsProvider(GameProviderIds.HoYo)
+            && _vendors.FirstOrDefault(x => key.IsProvider(x.ProviderId)) is IGameInstallVendor vendor)
+        {
+            UninstallVendorGame(request, key, vendor);
+            return;
         }
         _logger.LogInformation("Start to uninstall game ({gameBiz}): {installPath}", request.GameBiz, installPath);
         GameId gameId = new GameId { GameBiz = request.GameBiz, Id = request.GameId };
@@ -64,6 +75,53 @@ internal class GameUninstallService
         _logger.LogInformation("Finished uninstall game ({gameBiz}): {installPath}", request.GameBiz, installPath);
     }
 
+
+
+
+    /// <summary>
+    /// 只删游戏本体与 Starward 自己的暂存目录，官方启动器留着；
+    /// 删完如果安装根目录空了，才把它也删掉。
+    /// </summary>
+    private void UninstallVendorGame(UninstallGameRequest request, GameKey key, IGameInstallVendor vendor)
+    {
+        string installPath = request.InstallPath;
+        _logger.LogInformation("Start to uninstall game ({key}): {installPath}", key, installPath);
+        IReadOnlyList<string> dirs = vendor.GetUninstallDirectories(key, installPath);
+        string installFull = Path.GetFullPath(installPath).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+        foreach (string dir in dirs)
+        {
+            string full = Path.GetFullPath(dir);
+            if (!full.StartsWith(installFull, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException($"Uninstall directory is outside the install path: {dir}");
+            }
+        }
+        string? gameDir = dirs.FirstOrDefault(Directory.Exists);
+        if (gameDir is not null)
+        {
+            // 截图多半在游戏目录里（鸣潮是 Client\Saved\ScreenShot），按名字找
+            BackupScreenshot(new UninstallGameRequest(request) { InstallPath = gameDir }, null);
+        }
+        foreach (string dir in dirs)
+        {
+            if (!Directory.Exists(dir))
+            {
+                continue;
+            }
+            string[] files = Directory.GetFiles(dir, "*", SearchOption.AllDirectories);
+            foreach (string file in files)
+            {
+                File.SetAttributes(file, FileAttributes.Normal);
+            }
+            _logger.LogInformation("Deleting folder {dir} ({count} files).", dir, files.Length);
+            Directory.Delete(dir, true);
+        }
+        if (Directory.Exists(installPath) && !Directory.EnumerateFileSystemEntries(installPath).Any())
+        {
+            Directory.Delete(installPath);
+        }
+        _logger.LogInformation("Finished uninstall game ({key}): {installPath}", key, installPath);
+    }
 
 
 

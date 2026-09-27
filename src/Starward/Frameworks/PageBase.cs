@@ -4,6 +4,7 @@ using Microsoft.UI.Xaml.Navigation;
 using Starward.Core;
 using Starward.Core.Games;
 using Starward.Core.HoYoPlay;
+using Starward.Features.GameInstall;
 using Starward.Providers.HoYo;
 
 namespace Starward.Frameworks;
@@ -48,6 +49,14 @@ public abstract partial class PageBase : Page
     protected GameId RequiredGameId => CurrentGameId
         ?? throw new GameCapabilityNotSupportedException(CurrentGameKey, GameCapability.Install,
                                                         $"Game '{CurrentGameKey}' has no HoYoPlay game id.");
+
+
+    /// <summary>
+    /// 安装器（RPC 进程）使用的游戏标识。米哈游游戏就是 <see cref="CurrentGameId"/>，
+    /// 其他供应商由 <see cref="CurrentGameKey"/> 合成，见 <see cref="InstallGameIds"/>。
+    /// 只能交给安装器，不能拿去调用 HoYoPlay 的接口。
+    /// </summary>
+    protected GameId? InstallGameId => InstallGameIds.Resolve(CurrentGameKey);
 
 
     /// <summary>

@@ -58,22 +58,34 @@ public class NewGameProviderTests
 
 
     /// <summary>
-    /// 本阶段不实现下载器，三款游戏都不能声明安装、更新、修复
+    /// 安装、更新、修复走同一个下载器，要么一起声明，要么都不声明：
+    /// 只声明安装的话，装好之后「更新」按钮会接到一个不存在的流程上
     /// </summary>
     [Theory]
     [MemberData(nameof(Games))]
-    public void Descriptor_DoesNotClaimDownloadCapabilities(GameKey key, string exe, string processName, GameCapability capabilities)
+    public void Descriptor_ClaimsDownloadCapabilitiesTogether(GameKey key, string exe, string processName, GameCapability capabilities)
     {
         _ = exe;
         _ = processName;
         _ = capabilities;
         GameDescriptor descriptor = AllDescriptors().First(x => x.Key == key);
-        Assert.False(descriptor.HasCapability(GameCapability.Install));
-        Assert.False(descriptor.HasCapability(GameCapability.Update));
-        Assert.False(descriptor.HasCapability(GameCapability.Repair));
+        bool install = descriptor.HasCapability(GameCapability.Install);
+        Assert.Equal(install, descriptor.HasCapability(GameCapability.Update));
+        Assert.Equal(install, descriptor.HasCapability(GameCapability.Repair));
         // 游戏记录与云游戏都依赖米哈游的账号体系，任何一款都不能声明
         Assert.False(descriptor.HasCapability(GameCapability.GameRecord));
         Assert.False(descriptor.HasCapability(GameCapability.CloudGame));
+    }
+
+
+    /// <summary>
+    /// 鸣潮由 Starward 自己的下载器安装、更新、修复（逐个文件下载加 krpdiff 差分）
+    /// </summary>
+    [Fact]
+    public void WutheringWaves_ClaimsTheDownloader()
+    {
+        GameDescriptor descriptor = KuroGameMapping.GetDescriptors()[0];
+        Assert.True(descriptor.HasCapability(GameCapability.Install | GameCapability.Update | GameCapability.Repair));
     }
 
 

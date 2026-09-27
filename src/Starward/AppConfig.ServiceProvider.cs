@@ -177,6 +177,10 @@ public static partial class AppConfig
 
             sc.AddSingleton<RpcService>();
             sc.AddSingleton<GameInstallService>();
+            // 非米哈游游戏由 Starward 自己的下载器安装：这里只提供界面要的安装包信息，
+            // 真正的下载在 RPC 进程里由各家的 IGameInstallVendor 完成
+            sc.AddSingleton<GamePackageInfoProviderRegistry>();
+            sc.AddSingleton<IGamePackageInfoProvider, KuroPackageInfoProvider>();
 
             sc.AddSingleton<GameAuthLoginService>();
             sc.AddSingleton<GameAccountService>();
