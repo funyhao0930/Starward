@@ -115,6 +115,16 @@ internal class GameUninstallService
             }
             _logger.LogInformation("Deleting folder {dir} ({count} files).", dir, files.Length);
             Directory.Delete(dir, true);
+            // 终末地的游戏在 games\EndField Game，删完之后空着的 games 也一并清掉
+            string? parent = Path.GetDirectoryName(Path.GetFullPath(dir));
+            while (parent is not null
+                   && parent.Length + 1 > installFull.Length
+                   && Directory.Exists(parent)
+                   && !Directory.EnumerateFileSystemEntries(parent).Any())
+            {
+                Directory.Delete(parent);
+                parent = Path.GetDirectoryName(parent);
+            }
         }
         if (Directory.Exists(installPath) && !Directory.EnumerateFileSystemEntries(installPath).Any())
         {

@@ -508,9 +508,20 @@ internal partial class GameInstallHelper
     /// <param name="md5"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    public async Task DownloadToFileAsync(GameInstallContext task, string path, string url, long size, string md5, CancellationToken cancellationToken = default)
+    public Task DownloadToFileAsync(GameInstallContext task, string path, string url, long size, string md5, CancellationToken cancellationToken = default)
     {
-        if (await CheckFileMD5InDownloadProgressAsync(task, path, size, md5, cancellationToken))
+        return DownloadToFileAsync(task, path, url, size, FileChecksum.Md5(md5), cancellationToken);
+    }
+
+
+
+    /// <summary>
+    /// 下载到文件，校验方式由 <paramref name="checksum"/> 决定。
+    /// 已有正确的文件时只校验不下载；有未下完的 _tmp 文件时断点续传。
+    /// </summary>
+    public async Task DownloadToFileAsync(GameInstallContext task, string path, string url, long size, FileChecksum checksum, CancellationToken cancellationToken = default)
+    {
+        if (await CheckFileInDownloadProgressAsync(task, path, size, checksum, cancellationToken))
         {
             return;
         }
@@ -563,7 +574,7 @@ internal partial class GameInstallHelper
         }
         await fs.DisposeAsync();
 
-        if (await CheckFileMD5Async(task, path_tmp, size, md5, cancellationToken))
+        if (await CheckFileAsync(task, path_tmp, size, checksum, cancellationToken))
         {
             File.Move(path_tmp, path, true);
         }
@@ -571,10 +582,77 @@ internal partial class GameInstallHelper
         {
             File.Delete(path_tmp);
             Interlocked.Add(ref task._progress_WriteFinishBytes, -size);
-            var ex = new Exception("MD5 not match.");
-            _logger.LogError(ex, "MD5 not match.\nFile: {file}\nReal MD5: {realMD5}", path, md5);
+            var ex = new Exception($"{checksum.Type} not match.");
+            _logger.LogError(ex, "{type} not match.\nFile: {file}\nExpected: {expected}", checksum.Type, path, checksum.Value);
             throw ex;
         }
+    }
+
+
+
+    /// <summary>
+    /// 校验文件
+    /// </summary>
+    public Task<bool> CheckFileAsync(GameInstallContext task, string? path, long size, FileChecksum checksum, CancellationToken cancellationToken = default)
+    {
+        return checksum.Type switch
+        {
+            FileChecksumType.Crc32 => CheckFileCrc32Async(task, path, size, checksum.Value, false, cancellationToken),
+            _ => CheckFileMD5Async(task, path, size, checksum.Value, cancellationToken),
+        };
+    }
+
+
+    /// <summary>
+    /// 校验文件，并把读过的字节算进下载进度
+    /// </summary>
+    public Task<bool> CheckFileInDownloadProgressAsync(GameInstallContext task, string? path, long size, FileChecksum checksum, CancellationToken cancellationToken = default)
+    {
+        return checksum.Type switch
+        {
+            FileChecksumType.Crc32 => CheckFileCrc32Async(task, path, size, checksum.Value, true, cancellationToken),
+            _ => CheckFileMD5InDownloadProgressAsync(task, path, size, checksum.Value, cancellationToken),
+        };
+    }
+
+
+
+    /// <summary>
+    /// 检查文件的 CRC32
+    /// </summary>
+    /// <param name="inDownloadProgress">读过的字节是否算进下载进度，校验不过时会退回</param>
+    private async Task<bool> CheckFileCrc32Async(GameInstallContext task, string? path, long size, string crc32, bool inDownloadProgress, CancellationToken cancellationToken = default)
+    {
+        if (!File.Exists(path))
+        {
+            return false;
+        }
+        if (new FileInfo(path).Length != size)
+        {
+            return false;
+        }
+        using FileStream fs = File.Open(path, MD5CheckFileStreamOptions);
+        byte[] buffer = new byte[MD5_BUFFER_SIZE];
+        var crc = new System.IO.Hashing.Crc32();
+        int read;
+        while ((read = await fs.ReadAsync(buffer, cancellationToken)) > 0)
+        {
+            crc.Append(buffer.AsSpan(0, read));
+            if (inDownloadProgress)
+            {
+                Interlocked.Add(ref task._progress_DownloadFinishBytes, read);
+            }
+            Interlocked.Add(ref task.storageReadBytes, read);
+        }
+        if (string.Equals(crc32, crc.GetCurrentHashAsUInt32().ToString("x8"), StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+        if (inDownloadProgress)
+        {
+            Interlocked.Add(ref task._progress_DownloadFinishBytes, -fs.Length);
+        }
+        return false;
     }
 
 

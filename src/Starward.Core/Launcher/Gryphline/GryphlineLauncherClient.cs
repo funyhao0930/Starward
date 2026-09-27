@@ -216,6 +216,63 @@ public class GryphlineLauncherClient
 
 
     /// <summary>
+    /// 整包里的全部条目（含目录），读自最后一卷末尾的 zip 中央目录。
+    /// <para/>
+    /// 只下载两小段：末尾不到 64 KB 找出中央目录的位置，再读中央目录本身（1.5.3 是 260 KB）。
+    /// 分卷是一个 zip 直接切开的，所以偏移要按各卷首尾相接计算。
+    /// </summary>
+    /// <param name="package">需要带分卷列表：请求时版本号留空才会有，见 <see cref="GetLatestGameAsync"/></param>
+    public async Task<IReadOnlyList<ZipEntryInfo>> GetPackageEntriesAsync(GryphlineGamePackage package, CancellationToken cancellationToken = default)
+    {
+        List<GryphlinePackageFile> packs = package.Packs ?? [];
+        if (packs.Count == 0 || packs.Any(x => string.IsNullOrWhiteSpace(x.Url) || x.Size <= 0))
+        {
+            throw new InvalidOperationException("The package has no pack list.");
+        }
+        List<long> sizes = packs.Select(x => x.Size).ToList();
+        long total = sizes.Sum();
+        long tailLength = Math.Min(ZipCentralDirectory.MaxTailSize, total);
+        long tailStart = total - tailLength;
+        byte[] tail = await ReadPackageRangeAsync(packs, sizes, tailStart, tailLength, cancellationToken);
+        ZipCentralDirectoryInfo info = ZipCentralDirectory.Locate(tail, tailStart);
+        byte[] centralDirectory = info.Offset >= tailStart && info.Offset + info.Size <= total
+                                ? tail.AsSpan((int)(info.Offset - tailStart), (int)info.Size).ToArray()
+                                : await ReadPackageRangeAsync(packs, sizes, info.Offset, info.Size, cancellationToken);
+        IReadOnlyList<ZipEntryInfo> entries = ZipCentralDirectory.ReadEntries(centralDirectory);
+        if (entries.Count != info.EntryCount)
+        {
+            throw new InvalidDataException($"Central directory entry count mismatch: {entries.Count} != {info.EntryCount}");
+        }
+        return entries;
+    }
+
+
+    private async Task<byte[]> ReadPackageRangeAsync(List<GryphlinePackageFile> packs, List<long> sizes, long start, long length, CancellationToken cancellationToken)
+    {
+        using var ms = new MemoryStream((int)length);
+        foreach ((int index, long offset, long count) in GryphlineDownloadPlanner.MapRange(sizes, start, length))
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get, packs[index].Url);
+            request.Headers.Range = new System.Net.Http.Headers.RangeHeaderValue(offset, offset + count - 1);
+            using HttpResponseMessage response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+            response.EnsureSuccessStatusCode();
+            byte[] bytes = await response.Content.ReadAsByteArrayAsync(cancellationToken);
+            // CDN 不认 Range 时会回整个分卷（200），只取要的那一段
+            if (response.StatusCode is HttpStatusCode.OK && bytes.Length > count)
+            {
+                bytes = bytes.AsSpan((int)offset, (int)count).ToArray();
+            }
+            if (bytes.Length != count)
+            {
+                throw new InvalidDataException($"Range read returned {bytes.Length} bytes, expected {count}.");
+            }
+            ms.Write(bytes);
+        }
+        return ms.ToArray();
+    }
+
+
+    /// <summary>
     /// 每个 kind 的请求体都一样，只有 appcode 与语言会变
     /// </summary>
     private static GryphlineLauncherRequest MakeRequest(string appCode, string language)

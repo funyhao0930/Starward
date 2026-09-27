@@ -79,13 +79,16 @@ public class NewGameProviderTests
 
 
     /// <summary>
-    /// 鸣潮由 Starward 自己的下载器安装、更新、修复（逐个文件下载加 krpdiff 差分）
+    /// 鸣潮（逐个文件下载加 krpdiff 差分）与终末地（按整包清单逐个文件比对）由 Starward 自己的下载器安装、更新、修复；
+    /// 异环的外壳同时是登录服务器与更新程序，游戏本体由它负责，这里不声明
     /// </summary>
     [Fact]
-    public void WutheringWaves_ClaimsTheDownloader()
+    public void WutheringWavesAndEndfield_ClaimTheDownloader()
     {
-        GameDescriptor descriptor = KuroGameMapping.GetDescriptors()[0];
-        Assert.True(descriptor.HasCapability(GameCapability.Install | GameCapability.Update | GameCapability.Repair));
+        const GameCapability download = GameCapability.Install | GameCapability.Update | GameCapability.Repair;
+        Assert.True(KuroGameMapping.GetDescriptors()[0].HasCapability(download));
+        Assert.True(GryphlineGameMapping.GetDescriptors()[0].HasCapability(download));
+        Assert.False(HottaGameMapping.GetDescriptors()[0].HasCapability(GameCapability.Install));
     }
 
 

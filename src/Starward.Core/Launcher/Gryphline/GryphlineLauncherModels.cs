@@ -163,7 +163,8 @@ public class GryphlineProxyResponse
 
 
 /// <summary>
-/// 最新游戏包。下载相关的字段（分卷列表、补丁）这里不建模，需要实现下载器时再补。
+/// 最新游戏包。补丁（patch / pre_patch）这里不建模：它是用 cd_key 加密的 zip，
+/// 里面的 VFS 差分是 hpatch 的 HDIFFSF20，Starward 目前按完整文件比对更新，用不到。
 /// </summary>
 public class GryphlineLatestGame
 {
@@ -192,6 +193,30 @@ public class GryphlineGamePackage
 {
 
     /// <summary>
+    /// 整包的分卷。是同一个 Zip64 文件按 1 GiB 直接切开，不是多磁盘 zip：
+    /// 文件会跨分卷，中央目录在最后一卷的末尾。
+    /// 本机已是最新版时为空。
+    /// </summary>
+    [JsonPropertyName("packs")]
+    public List<GryphlinePackageFile>? Packs { get; set; }
+
+
+    /// <summary>
+    /// 逐个文件下载的根目录：<c>{file_path}/{相对路径}</c>，支持 Range。
+    /// 本机已是最新版时也会给。
+    /// </summary>
+    [JsonPropertyName("file_path")]
+    public string? FilePath { get; set; }
+
+
+    /// <summary>
+    /// 先下载整包再解压需要的最大空间（分卷总和加解压后大小），字符串形式的数字
+    /// </summary>
+    [JsonPropertyName("total_size")]
+    public string? TotalSize { get; set; }
+
+
+    /// <summary>
     /// 这一版安装清单 <c>game_files</c> 的 MD5。
     /// <para/>
     /// 官方启动器装完会把同一份清单放在游戏目录里，内容逐字节一致，
@@ -200,6 +225,29 @@ public class GryphlineGamePackage
     /// </summary>
     [JsonPropertyName("game_files_md5")]
     public string? GameFilesMd5 { get; set; }
+
+}
+
+
+/// <summary>
+/// 整包的一个分卷
+/// </summary>
+public class GryphlinePackageFile
+{
+
+    [JsonPropertyName("url")]
+    public string? Url { get; set; }
+
+    [JsonPropertyName("md5")]
+    public string? Md5 { get; set; }
+
+    /// <summary>
+    /// 字符串形式的字节数
+    /// </summary>
+    [JsonPropertyName("package_size")]
+    public string? PackageSize { get; set; }
+
+    public long Size => long.TryParse(PackageSize, out long size) ? size : 0;
 
 }
 

@@ -7,9 +7,11 @@ using Polly;
 using Polly.Extensions.Http;
 using Serilog;
 using Starward.Core.HoYoPlay;
+using Starward.Core.Launcher.Gryphline;
 using Starward.Core.Launcher.Kuro;
 using Starward.RPC.Env;
 using Starward.RPC.GameInstall;
+using Starward.RPC.GameInstall.Gryphline;
 using Starward.RPC.GameInstall.Kuro;
 using Starward.Setup.Core;
 using System;
@@ -121,6 +123,8 @@ public static class RpcRunner
         builder.Services.AddHttpClient<KuroLauncherClient>().AddPolicyHandler(GetHttpRetryPolicy());
         builder.Services.AddSingleton<KuroDirDiffPatcher>();
         builder.Services.AddSingleton<IGameInstallVendor, KuroGameInstaller>();
+        builder.Services.AddHttpClient<GryphlineLauncherClient>().AddPolicyHandler(GetHttpRetryPolicy());
+        builder.Services.AddSingleton<IGameInstallVendor, GryphlineGameInstaller>();
 
 
 

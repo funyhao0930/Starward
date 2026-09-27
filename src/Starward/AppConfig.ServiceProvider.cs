@@ -181,6 +181,7 @@ public static partial class AppConfig
             // 真正的下载在 RPC 进程里由各家的 IGameInstallVendor 完成
             sc.AddSingleton<GamePackageInfoProviderRegistry>();
             sc.AddSingleton<IGamePackageInfoProvider, KuroPackageInfoProvider>();
+            sc.AddSingleton<IGamePackageInfoProvider, GryphlinePackageInfoProvider>();
 
             sc.AddSingleton<GameAuthLoginService>();
             sc.AddSingleton<GameAccountService>();

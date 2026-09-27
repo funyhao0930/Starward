@@ -3,8 +3,9 @@ namespace Starward.Core.Games.Gryphline;
 /// <summary>
 /// 鹰角网络（明日方舟：终末地），官方启动器为 GRYPHLINK。
 /// <para/>
-/// 本阶段只支持启动、搜索、截图与游玩时间，不实现下载与更新。
-/// 本地版本号文件是加密的，因此不声明 <see cref="GameCapability.VersionCheck"/>。
+/// 安装、更新、修复都按文件比对线上最新整包的清单（见 <see cref="Launcher.Gryphline.GryphlineDownloadPlanner"/>），
+/// 下载在 RPC 进程里完成。本地版本号文件是加密的，因此不声明 <see cref="GameCapability.VersionCheck"/>，
+/// 要不要更新改比安装清单 game_files 的 MD5。
 /// </summary>
 public static class GryphlineGameMapping
 {
@@ -39,10 +40,13 @@ public static class GryphlineGameMapping
 
     /// <summary>
     /// 本供应商支持的功能。
-    /// 本地版本号文件加密，无法读取，因此没有 VersionCheck；也没有实现下载器。
+    /// 本地版本号文件加密，无法读取，因此没有 VersionCheck。
     /// </summary>
     public const GameCapability Capabilities = GameCapability.Launch
                                              | GameCapability.Discovery
+                                             | GameCapability.Install
+                                             | GameCapability.Update
+                                             | GameCapability.Repair
                                              | GameCapability.Screenshot
                                              | GameCapability.PlayTime
                                              | GameCapability.Gacha
