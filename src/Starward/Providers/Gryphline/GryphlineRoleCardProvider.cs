@@ -35,6 +35,13 @@ internal class GryphlineRoleCardProvider : IGameRoleCardProvider
     private static readonly TimeSpan CredentialLifetime = TimeSpan.FromMinutes(20);
 
 
+    /// <summary>
+    /// 一次查询最多等多久。鹰角账号服务偶尔要十几秒才回应，
+    /// 但不能让卡片无限转圈，超过就当查询失败，玩家可以再按重新整理。
+    /// </summary>
+    private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(20);
+
+
     private readonly ILogger<GryphlineRoleCardProvider> _logger;
 
     private readonly SkportClient _client;
@@ -138,10 +145,12 @@ internal class GryphlineRoleCardProvider : IGameRoleCardProvider
         SkportCredential credential;
         try
         {
-            credential = await GetCredentialAsync(token, cancellationToken);
-            roles = await _client.GetEndfieldRolesAsync(credential, cancellationToken);
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            timeout.CancelAfter(RequestTimeout);
+            credential = await GetCredentialAsync(token, timeout.Token);
+            roles = await _client.GetEndfieldRolesAsync(credential, timeout.Token);
         }
-        catch (Exception ex) when (ex is not OperationCanceledException)
+        catch (Exception ex) when (IsFailure(ex, cancellationToken))
         {
             _logger.LogWarning(ex, "Query Endfield roles from SKPort failed.");
             throw ToRoleCardException(ex);
@@ -172,20 +181,22 @@ internal class GryphlineRoleCardProvider : IGameRoleCardProvider
             ?? throw new GameRoleCardLoginRequiredException(Lang.GameRoleCard_Gryphline_LoginPrompt);
         try
         {
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            timeout.CancelAfter(RequestTimeout);
             SkportCardDetail detail;
             try
             {
-                detail = await _client.GetEndfieldCardAsync(await GetCredentialAsync(token, cancellationToken), role.RoleId, role.Region, cancellationToken);
+                detail = await _client.GetEndfieldCardAsync(await GetCredentialAsync(token, timeout.Token), role.RoleId, role.Region, timeout.Token);
             }
             catch (SkportApiException)
             {
                 // cred 在缓存期间失效时 SKPort 返回非 0 的 code，重新换一次再试，仍然不行才算失败
                 _credential = null;
-                detail = await _client.GetEndfieldCardAsync(await GetCredentialAsync(token, cancellationToken), role.RoleId, role.Region, cancellationToken);
+                detail = await _client.GetEndfieldCardAsync(await GetCredentialAsync(token, timeout.Token), role.RoleId, role.Region, timeout.Token);
             }
             return ToCardData(role, detail, DateTimeOffset.Now);
         }
-        catch (Exception ex) when (ex is not OperationCanceledException)
+        catch (Exception ex) when (IsFailure(ex, cancellationToken))
         {
             _logger.LogWarning(ex, "Query Endfield card {serverId} {roleId} failed.", role.Region, role.RoleId);
             throw ToRoleCardException(ex);
@@ -261,6 +272,16 @@ internal class GryphlineRoleCardProvider : IGameRoleCardProvider
         _credential = credential;
         _credentialToken = token;
         _credentialTime = DateTimeOffset.Now;
+    }
+
+
+    /// <summary>
+    /// 这次查询该不该当成失败显示给玩家：调用方自己取消的（换游戏、离开页面）不算，
+    /// 我们自己设的超时要算——否则卡片只会安静地停在转圈
+    /// </summary>
+    private static bool IsFailure(Exception ex, CancellationToken callerToken)
+    {
+        return ex is not OperationCanceledException || !callerToken.IsCancellationRequested;
     }
 
 

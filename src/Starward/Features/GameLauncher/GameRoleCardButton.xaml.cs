@@ -155,6 +155,13 @@ public sealed partial class GameRoleCardButton : UserControl
                 ShowLogin(provider.LoginPrompt);
                 return;
             }
+            if (provider.RequiresLogin)
+            {
+                // 已经登录的游戏一定有东西可显示（卡片或原因），先把按钮亮出来，卡片里转圈。
+                // 这类游戏要走网络才查得到角色，终末地的账号服务偶尔要十几秒才回应，
+                // 等查完才显示的话，玩家看到的就是按钮不见了。
+                this.Visibility = Visibility.Visible;
+            }
             IsLoading = true;
             IReadOnlyList<GameRoleCardRole> roles;
             try
