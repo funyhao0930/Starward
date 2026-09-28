@@ -120,18 +120,32 @@ internal static class FileCache
             return filePath;
         }
 
-        uint retries = 0;
-        while (retries < RetryCount)
+        // 下载成功就返回，只有失败才重试。读取超时、连接中断都会留下 _tmp，下一次用 Range 续传
+        // 调用方取消不重试；没取消的 OperationCanceledException 是 HttpClient.Timeout，也重试
+        // 最后一次的异常抛给 GetItemAsync，由 throwOnError 决定是否抛出
+        for (int attempt = 1; ; attempt++)
         {
             try
             {
                 await DownloadFileAsync(uri, filePath, cancellationToken).ConfigureAwait(false);
+                return filePath;
             }
-            catch (HttpRequestException) { }
-            retries++;
+            catch (Exception ex) when (attempt < RetryCount && IsRetryable(ex, cancellationToken))
+            {
+                Debug.WriteLine($"Download failed (attempt {attempt}/{RetryCount}), retrying: {ex.Message}");
+            }
         }
+    }
 
-        return filePath;
+
+    private static bool IsRetryable(Exception ex, CancellationToken cancellationToken)
+    {
+        return ex switch
+        {
+            OperationCanceledException => !cancellationToken.IsCancellationRequested,
+            HttpRequestException or TimeoutException or IOException => true,
+            _ => false,
+        };
     }
 
 
