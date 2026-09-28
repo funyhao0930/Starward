@@ -1165,6 +1165,11 @@ public sealed partial class GameLauncherPage : PageBase
 
     public bool CanStopVideo { get; set => SetProperty(ref field, value); }
 
+    /// <summary>
+    /// 不止一张背景才有得切换，只有一张时不显示页码指示器
+    /// </summary>
+    public bool CanSwitchBackground { get; set => SetProperty(ref field, value); }
+
     public string StartStopButtonIcon { get; set => SetProperty(ref field, value); }
 
 
@@ -1197,7 +1202,10 @@ public sealed partial class GameLauncherPage : PageBase
         {
             CanStopVideo = false;
             BackgroundImages = await _backgroundService.GetGameBackgroundsAsync(CurrentGameKey);
-            if (BackgroundImages.Count > 1)
+            CanSwitchBackground = BackgroundImages.Count > 1;
+            // 鸣潮、终末地、异环的接口一次只给一张背景，但那张多半是视频，
+            // 只有一张时也要显示这一栏，否则没有地方暂停视频
+            if (CanSwitchBackground || BackgroundImages.Any(x => x.Type is GameBackground.BACKGROUND_TYPE_VIDEO))
             {
                 Border_SwitchBackgroundImage.Visibility = Visibility.Visible;
                 GameBackground? currentBackground = await _backgroundService.GetSuggestedGameBackgroundAsync(CurrentGameKey);
@@ -1261,16 +1269,22 @@ public sealed partial class GameLauncherPage : PageBase
 
     private void Border_SwitchBackgroundImage_PointerWheelChanged(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
     {
+        if (BackgroundImages is not { Count: > 1 })
+        {
+            return;
+        }
         int delta = e.GetCurrentPoint(this).Properties.MouseWheelDelta;
         _switchBackgroundTotalDelta += delta;
+        // 索引越界时 ChangeBackgroundImageIndex 虽然不换图，但索引本身已经改了，
+        // 之后的暂停按钮会拿越界的索引取背景，因此在这里就夹住
         if (_switchBackgroundTotalDelta <= -120)
         {
-            CurrentBackgroundImageIndex++;
+            CurrentBackgroundImageIndex = Math.Min(CurrentBackgroundImageIndex + 1, BackgroundImages.Count - 1);
             _switchBackgroundTotalDelta = 0;
         }
         else if (_switchBackgroundTotalDelta >= 120)
         {
-            CurrentBackgroundImageIndex--;
+            CurrentBackgroundImageIndex = Math.Max(CurrentBackgroundImageIndex - 1, 0);
             _switchBackgroundTotalDelta = 0;
         }
     }

@@ -435,8 +435,9 @@
                            NumberOfPages="{x:Bind BackgroundImages.Count}"
                            PreviousButtonVisibility="VisibleOnPointerOver"
                            SelectedPageIndex="{x:Bind CurrentBackgroundImageIndex, Mode=TwoWay}"
-                           Style="{ThemeResource CustomPipsPagerStyle}" />
-                <AppBarSeparator Padding="0,4,0,4" />
+                           Style="{ThemeResource CustomPipsPagerStyle}"
+                           Visibility="{x:Bind CanSwitchBackground}" />
+                <AppBarSeparator Padding="0,4,0,4" Visibility="{x:Bind CanSwitchBackground}" />
                 <!--  图库  -->
                 <Button Padding="4"
                         VerticalAlignment="Center"
