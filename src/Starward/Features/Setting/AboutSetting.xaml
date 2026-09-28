@@ -104,7 +104,7 @@
                 </Hyperlink>
             </TextBlock>
             <TextBlock Margin="0,8,0,0" HorizontalAlignment="Left">
-                <Hyperlink NavigateUri="https://github.com/Scighost/Starward/releases" UnderlineStyle="None">
+                <Hyperlink NavigateUri="https://github.com/funyhao0930/Starward/releases" UnderlineStyle="None">
                     <Run FontWeight="Bold"
                          Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
                          Text="{x:Bind lang:Lang.SettingPage_ReleaseHistroy}" />

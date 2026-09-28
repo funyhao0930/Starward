@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Starward.Features.RPC;
 using Starward.Helpers;
 using Starward.Setup.Core;
 using System;
@@ -37,7 +38,7 @@ internal class SetupService
 
     private async Task<ReleaseInfoDetail> GetReleaseInfoDetailAsync(CancellationToken cancellationToken = default)
     {
-        return await _releaseClient.GetLatestReleaseInfoDetailAsync(AppConfig.EnablePreviewRelease, AppConfig.AppVersion, RuntimeInformation.ProcessArchitecture, (InstallType)(AppConfig.IsPortable ? 1 : 0), cancellationToken);
+        return await _releaseClient.GetLatestGithubReleaseInfoDetailAsync(AppConfig.EnablePreviewRelease, RuntimeInformation.ProcessArchitecture, AppConfig.InstallType, cancellationToken);
     }
 
 
@@ -130,15 +131,16 @@ internal class SetupService
             throw new NotSupportedException("Update is not supported.");
         }
         cancellationToken.ThrowIfCancellationRequested();
+        // 本分支的安裝程式內嵌完整封包，直接跑一般安裝流程覆蓋；它的 update 模式會去上游伺服器取版本
         Process.Start(new ProcessStartInfo
         {
             FileName = setupPath,
             UseShellExecute = true,
             Verb = "runas",
-            Arguments = $"""
-                update --InstallFolder "{AppContext.BaseDirectory.TrimEnd('\\')}" --OldVersion "{AppConfig.AppVersion}" --NewVersion "{detail.Version}" --Preview "{AppConfig.EnablePreviewRelease}" --pid {Environment.ProcessId}
-                """,
         });
+        // 安裝程式要覆蓋目前的檔案，交給它之後就結束，RPC 也一起關掉
+        AppConfig.GetService<RpcService>().KeepRunningOnExited(false, noLongerChange: true);
+        Environment.Exit(0);
     }
 
 

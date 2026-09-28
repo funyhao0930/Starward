@@ -53,8 +53,6 @@ jobs:
     env:
       Version: ${{ inputs.version || github.ref_name }}
       Arch: ${{ matrix.arch }}
-      # 本分支沒有自己的更新伺服器，關掉自動更新檢查，免得被上游的版本蓋掉這裡的修改
-      StarwardDisableUpdateCheck: 'true'
 
     steps:
     - name: Checkout
@@ -135,7 +133,7 @@ jobs:
         | \`Starward_Portable_${Version}_x64.7z\` | 免安裝版，Intel／AMD 處理器 |
         | \`Starward_Portable_${Version}_arm64.7z\` | 免安裝版，ARM64 處理器 |
 
-        本建置關閉了自動更新檢查，不會被上游版本覆蓋，更新請回來這裡下載。
+        本建置的自動更新只看這個倉庫的 Release，不會被上游版本覆蓋。自動更新需要 \`SHA256SUMS.txt\` 與上面的檔名，請勿改名。
         EOF
         } > body.md
         cat body.md

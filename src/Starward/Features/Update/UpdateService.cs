@@ -1,7 +1,8 @@
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using NuGet.Versioning;
 using Polly;
 using Polly.Retry;
+using SharpSevenZip;
 using Snap.HPatch;
 using Starward.RPC.GameInstall;
 using Starward.Setup.Core;
@@ -79,9 +80,9 @@ internal class UpdateService
         _ = NuGetVersion.TryParse(AppConfig.AppVersion, out var currentVersion);
         _ = NuGetVersion.TryParse(AppConfig.IgnoreVersion, out var ignoreVersion);
 #if DEBUG
-        var release = await _releaseClient.GetLatestReleaseInfoDetailAsync(AppConfig.EnablePreviewRelease, AppConfig.AppVersion, RuntimeInformation.ProcessArchitecture, InstallType.Portable);
+        var release = await _releaseClient.GetLatestGithubReleaseInfoDetailAsync(AppConfig.EnablePreviewRelease, RuntimeInformation.ProcessArchitecture, InstallType.Portable);
 #else
-        var release = await _releaseClient.GetLatestReleaseInfoDetailAsync(AppConfig.EnablePreviewRelease, AppConfig.AppVersion, RuntimeInformation.ProcessArchitecture, AppConfig.InstallType);
+        var release = await _releaseClient.GetLatestGithubReleaseInfoDetailAsync(AppConfig.EnablePreviewRelease, RuntimeInformation.ProcessArchitecture, AppConfig.InstallType);
 #endif
         _logger.LogInformation("Current version: {currentVersion}, latest version: {latestVersion}, ignore version: {ignoreVersion}.", AppConfig.AppVersion, release?.Version, ignoreVersion);
         _ = NuGetVersion.TryParse(release?.Version, out var newVersion);
@@ -100,9 +101,9 @@ internal class UpdateService
     public async Task<ReleaseInfoDetail> GetLatestVersionAsync(CancellationToken cancellation = default)
     {
 #if DEBUG
-        return await _releaseClient.GetLatestReleaseInfoDetailAsync(AppConfig.EnablePreviewRelease, AppConfig.AppVersion, RuntimeInformation.ProcessArchitecture, InstallType.Portable);
+        return await _releaseClient.GetLatestGithubReleaseInfoDetailAsync(AppConfig.EnablePreviewRelease, RuntimeInformation.ProcessArchitecture, InstallType.Portable, cancellation);
 #else
-        return await _releaseClient.GetLatestReleaseInfoDetailAsync(AppConfig.EnablePreviewRelease, AppConfig.AppVersion, RuntimeInformation.ProcessArchitecture, AppConfig.InstallType);
+        return await _releaseClient.GetLatestGithubReleaseInfoDetailAsync(AppConfig.EnablePreviewRelease, RuntimeInformation.ProcessArchitecture, AppConfig.InstallType, cancellation);
 #endif
     }
 
@@ -129,7 +130,14 @@ internal class UpdateService
                 State = UpdateState.NotSupport;
                 return;
             }
-            await StartInternalAsync(release, _cancellationTokenSource.Token);
+            if (string.IsNullOrWhiteSpace(release.ManifestUrl))
+            {
+                await UpdateFromPackageAsync(release, _cancellationTokenSource.Token);
+            }
+            else
+            {
+                await StartInternalAsync(release, _cancellationTokenSource.Token);
+            }
             if (State is UpdateState.Finish)
             {
                 UpdateFinished = true;
@@ -191,6 +199,180 @@ internal class UpdateService
         _progress_DownloadBytes = 0;
         ErrorMessage = null;
     }
+
+
+
+    #region Package
+
+
+
+    /// <summary>
+    /// GitHub Release 沒有逐檔 manifest，整包下載可攜版 7z，解出新的 app-{version} 後改寫 version.ini
+    /// </summary>
+    private async Task UpdateFromPackageAsync(ReleaseInfoDetail release, CancellationToken cancellationToken = default)
+    {
+        _targetPath = Path.GetDirectoryName(AppConfig.StarwardPortableLauncherExecutePath)!;
+        _updateCacheFolder = Path.Combine(AppConfig.CacheFolder, "update");
+        string packagePath = Path.Combine(_updateCacheFolder, Path.GetFileName(new Uri(release.PackageUrl).LocalPath));
+        // 解壓在安裝目錄底下，和目標同一個磁碟，新版資料夾才能直接搬過去
+        string extractPath = Path.Combine(_targetPath, ".update");
+        try
+        {
+            _logger.LogInformation("Update Starward from package {url}", release.PackageUrl);
+            Directory.CreateDirectory(_updateCacheFolder);
+            State = UpdateState.Downloading;
+            Progress_TotalBytes = release.PackageSize;
+            await _polly.ExecuteAsync(async (pollyToken) => await DownloadPackageAsync(release, packagePath, pollyToken), cancellationToken);
+
+            State = UpdateState.Pending;
+            TryDeleteDirectory(extractPath);
+            await ExtractPackageAsync(packagePath, extractPath, cancellationToken);
+
+            // 封包的根目錄是 Starward\，裡面有 app-{version}、Starward.exe、version.ini
+            string root = Path.Combine(extractPath, "Starward");
+            string[] appFolders = Directory.Exists(root) ? Directory.GetDirectories(root, "app-*") : [];
+            if (appFolders.Length != 1 || !File.Exists(Path.Combine(appFolders[0], "Starward.exe")))
+            {
+                throw new InvalidDataException($"Unexpected package layout: {release.PackageUrl}");
+            }
+            string targetApp = Path.Combine(_targetPath, Path.GetFileName(appFolders[0]));
+            TryDeleteDirectory(targetApp);
+            Directory.Move(appFolders[0], targetApp);
+
+            // 啟動器只讀 version.ini 決定開哪個 app-*，被占用時沿用舊的也能正常啟動
+            try
+            {
+                string launcher = Path.Combine(root, "Starward.exe");
+                if (File.Exists(launcher))
+                {
+                    File.Copy(launcher, Path.Combine(_targetPath, "Starward.exe"), true);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Replace launcher");
+            }
+
+            // 最後才換 version.ini，前面任何一步失敗，啟動器都還會開舊版
+            string versionIni = Path.Combine(root, "version.ini");
+            if (File.Exists(versionIni))
+            {
+                File.Copy(versionIni, Path.Combine(_targetPath, "version.ini"), true);
+            }
+            else
+            {
+                await File.WriteAllTextAsync(Path.Combine(_targetPath, "version.ini"), $"version={release.Version}", CancellationToken.None);
+            }
+
+            TryDeleteDirectory(extractPath);
+            DeleteUpdateCacheFolder();
+            State = UpdateState.Finish;
+            _logger.LogInformation("Update Starward finished");
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogInformation("Update Starward canceled");
+            State = UpdateState.Stop;
+            TryDeleteDirectory(extractPath);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Update Starward from package failed");
+            State = UpdateState.Error;
+            ErrorMessage = ex.Message;
+            TryDeleteDirectory(extractPath);
+        }
+    }
+
+
+
+    private async Task DownloadPackageAsync(ReleaseInfoDetail release, string path, CancellationToken cancellationToken = default)
+    {
+        using var fs = File.Open(path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite | FileShare.Delete);
+        if (fs.Length > release.PackageSize)
+        {
+            fs.SetLength(0);
+        }
+        Interlocked.Exchange(ref _progress_DownloadBytes, fs.Length);
+        if (fs.Length < release.PackageSize)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get, release.PackageUrl) { VersionPolicy = HttpVersionPolicy.RequestVersionOrHigher };
+            request.Headers.Range = new RangeHeaderValue(fs.Length, null);
+            using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+            response.EnsureSuccessStatusCode();
+            // 伺服器不支援續傳時會回整個檔案
+            fs.Position = response.Content.Headers.ContentRange?.From ?? 0;
+            fs.SetLength(fs.Position);
+            Interlocked.Exchange(ref _progress_DownloadBytes, fs.Position);
+            using var hs = await response.Content.ReadAsStreamAsync(cancellationToken);
+            var buffer = new byte[1 << 16];
+            int length;
+            while ((length = await hs.ReadAsync(buffer, cancellationToken)) != 0)
+            {
+                await fs.WriteAsync(buffer.AsMemory(0, length), cancellationToken);
+                Interlocked.Add(ref _progress_DownloadBytes, length);
+            }
+            await fs.FlushAsync(cancellationToken);
+        }
+
+        fs.Position = 0;
+        var sha256 = await SHA256.HashDataAsync(fs, cancellationToken);
+        if (string.Equals(Convert.ToHexString(sha256), release.PackageHash, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+        _logger.LogWarning("Checksum failed: {path}", path);
+        fs.SetLength(0);
+        Interlocked.Exchange(ref _progress_DownloadBytes, 0);
+        throw new Exception($"Checksum failed: {path}");
+    }
+
+
+
+    private static async Task ExtractPackageAsync(string packagePath, string extractPath, CancellationToken cancellationToken = default)
+    {
+        using var fs = File.OpenRead(packagePath);
+        using var archive = new SharpSevenZipExtractor(fs, leaveOpen: true);
+        try
+        {
+            Task extractTask = Task.Run(() => archive.ExtractArchive(extractPath), cancellationToken);
+            while (!extractTask.IsCompleted)
+            {
+                await Task.Delay(50, CancellationToken.None);
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    // 解壓本身不能取消，關掉來源串流讓它中止
+                    fs.Dispose();
+                }
+            }
+            await extractTask;
+        }
+        catch (Exception) when (cancellationToken.IsCancellationRequested)
+        {
+            throw new OperationCanceledException("Extract operation canceled.", cancellationToken);
+        }
+    }
+
+
+
+    private void TryDeleteDirectory(string path)
+    {
+        try
+        {
+            if (Directory.Exists(path))
+            {
+                Directory.Delete(path, true);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Delete directory {path}", path);
+        }
+    }
+
+
+
+    #endregion
 
 
 
