@@ -58,10 +58,16 @@ public static class KuroDownloadPlanner
     /// <summary>
     /// 下载用的 CDN 根地址，权重高的在前，权重为 0 的备用 CDN 排最后。
     /// 每个地址都以斜杠结尾。
+    /// <para/>
+    /// 预下载那一段没有自己的 cdnList（3.7.0 预下载时线上就是这样），
+    /// 这时沿用 default 的：新版本的文件同样放在那几个 CDN 上。
     /// </summary>
-    public static IReadOnlyList<string> GetCdnBases(KuroLauncherGameResource resource)
+    /// <param name="index">整份游戏配置，取 default 的 CDN 作后备</param>
+    /// <param name="resource">要下载的那一段，default 或 predownload</param>
+    public static IReadOnlyList<string> GetCdnBases(KuroLauncherGameIndex index, KuroLauncherGameResource resource)
     {
-        return (resource.CdnList ?? [])
+        List<KuroLauncherCdn>? cdnList = resource.CdnList is { Count: > 0 } ? resource.CdnList : index.Default?.CdnList;
+        return (cdnList ?? [])
             .Where(x => !string.IsNullOrWhiteSpace(x.Url))
             .OrderByDescending(x => x.Priority > 0)
             .ThenByDescending(x => x.Priority)

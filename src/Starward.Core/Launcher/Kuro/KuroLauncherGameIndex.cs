@@ -22,7 +22,8 @@ public class KuroLauncherGameIndex
     /// 预下载，只在新版本公布之后、上线之前出现，平时整个键都不在。
     /// <para/>
     /// 形状与 <see cref="Default"/> 相同：官方启动器 <c>launcher_main.dll</c>
-    /// 用同一个类型反序列化这两个键。
+    /// 用同一个类型反序列化这两个键。但线上的预下载没有 <c>cdnList</c>，
+    /// 要用 <see cref="Default"/> 的，见 <see cref="KuroDownloadPlanner.GetCdnBases"/>。
     /// </summary>
     [JsonPropertyName("predownload")]
     public KuroLauncherGameResource? Predownload { get; set; }
@@ -68,7 +69,8 @@ public class KuroLauncherGameResource
 
 
     /// <summary>
-    /// 下载资源用的 CDN，与取这份配置的 CDN 不是同一批域名
+    /// 下载资源用的 CDN，与取这份配置的 CDN 不是同一批域名。
+    /// 只有 default 有，predownload 没有这个键。
     /// </summary>
     [JsonPropertyName("cdnList")]
     public List<KuroLauncherCdn>? CdnList { get; set; }

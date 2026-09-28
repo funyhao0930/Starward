@@ -184,7 +184,7 @@ internal class KuroGameInstaller : IGameInstallVendor
         {
             throw new InvalidOperationException("Wuthering Waves download config has no index file.");
         }
-        IReadOnlyList<string> cdnBases = KuroDownloadPlanner.GetCdnBases(resource);
+        IReadOnlyList<string> cdnBases = KuroDownloadPlanner.GetCdnBases(index, resource);
         if (cdnBases.Count == 0)
         {
             throw new InvalidOperationException("Wuthering Waves download config has no CDN.");

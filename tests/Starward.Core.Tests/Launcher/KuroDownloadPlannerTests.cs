@@ -85,7 +85,7 @@ public class KuroDownloadPlannerTests
     [Fact]
     public void GetCdnBases_OrdersByPriorityAndKeepsTheBackupLast()
     {
-        IReadOnlyList<string> bases = KuroDownloadPlanner.GetCdnBases(Index.Default!);
+        IReadOnlyList<string> bases = KuroDownloadPlanner.GetCdnBases(Index, Index.Default!);
 
         Assert.Equal(
         [
@@ -191,7 +191,40 @@ public class KuroDownloadPlannerTests
 
 
     /// <summary>
-    /// 预下载平时不在，出现时与 default 同形状
+    /// 2026-09-28 线上 3.7.0 预下载的形状（删减）：与 default 同类型，但没有 cdnList
+    /// </summary>
+    private const string PredownloadIndexJson = """
+        {"default":{
+            "cdnList":[
+                {"K1":1,"K2":1,"P":1677,"url":"https://hw-pcdownload-qcloud.aki-game.net/"},
+                {"K1":1,"K2":1,"P":7276,"url":"https://hw-pcdownload-aws.aki-game.net/"}],
+            "version":"3.6.1"},
+         "predownload":{
+            "changelog":{},
+            "config":{
+                "indexFileMd5":"ffa6c297a532a56536b075291e290e7b",
+                "unCompressSize":85880131888,
+                "baseUrl":"launcher/game/G153/50004/3.7.0/TXAEABiubisYwJFkmSfnDtRUNlGBdYPs/zip/",
+                "size":85880131888,
+                "patchType":"patch",
+                "indexFile":"launcher/game/G153/50004/3.7.0/TXAEABiubisYwJFkmSfnDtRUNlGBdYPs/resource/50004/3.7.0/indexFile.json",
+                "version":"3.7.0",
+                "patchConfig":[
+                    {"indexFileMd5":"35e9f8ca4148011fbf7052b6bcfda27a","unCompressSize":79698373721,
+                     "ext":{"requiredDiskSpace":22664759411,"maxFileSize":3965510269},
+                     "baseUrl":"launcher/game/G153/50004/3.7.0/TXAEABiubisYwJFkmSfnDtRUNlGBdYPs/resource/50004/3.7.0/3.6.1/resources/",
+                     "size":26890642133,
+                     "indexFile":"launcher/game/G153/50004/3.7.0/TXAEABiubisYwJFkmSfnDtRUNlGBdYPs/resource/50004/3.7.0/3.6.1/indexFile.json",
+                     "version":"3.6.1"}]},
+            "resources":"launcher/game/G153/50004/3.7.0/TXAEABiubisYwJFkmSfnDtRUNlGBdYPs/resource.json",
+            "resourcesBasePath":"launcher/game/G153/50004/3.7.0/TXAEABiubisYwJFkmSfnDtRUNlGBdYPs/zip",
+            "version":"3.7.0"},
+         "predownloadSwitch":1}
+        """;
+
+
+    /// <summary>
+    /// 预下载平时不在，出现时与 default 同类型
     /// </summary>
     [Fact]
     public void Deserialize_ReadsThePredownloadWhenPresent()
@@ -199,15 +232,40 @@ public class KuroDownloadPlannerTests
         Assert.Null(Index.Predownload);
         Assert.Equal(1, Index.PredownloadSwitch);
 
-        KuroLauncherGameIndex withPredownload = JsonSerializer.Deserialize<KuroLauncherGameIndex>("""
-            {"default":{"version":"3.6.1"},
-             "predownload":{"version":"3.7.0","cdnList":[{"P":1,"url":"https://cdn.example/"}],
-                            "config":{"version":"3.7.0","indexFile":"a/indexFile.json","baseUrl":"a/zip/","size":1,"patchConfig":[{"version":"3.6.1","indexFile":"a/3.6.1/indexFile.json","baseUrl":"a/diff/","size":2}]}},
-             "predownloadSwitch":1}
-            """)!;
+        KuroLauncherGameIndex withPredownload = JsonSerializer.Deserialize<KuroLauncherGameIndex>(PredownloadIndexJson)!;
 
         Assert.Equal("3.7.0", withPredownload.Predownload?.Version);
-        Assert.Equal(2, KuroDownloadPlanner.FindPatch(withPredownload.Predownload!.Config!, "3.6.1")?.Size);
+        Assert.Null(withPredownload.Predownload!.CdnList);
+        Assert.Equal(26890642133, KuroDownloadPlanner.FindPatch(withPredownload.Predownload.Config!, "3.6.1")?.Size);
+    }
+
+
+    /// <summary>
+    /// 预下载没有自己的 cdnList，要用 default 的，否则一开始预下载就报「没有 CDN」
+    /// </summary>
+    [Fact]
+    public void GetCdnBases_FallsBackToTheDefaultCdnsForThePredownload()
+    {
+        KuroLauncherGameIndex index = JsonSerializer.Deserialize<KuroLauncherGameIndex>(PredownloadIndexJson)!;
+
+        IReadOnlyList<string> bases = KuroDownloadPlanner.GetCdnBases(index, index.Predownload!);
+
+        Assert.Equal(["https://hw-pcdownload-aws.aki-game.net/", "https://hw-pcdownload-qcloud.aki-game.net/"], bases);
+    }
+
+
+    /// <summary>
+    /// 哪一天预下载带了自己的 cdnList，就用它自己的
+    /// </summary>
+    [Fact]
+    public void GetCdnBases_PrefersTheResourcesOwnCdns()
+    {
+        KuroLauncherGameIndex index = JsonSerializer.Deserialize<KuroLauncherGameIndex>(PredownloadIndexJson)!;
+        index.Predownload!.CdnList = [new KuroLauncherCdn { Url = "https://cdn.example", Priority = 1 }];
+
+        IReadOnlyList<string> bases = KuroDownloadPlanner.GetCdnBases(index, index.Predownload);
+
+        Assert.Equal(["https://cdn.example/"], bases);
     }
 
 
