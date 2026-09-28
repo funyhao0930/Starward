@@ -15,6 +15,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="Starward.Core.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <EmbeddedResource Update="Localization\CoreLang.resx">
       <Generator>PublicResXFileCodeGenerator</Generator>
       <LastGenOutput>CoreLang.Designer.cs</LastGenOutput>

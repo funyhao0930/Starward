@@ -69,6 +69,12 @@ public class GryphlineLauncherClient
     private readonly HttpClient _httpClient;
 
 
+    /// <summary>
+    /// 读分卷片段的读取超时，默认 <see cref="IdleTimeoutStream.DefaultTimeout"/>。测试会调短
+    /// </summary>
+    internal TimeSpan? PackageReadTimeout { get; init; }
+
+
     public GryphlineLauncherClient(HttpClient? httpClient = null)
     {
         _httpClient = httpClient ?? new(new HttpClientHandler { AutomaticDecompression = DecompressionMethods.All }) { DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrHigher };
@@ -256,17 +262,24 @@ public class GryphlineLauncherClient
             request.Headers.Range = new System.Net.Http.Headers.RangeHeaderValue(offset, offset + count - 1);
             using HttpResponseMessage response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
             response.EnsureSuccessStatusCode();
-            byte[] bytes = await response.Content.ReadAsByteArrayAsync(cancellationToken);
-            // CDN 不认 Range 时会回整个分卷（200），只取要的那一段
-            if (response.StatusCode is HttpStatusCode.OK && bytes.Length > count)
+            // 不用 ReadAsByteArrayAsync：ResponseHeadersRead 之后 HttpClient.Timeout 不管读正文，
+            // 连接悄悄断掉的话会一直等下去，安装停在准备阶段，所以自己读流并计时
+            using var body = new MemoryStream();
+            using (var stream = new IdleTimeoutStream(await response.Content.ReadAsStreamAsync(cancellationToken), PackageReadTimeout))
             {
-                bytes = bytes.AsSpan((int)offset, (int)count).ToArray();
+                await stream.CopyToAsync(body, cancellationToken);
+            }
+            Memory<byte> bytes = body.GetBuffer().AsMemory(0, (int)body.Length);
+            // CDN 不认 Range 时会回整个分卷（200），只取要的那一段
+            if (response.StatusCode is HttpStatusCode.OK && bytes.Length >= offset + count)
+            {
+                bytes = bytes.Slice((int)offset, (int)count);
             }
             if (bytes.Length != count)
             {
                 throw new InvalidDataException($"Range read returned {bytes.Length} bytes, expected {count}.");
             }
-            ms.Write(bytes);
+            ms.Write(bytes.Span);
         }
         return ms.ToArray();
     }

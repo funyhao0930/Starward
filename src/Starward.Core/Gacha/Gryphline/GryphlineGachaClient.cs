@@ -389,7 +389,7 @@ public class GryphlineGachaClient : GachaLogClient
             return (version, null);
         }
 
-        await using Stream stream = await _httpClient.GetStreamAsync($"{AKEDATA_BASE_URL}/{tableCfgPath.Trim('/')}/ItemTable.json", cancellationToken);
+        await using Stream stream = new IdleTimeoutStream(await _httpClient.GetStreamAsync($"{AKEDATA_BASE_URL}/{tableCfgPath.Trim('/')}/ItemTable.json", cancellationToken));
         using JsonDocument itemTable = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
         if (itemTable.RootElement.ValueKind != JsonValueKind.Object)
         {

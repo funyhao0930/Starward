@@ -149,7 +149,8 @@ internal class GryphlineGameInstaller : IGameInstallVendor
             throw new InvalidOperationException("Endfield game package has no file path.");
         }
         string version = latest.Version ?? throw new InvalidOperationException("Endfield game package has no version.");
-        IReadOnlyList<ZipEntryInfo> entries = await _launcherClient.GetPackageEntriesAsync(package, cancellationToken);
+        // 读中央目录只有两小段，连接卡住会抛 TimeoutException，与下载文件一样重试
+        IReadOnlyList<ZipEntryInfo> entries = await _polly.ExecuteAsync(async token => await _launcherClient.GetPackageEntriesAsync(package, token), cancellationToken);
         if (entries.FirstOrDefault(x => x.IsEncrypted) is ZipEntryInfo encrypted)
         {
             throw new NotSupportedException($"Encrypted entry in the Endfield package: {encrypted.Name}");

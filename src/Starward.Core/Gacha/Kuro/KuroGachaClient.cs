@@ -424,7 +424,7 @@ public class KuroGachaClient : GachaLogClient
 
     private async Task<JsonDocument> GetJsonDocumentAsync(string url, CancellationToken cancellationToken)
     {
-        await using Stream stream = await _httpClient.GetStreamAsync(url, cancellationToken);
+        await using Stream stream = new IdleTimeoutStream(await _httpClient.GetStreamAsync(url, cancellationToken));
         return await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
     }
 
