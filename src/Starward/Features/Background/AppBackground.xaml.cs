@@ -581,6 +581,7 @@ public sealed partial class AppBackground : UserControl
     {
         _mediaPlayer?.Dispose();
         _mediaPlayer = null;
+        _videoPausedByDisplayOff = false;
         _videoSurface?.Dispose();
         _videoSurface = null;
         _videoImageSource = null;
@@ -605,6 +606,13 @@ public sealed partial class AppBackground : UserControl
     }
 
 
+    /// <summary>
+    /// 视频是因为显示器关闭才暂停的，显示器打开时要接着播。
+    /// 隐藏窗口、锁屏造成的暂停不算，那两种要等窗口再次激活。
+    /// </summary>
+    private bool _videoPausedByDisplayOff;
+
+
     private void OnMainWindowStateChanged(object _, MainWindowStateChangedMessage message)
     {
         try
@@ -615,10 +623,23 @@ public sealed partial class AppBackground : UserControl
                 if (message.Activate && state is not MediaPlaybackState.Playing)
                 {
                     _mediaPlayer.Play();
+                    _videoPausedByDisplayOff = false;
                 }
                 else if (message.Hide || message.SessionLock)
                 {
                     _mediaPlayer.Pause();
+                    _videoPausedByDisplayOff = false;
+                }
+                else if (message.DisplayOff && state is MediaPlaybackState.Playing)
+                {
+                    // 原因见 MainWindow 处理 WM_POWERBROADCAST 的地方
+                    _mediaPlayer.Pause();
+                    _videoPausedByDisplayOff = true;
+                }
+                else if (message.DisplayOn && _videoPausedByDisplayOff)
+                {
+                    _mediaPlayer.Play();
+                    _videoPausedByDisplayOff = false;
                 }
             }
         }

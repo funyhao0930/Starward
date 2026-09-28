@@ -54,6 +54,7 @@ public sealed partial class MainWindow : WindowEx
         SetDragRectangles(new RectInt32(0, 0, 100000, (int)(48 * UIScale)));
         SetIcon();
         WTSRegisterSessionNotification(WindowHandle, 0);
+        RegisterPowerSettingNotification(WindowHandle, GUID_CONSOLE_DISPLAY_STATE, 0);
         if (AppWindow.Presenter is OverlappedPresenter presenter)
         {
             presenter.IsMaximizable = false;
@@ -215,7 +216,26 @@ public sealed partial class MainWindow : WindowEx
             }
             else if (wParam == 0x8)
             {
-                // WTS_SESSION_UNLOCK 
+                // WTS_SESSION_UNLOCK
+            }
+        }
+        else if (uMsg == (uint)User32.WindowMessage.WM_POWERBROADCAST && wParam == 0x8013)
+        {
+            // PBT_POWERSETTINGCHANGE，lParam 是 POWERBROADCAST_SETTING：GUID、DataLength、Data
+            // 只关显示器不锁屏时收不到 WTS_SESSION_LOCK，视频背景会在没人看的时候一直解码、一直往画面上画。
+            // 实际遇到过：显示器关了半小时，再打开时 UI 线程在 XAML 里跑满十来分钟，窗口无响应，内存多出约 400 MB
+            if (Marshal.PtrToStructure<Guid>(lParam) == GUID_CONSOLE_DISPLAY_STATE)
+            {
+                // 0 关闭，1 打开，2 变暗（变暗时画面还看得见，不处理）
+                int state = Marshal.ReadInt32(lParam, 20);
+                if (state is 0)
+                {
+                    WeakReferenceMessenger.Default.Send(new MainWindowStateChangedMessage { DisplayOff = true, CurrentTime = DateTimeOffset.Now });
+                }
+                else if (state is 1)
+                {
+                    WeakReferenceMessenger.Default.Send(new MainWindowStateChangedMessage { DisplayOn = true, CurrentTime = DateTimeOffset.Now });
+                }
             }
         }
         else if (uMsg == (uint)User32.WindowMessage.WM_DEVICECHANGE)
@@ -263,6 +283,17 @@ public sealed partial class MainWindow : WindowEx
     [LibraryImport("wtsapi32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static partial bool WTSRegisterSessionNotification(IntPtr hWnd, int dwFlags);
+
+
+    /// <summary>
+    /// 显示器关闭、打开、变暗时发 WM_POWERBROADCAST
+    /// </summary>
+    private static readonly Guid GUID_CONSOLE_DISPLAY_STATE = new("6FE69556-704A-47A0-8F24-C28D936FDA47");
+
+
+    /// <param name="flags">0 是 DEVICE_NOTIFY_WINDOW_HANDLE</param>
+    [LibraryImport("user32.dll")]
+    private static partial IntPtr RegisterPowerSettingNotification(IntPtr hRecipient, in Guid powerSettingGuid, int flags);
 
 
 }

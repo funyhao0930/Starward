@@ -17,6 +17,18 @@ internal class MainWindowStateChangedMessage
     public bool SessionLock { get; set; }
 
 
+    /// <summary>
+    /// 显示器关闭（没有锁屏，只是到了关闭显示器的时间）
+    /// </summary>
+    public bool DisplayOff { get; set; }
+
+
+    /// <summary>
+    /// 显示器重新打开
+    /// </summary>
+    public bool DisplayOn { get; set; }
+
+
     public DateTimeOffset CurrentTime { get; set; }
 
 
