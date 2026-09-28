@@ -30,6 +30,11 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<!-- 与主程序共用下载的读取超时。Setup 不引用 Starward.Core，只把这一个文件编译进来 -->
+		<Compile Include="..\Starward.Core\IdleTimeoutStream.cs" Link="Services\IdleTimeoutStream.cs" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<EmbeddedResource Include="Assets\*" />
 		<EmbeddedResource Include="Firefly.png" />
 	</ItemGroup>

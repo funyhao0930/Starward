@@ -845,7 +845,8 @@ internal partial class GamePackageService
             using HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, url) { VersionPolicy = HttpVersionPolicy.RequestVersionOrHigher };
             using HttpResponseMessage response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
             response.EnsureSuccessStatusCode();
-            using Stream hs = await response.Content.ReadAsStreamAsync(cancellationToken);
+            // 连接断了时读取会一直挂着，任务就一直停在准备阶段。超时后任务出错可以重试，写了一半的文件会重新下载
+            using Stream hs = new IdleTimeoutStream(await response.Content.ReadAsStreamAsync(cancellationToken));
             await hs.CopyToAsync(fs, cancellationToken);
         }
         {
@@ -907,7 +908,7 @@ internal partial class GamePackageService
             return [];
         }
         response.EnsureSuccessStatusCode();
-        using Stream hs = await response.Content.ReadAsStreamAsync(cancellationToken);
+        using Stream hs = new IdleTimeoutStream(await response.Content.ReadAsStreamAsync(cancellationToken));
         using MemoryStream ms = new();
         await hs.CopyToAsync(ms, cancellationToken);
         ms.Position = 0;

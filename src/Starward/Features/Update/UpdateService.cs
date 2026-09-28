@@ -4,6 +4,7 @@ using Polly;
 using Polly.Retry;
 using SharpSevenZip;
 using Snap.HPatch;
+using Starward.Core;
 using Starward.RPC.GameInstall;
 using Starward.Setup.Core;
 using System;
@@ -296,23 +297,37 @@ internal class UpdateService
         Interlocked.Exchange(ref _progress_DownloadBytes, fs.Length);
         if (fs.Length < release.PackageSize)
         {
-            var request = new HttpRequestMessage(HttpMethod.Get, release.PackageUrl) { VersionPolicy = HttpVersionPolicy.RequestVersionOrHigher };
-            request.Headers.Range = new RangeHeaderValue(fs.Length, null);
-            using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-            response.EnsureSuccessStatusCode();
-            // 伺服器不支援續傳時會回整個檔案
-            fs.Position = response.Content.Headers.ContentRange?.From ?? 0;
-            fs.SetLength(fs.Position);
-            Interlocked.Exchange(ref _progress_DownloadBytes, fs.Position);
-            using var hs = await response.Content.ReadAsStreamAsync(cancellationToken);
-            var buffer = new byte[1 << 16];
-            int length;
-            while ((length = await hs.ReadAsync(buffer, cancellationToken)) != 0)
+            try
             {
-                await fs.WriteAsync(buffer.AsMemory(0, length), cancellationToken);
-                Interlocked.Add(ref _progress_DownloadBytes, length);
+                var request = new HttpRequestMessage(HttpMethod.Get, release.PackageUrl) { VersionPolicy = HttpVersionPolicy.RequestVersionOrHigher };
+                request.Headers.Range = new RangeHeaderValue(fs.Length, null);
+                using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+                response.EnsureSuccessStatusCode();
+                // 伺服器不支援續傳時會回整個檔案
+                fs.Position = response.Content.Headers.ContentRange?.From ?? 0;
+                fs.SetLength(fs.Position);
+                Interlocked.Exchange(ref _progress_DownloadBytes, fs.Position);
+                // 連線無聲斷掉時讀取會一直卡住，逾時後交給 Polly 重試，從已寫入的長度續傳
+                using var hs = new IdleTimeoutStream(await response.Content.ReadAsStreamAsync(cancellationToken));
+                var buffer = new byte[1 << 16];
+                int length;
+                while ((length = await hs.ReadAsync(buffer, cancellationToken)) != 0)
+                {
+                    await fs.WriteAsync(buffer.AsMemory(0, length), cancellationToken);
+                    Interlocked.Add(ref _progress_DownloadBytes, length);
+                }
+                await fs.FlushAsync(cancellationToken);
             }
-            await fs.FlushAsync(cancellationToken);
+            catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
+            {
+                // HttpClient.Timeout 到期丟的是 TaskCanceledException，Polly 預設不重試取消，外層也會當成使用者取消
+                throw new TimeoutException(ex.Message, ex);
+            }
+            catch (TimeoutException ex)
+            {
+                _logger.LogWarning("Download stalled at {position} bytes: {url} ({message})", fs.Length, release.PackageUrl, ex.Message);
+                throw;
+            }
         }
 
         fs.Position = 0;
@@ -571,24 +586,45 @@ internal class UpdateService
         string path = Path.Combine(_updateCacheFolder, item.Id);
 
         using var fs = File.Open(path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite | FileShare.Delete);
-        Interlocked.Add(ref _progress_DownloadBytes, fs.Length);
+        // 這一輪加進進度的位元組，失敗時扣回去，Polly 重試時才不會把已下載的部分再算一次
+        long progress = fs.Length;
+        Interlocked.Add(ref _progress_DownloadBytes, progress);
         if (fs.Length < item.Size)
         {
-            var request = new HttpRequestMessage(HttpMethod.Get, url) { VersionPolicy = HttpVersionPolicy.RequestVersionOrHigher };
-            request.Headers.Range = new RangeHeaderValue(fs.Length, null);
-            var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-            response.EnsureSuccessStatusCode();
-            if (response.Content.Headers.ContentRange?.From is not null)
+            try
             {
-                fs.Position = response.Content.Headers.ContentRange.From.Value;
+                var request = new HttpRequestMessage(HttpMethod.Get, url) { VersionPolicy = HttpVersionPolicy.RequestVersionOrHigher };
+                request.Headers.Range = new RangeHeaderValue(fs.Length, null);
+                using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+                response.EnsureSuccessStatusCode();
+                if (response.Content.Headers.ContentRange?.From is not null)
+                {
+                    fs.Position = response.Content.Headers.ContentRange.From.Value;
+                }
+                // 連線無聲斷掉時讀取會一直卡住，逾時後交給 Polly 重試，從已寫入的長度續傳
+                using var hs = new IdleTimeoutStream(await response.Content.ReadAsStreamAsync(cancellationToken));
+                var buffer = new byte[1 << 16];
+                int length;
+                while ((length = await hs.ReadAsync(buffer, cancellationToken)) != 0)
+                {
+                    await fs.WriteAsync(buffer.AsMemory(0, length), cancellationToken);
+                    Interlocked.Add(ref _progress_DownloadBytes, length);
+                    progress += length;
+                }
             }
-            using var hs = await response.Content.ReadAsStreamAsync(cancellationToken);
-            var buffer = new byte[1 << 16];
-            int length;
-            while ((length = await hs.ReadAsync(buffer, cancellationToken)) != 0)
+            catch (Exception ex)
             {
-                await fs.WriteAsync(buffer.AsMemory(0, length), cancellationToken);
-                Interlocked.Add(ref _progress_DownloadBytes, length);
+                Interlocked.Add(ref _progress_DownloadBytes, -progress);
+                if (ex is TaskCanceledException { InnerException: TimeoutException })
+                {
+                    // HttpClient.Timeout 到期丟的是 TaskCanceledException，Polly 預設不重試取消，外層也會當成使用者取消
+                    throw new TimeoutException(ex.Message, ex);
+                }
+                if (ex is TimeoutException)
+                {
+                    _logger.LogWarning("Download stalled at {position} bytes: {url} ({message})", fs.Length, url, ex.Message);
+                }
+                throw;
             }
         }
         await fs.FlushAsync(cancellationToken);
@@ -602,7 +638,7 @@ internal class UpdateService
         _logger.LogWarning("Checksum failed: {path}", path);
         fs.Dispose();
         File.Delete(path);
-        Interlocked.Add(ref _progress_DownloadBytes, -item.Size);
+        Interlocked.Add(ref _progress_DownloadBytes, -progress);
         throw new Exception($"Checksum failed: {path}");
     }
 
@@ -657,10 +693,24 @@ internal class UpdateService
         if (fs.Length != releaseFile.Size)
         {
             string url = _releaseManifest.UrlPrefix + releaseFile.Id + _releaseManifest.UrlSuffix;
-            using var hs = await _httpClient.GetStreamAsync(url, cancellationToken);
-            fs.SetLength(0);
-            using var zstdStream = new ZstdSharp.DecompressionStream(hs);
-            await zstdStream.CopyToAsync(fs, cancellationToken);
+            try
+            {
+                // 連線無聲斷掉時讀取會一直卡住，逾時後交給 Polly 重試，重新下載這個檔案
+                using var hs = new IdleTimeoutStream(await _httpClient.GetStreamAsync(url, cancellationToken));
+                fs.SetLength(0);
+                using var zstdStream = new ZstdSharp.DecompressionStream(hs);
+                await zstdStream.CopyToAsync(fs, cancellationToken);
+            }
+            catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
+            {
+                // HttpClient.Timeout 到期丟的是 TaskCanceledException，Polly 預設不重試取消，外層也會當成使用者取消
+                throw new TimeoutException(ex.Message, ex);
+            }
+            catch (TimeoutException ex)
+            {
+                _logger.LogWarning("Download stalled after {position} bytes: {url} ({message})", fs.Length, url, ex.Message);
+                throw;
+            }
             fs.Position = 0;
         }
         var sha256 = await SHA256.HashDataAsync(fs, cancellationToken);

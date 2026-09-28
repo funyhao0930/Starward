@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using SharpSevenZip;
 using SharpSevenZip.Exceptions;
 using Snap.HPatch;
+using Starward.Core;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -26,17 +27,6 @@ internal partial class GameInstallHelper
     private const int BUFFER_SIZE = 8192;
 
     private const int MD5_BUFFER_SIZE = 1 << 19;
-
-
-    /// <summary>
-    /// 下载时连续这么久收不到任何数据，就当连接已经断了。
-    /// <para/>
-    /// 网络断过一下之后（路由器的 NAT 表被挤掉、VPN 重连等），已经建立的 TCP 连接常常收不到 RST，
-    /// 只收数据的这一方永远等不到下一个包，ReadAsync 就一直挂着，任务停在某个百分比、速度为 0。
-    /// HttpClient.Timeout 在 ResponseHeadersRead 之后就不再管读取正文，所以要自己计时。
-    /// 超时抛出 <see cref="TimeoutException"/>，由调用方的重试接手，重试会从 _tmp 文件断点续传。
-    /// </summary>
-    private static readonly TimeSpan DownloadIdleTimeout = TimeSpan.FromSeconds(30);
 
 
     private readonly ILogger<GameInstallHelper> _logger;
@@ -347,7 +337,6 @@ internal partial class GameInstallHelper
             try
             {
                 using HttpClient httpClient = _httpClientFactory.CreateClient();
-                using CancellationTokenSource idle = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
                 foreach (GameInstallFileChunk chunk in file.Chunks ?? [])
                 {
                     // 根据当前文件的长度判断 chunk 是否已完成下载和解压
@@ -388,14 +377,15 @@ internal partial class GameInstallHelper
                             // 从头开始下载
                             using HttpResponseMessage response = await httpClient.GetAsync(chunk.Url, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
                             response.EnsureSuccessStatusCode();
-                            using Stream hs = await response.Content.ReadAsStreamAsync(cancellationToken);
+                            // 连接断了时读取会一直挂着，超时后由调用方重试，已经写完的 chunk 不会重新下载
+                            using Stream hs = new IdleTimeoutStream(await response.Content.ReadAsStreamAsync(cancellationToken));
                             Pipe pipe = new();
                             using DecompressionStream ds = new(pipe.Reader.AsStream(), BUFFER_SIZE);
                             Memory<byte> buffer = new byte[BUFFER_SIZE];
                             int read = 0;
                             long lastFsPosition = fs.Position;
                             Task writeFileTask = ds.CopyToAsync(fs, cancellationToken);
-                            while ((read = await ReadWithIdleTimeoutAsync(hs, buffer, idle, cancellationToken)) > 0)
+                            while ((read = await hs.ReadAsync(buffer, cancellationToken)) > 0)
                             {
                                 // RateLimiter 的等待队列已设置为 int.MaxValue，理论上不会出现获取令牌失败的情况
                                 RateLimitLease lease = await _rateLimiter.AcquireAsync(read, cancellationToken);
@@ -563,9 +553,9 @@ internal partial class GameInstallHelper
                 }
                 byte[] buffer = new byte[BUFFER_SIZE];
                 int read = 0;
-                using Stream hs = await response.Content.ReadAsStreamAsync(cancellationToken);
-                using CancellationTokenSource idle = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-                while ((read = await ReadWithIdleTimeoutAsync(hs, buffer, idle, cancellationToken)) > 0)
+                // 连接断了时读取会一直挂着，超时后由调用方重试，重试会从 _tmp 文件断点续传
+                using Stream hs = new IdleTimeoutStream(await response.Content.ReadAsStreamAsync(cancellationToken));
+                while ((read = await hs.ReadAsync(buffer, cancellationToken)) > 0)
                 {
                     RateLimitLease lease = await _rateLimiter.AcquireAsync(read, cancellationToken);
                     while (!lease.IsAcquired)
@@ -606,33 +596,6 @@ internal partial class GameInstallHelper
             var ex = new Exception($"{checksum.Type} not match.");
             _logger.LogError(ex, "{type} not match.\nFile: {file}\nExpected: {expected}", checksum.Type, path, checksum.Value);
             throw ex;
-        }
-    }
-
-
-
-    /// <summary>
-    /// 读取下载的数据，<see cref="DownloadIdleTimeout"/> 内一个字节都没收到就抛出 <see cref="TimeoutException"/>。
-    /// <para/>
-    /// 只在等数据时计时，限速排队、写文件的时间不算在内。
-    /// </summary>
-    /// <param name="idle">与 <paramref name="cancellationToken"/> 连接的令牌源，同一个下载的每次读取共用</param>
-    /// <param name="timeout">默认 <see cref="DownloadIdleTimeout"/></param>
-    internal static async ValueTask<int> ReadWithIdleTimeoutAsync(Stream stream, Memory<byte> buffer, CancellationTokenSource idle, CancellationToken cancellationToken, TimeSpan? timeout = null)
-    {
-        TimeSpan limit = timeout ?? DownloadIdleTimeout;
-        try
-        {
-            idle.CancelAfter(limit);
-            int read = await stream.ReadAsync(buffer, idle.Token);
-            idle.CancelAfter(Timeout.InfiniteTimeSpan);
-            return read;
-        }
-        // 取消读取时 HttpClient 会顺手关掉连接，抛出来的不一定是 OperationCanceledException，
-        // 所以按令牌判断：调用方没有取消而计时到了，就是超时
-        catch (Exception ex) when (idle.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
-        {
-            throw new TimeoutException($"No data received for {limit.TotalSeconds:0} seconds.", ex);
         }
     }
 

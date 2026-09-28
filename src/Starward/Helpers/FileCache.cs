@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Starward.Core;
+using System;
 using System.Buffers;
 using System.Collections.Concurrent;
 using System.Diagnostics;
@@ -150,7 +151,8 @@ internal static class FileCache
             fs.Position = response.Content.Headers.ContentRange.From.Value;
         }
 
-        using var hs = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+        // 连接断了时读取会一直挂着，之后同一个网址的请求也都在等这个任务。超时后这次失败，_tmp 留着下次续传
+        using var hs = new IdleTimeoutStream(await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false));
         await hs.CopyToAsync(fs, cancellationToken).ConfigureAwait(false);
         await fs.FlushAsync(cancellationToken).ConfigureAwait(false);
         fs.Dispose();

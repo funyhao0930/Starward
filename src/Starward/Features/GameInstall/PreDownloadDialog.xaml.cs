@@ -584,7 +584,8 @@ public sealed partial class PreDownloadDialog : ContentDialog
             using HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, url) { VersionPolicy = HttpVersionPolicy.RequestVersionOrHigher };
             using HttpResponseMessage response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
             response.EnsureSuccessStatusCode();
-            using Stream hs = await response.Content.ReadAsStreamAsync(cancellationToken);
+            // 连接断了时读取会一直挂着，对话框就一直算不出大小。超时后这次算大小失败，写了一半的文件下次重新下载
+            using Stream hs = new IdleTimeoutStream(await response.Content.ReadAsStreamAsync(cancellationToken));
             await hs.CopyToAsync(fs, cancellationToken);
         }
         {

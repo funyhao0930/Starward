@@ -1,5 +1,6 @@
 ﻿using Microsoft.Win32;
 using SharpCompress.Compressors.ZStandard;
+using Starward.Core;
 using Starward.Setup.Core;
 using System.Buffers;
 using System.Net;
@@ -118,18 +119,22 @@ public class DownloadService
         using var fs = File.Open(path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite | FileShare.Delete);
         if (fs.Length < size)
         {
+            // 这一次加进进度的字节，失败时只扣这些。连接一开始就失败时什么都没加，扣掉 fs.Length 会把之前下载的算没
+            long progress = 0;
             try
             {
                 var request = new HttpRequestMessage(HttpMethod.Get, url) { VersionPolicy = HttpVersionPolicy.RequestVersionOrHigher };
                 request.Headers.Range = new RangeHeaderValue(fs.Length, null);
-                var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellation).ConfigureAwait(false);
+                using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellation).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
                 if (response.Content.Headers.ContentRange?.From is not null)
                 {
                     fs.Position = response.Content.Headers.ContentRange.From.Value;
                     Interlocked.Add(ref _downloadBytes, fs.Position);
+                    progress = fs.Position;
                 }
-                using var hs = await response.Content.ReadAsStreamAsync(cancellation).ConfigureAwait(false);
+                // 连接断了时读取会一直挂着，超时后由 RetryHelper 重试，从 .tmp 文件断点续传
+                using var hs = new IdleTimeoutStream(await response.Content.ReadAsStreamAsync(cancellation).ConfigureAwait(false));
                 byte[] buffer = ArrayPool<byte>.Shared.Rent(1 << 16);
                 try
                 {
@@ -138,6 +143,7 @@ public class DownloadService
                     {
                         await fs.WriteAsync(buffer.AsMemory(0, read), cancellation).ConfigureAwait(false);
                         Interlocked.Add(ref _downloadBytes, read);
+                        progress += read;
                     }
                     await fs.FlushAsync(cancellation).ConfigureAwait(false);
                 }
@@ -146,9 +152,14 @@ public class DownloadService
                     ArrayPool<byte>.Shared.Return(buffer);
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                Interlocked.Add(ref _downloadBytes, -fs.Length);
+                Interlocked.Add(ref _downloadBytes, -progress);
+                if (ex is TaskCanceledException { InnerException: TimeoutException })
+                {
+                    // HttpClient.Timeout 到期抛出的是 TaskCanceledException，RetryHelper 不重试取消
+                    throw new TimeoutException(ex.Message, ex);
+                }
                 throw;
             }
         }
@@ -198,25 +209,43 @@ public class DownloadService
         if (fs.Length < size)
         {
             fs.Position = 0;
-            var request = new HttpRequestMessage(HttpMethod.Get, url) { VersionPolicy = HttpVersionPolicy.RequestVersionOrHigher };
-            var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellation).ConfigureAwait(false);
-            response.EnsureSuccessStatusCode();
-            using var hs = await response.Content.ReadAsStreamAsync(cancellation).ConfigureAwait(false);
-            using DecompressionStream ds = new(hs, 8192);
-            byte[] buffer = ArrayPool<byte>.Shared.Rent(8192);
+            long progress = 0;
             try
             {
-                int read = 0;
-                while ((read = await ds.ReadAsync(buffer, cancellation).ConfigureAwait(false)) > 0)
+                var request = new HttpRequestMessage(HttpMethod.Get, url) { VersionPolicy = HttpVersionPolicy.RequestVersionOrHigher };
+                using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellation).ConfigureAwait(false);
+                response.EnsureSuccessStatusCode();
+                // 连接断了时读取会一直挂着，超时后由 RetryHelper 重试。解压出来的数据没法续传，重试时从头下载
+                using var hs = new IdleTimeoutStream(await response.Content.ReadAsStreamAsync(cancellation).ConfigureAwait(false));
+                using DecompressionStream ds = new(hs, 8192);
+                byte[] buffer = ArrayPool<byte>.Shared.Rent(8192);
+                try
                 {
-                    await fs.WriteAsync(buffer.AsMemory(0, read), cancellation).ConfigureAwait(false);
-                    Interlocked.Add(ref _downloadBytes, read);
+                    int read = 0;
+                    while ((read = await ds.ReadAsync(buffer, cancellation).ConfigureAwait(false)) > 0)
+                    {
+                        await fs.WriteAsync(buffer.AsMemory(0, read), cancellation).ConfigureAwait(false);
+                        Interlocked.Add(ref _downloadBytes, read);
+                        progress += read;
+                    }
+                    await fs.FlushAsync(cancellation).ConfigureAwait(false);
                 }
-                await fs.FlushAsync(cancellation).ConfigureAwait(false);
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(buffer);
+                }
             }
-            finally
+            catch (Exception ex)
             {
-                ArrayPool<byte>.Shared.Return(buffer);
+                Interlocked.Add(ref _downloadBytes, -progress);
+                // 写了一半的文件要清掉：安装时传进来的 size 是压缩后的大小，解压写出的长度很快就超过它，留着的话重试时会被当成已经下载完
+                try { fs.SetLength(0); } catch { }
+                if (ex is TaskCanceledException { InnerException: TimeoutException })
+                {
+                    // HttpClient.Timeout 到期抛出的是 TaskCanceledException，RetryHelper 不重试取消
+                    throw new TimeoutException(ex.Message, ex);
+                }
+                throw;
             }
         }
         else

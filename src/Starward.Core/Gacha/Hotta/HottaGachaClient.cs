@@ -373,7 +373,7 @@ public class HottaGachaClient : GachaLogClient
         var icons = new Dictionary<int, GachaItemIcon>();
         foreach ((string path, string[] fields) in IconTables)
         {
-            await using Stream stream = await _httpClient.GetStreamAsync($"https://cdn.jsdelivr.net/gh/{NTE_ASSETS_REPO}@{sha}/{path}", cancellationToken);
+            await using Stream stream = new IdleTimeoutStream(await _httpClient.GetStreamAsync($"https://cdn.jsdelivr.net/gh/{NTE_ASSETS_REPO}@{sha}/{path}", cancellationToken));
             using JsonDocument document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
             foreach (JsonProperty row in EnumerateRows(document.RootElement))
             {
@@ -409,7 +409,7 @@ public class HottaGachaClient : GachaLogClient
         using var request = CreateGitHubRequest($"https://api.github.com/repos/{NTE_ASSETS_REPO}/git/trees/{sha}?recursive=1", "application/vnd.github+json");
         using HttpResponseMessage response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
         response.EnsureSuccessStatusCode();
-        await using Stream stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+        await using Stream stream = new IdleTimeoutStream(await response.Content.ReadAsStreamAsync(cancellationToken));
         using JsonDocument tree = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
         if (tree.RootElement.TryGetProperty("truncated", out JsonElement truncated) && truncated.ValueKind == JsonValueKind.True)
         {

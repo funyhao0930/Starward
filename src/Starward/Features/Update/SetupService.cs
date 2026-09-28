@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Starward.Core;
 using Starward.Features.RPC;
 using Starward.Helpers;
 using Starward.Setup.Core;
@@ -87,25 +88,40 @@ internal class SetupService
             SetupDownloadBytes = stream.Length;
             if (stream.Length < SetupTotalBytes)
             {
-                var request = new HttpRequestMessage(HttpMethod.Get, url);
-                request.VersionPolicy = HttpVersionPolicy.RequestVersionOrHigher;
-                request.Headers.Range = new System.Net.Http.Headers.RangeHeaderValue(stream.Length, null);
-                using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-                response.EnsureSuccessStatusCode();
-                if (response.Content.Headers.ContentRange?.From is not null)
+                try
                 {
-                    stream.Position = response.Content.Headers.ContentRange.From.Value;
+                    var request = new HttpRequestMessage(HttpMethod.Get, url);
+                    request.VersionPolicy = HttpVersionPolicy.RequestVersionOrHigher;
+                    request.Headers.Range = new System.Net.Http.Headers.RangeHeaderValue(stream.Length, null);
+                    using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+                    response.EnsureSuccessStatusCode();
+                    // 伺服器不支援續傳時會回整個檔案
+                    stream.Position = response.Content.Headers.ContentRange?.From ?? 0;
+                    stream.SetLength(stream.Position);
                     SetupDownloadBytes = stream.Position;
+                    // 連線無聲斷掉時讀取會一直卡住，逾時後重試，從已寫入的長度續傳
+                    using var hs = new IdleTimeoutStream(await response.Content.ReadAsStreamAsync(cancellationToken));
+                    int read = 0;
+                    Memory<byte> buffer = new byte[8192];
+                    while ((read = await hs.ReadAsync(buffer, cancellationToken)) > 0)
+                    {
+                        await stream.WriteAsync(buffer[..read], cancellationToken);
+                        SetupDownloadBytes += read;
+                    }
+                    SetupDownloadBytes = stream.Length;
                 }
-                using var hs = await response.Content.ReadAsStreamAsync(cancellationToken);
-                int read = 0;
-                Memory<byte> buffer = new byte[8192];
-                while ((read = await hs.ReadAsync(buffer, cancellationToken)) > 0)
+                catch (Exception ex) when (i < 2 && !cancellationToken.IsCancellationRequested)
                 {
-                    await stream.WriteAsync(buffer[..read], cancellationToken);
-                    SetupDownloadBytes += read;
+                    // 讀取逾時、連線中斷、HttpClient.Timeout 到期都在這裡，已下載的部分留著，下一輪續傳
+                    _logger.LogWarning(ex, "Download setup file failed at {position} bytes, retrying.", stream.Length);
+                    await Task.Delay(TimeSpan.FromSeconds(2), cancellationToken);
+                    continue;
                 }
-                SetupDownloadBytes = stream.Length;
+                catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
+                {
+                    // 最後一次也失敗了。HttpClient.Timeout 到期丟的是 TaskCanceledException，呼叫端會當成使用者取消
+                    throw new TimeoutException(ex.Message, ex);
+                }
             }
             stream.Position = 0;
             if (await FileHashHelper.CheckSHA256Async(stream, hash, cancellationToken))
