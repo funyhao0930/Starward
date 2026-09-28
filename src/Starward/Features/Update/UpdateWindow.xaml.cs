@@ -539,7 +539,6 @@ public sealed partial class UpdateWindow : WindowEx
 
     private async Task<string> GetReleaseContentMarkdownAsync()
     {
-        bool showPrerelease = false;
         NuGetVersion? startVersion, endVersion;
         if (NewVersion is null)
         {
@@ -553,56 +552,21 @@ public sealed partial class UpdateWindow : WindowEx
         }
         startVersion ??= new NuGetVersion(0, 0, 0);
         endVersion ??= new NuGetVersion(int.MaxValue, int.MaxValue, int.MaxValue);
-        if (endVersion.IsPrerelease)
-        {
-            showPrerelease = true;
-            if (startVersion.IsPrerelease)
-            {
-                if (startVersion.Patch - 1 >= 0)
-                {
-                    startVersion = new NuGetVersion(startVersion.Major, startVersion.Minor, startVersion.Patch - 1);
-                }
-                else if (startVersion.Minor - 1 >= 0)
-                {
-                    startVersion = new NuGetVersion(startVersion.Major, startVersion.Minor - 1, int.MaxValue);
-                }
-                else if (startVersion.Major - 1 >= 0)
-                {
-                    startVersion = new NuGetVersion(startVersion.Major - 1, int.MaxValue, int.MaxValue);
-                }
-            }
-        }
+        // -odyssey.N 是本分支的穩定版；只有目標版本本身是預覽版時才列出預覽版
+        bool showPreview = GithubReleaseChannel.IsPreview(endVersion);
 
         var releases = await _releaseClient.GetGithubReleaseAsync(1, 20);
         var markdown = new StringBuilder();
-        int count = 0;
-        foreach (var release in releases)
+        // GitHub API 的順序不是版本順序（重建過的 release 會跑到最前面），要自己依版本排
+        var inRange = releases.Where(x => !x.Draft)
+                              .Select(x => (Release: x, Version: NuGetVersion.TryParse(x.TagName, out var v) ? v : null))
+                              .Where(x => x.Version is not null && x.Version > startVersion && x.Version <= endVersion)
+                              .Where(x => showPreview || !GithubReleaseChannel.IsPreview(x.Version!))
+                              .OrderByDescending(x => x.Version)
+                              .Take(10);
+        foreach (var (release, _) in inRange)
         {
-            if (NuGetVersion.TryParse(release.TagName, out var version))
-            {
-                if (version >= startVersion && version <= endVersion)
-                {
-                    // 只显示最新的几个连续的预览版，最新稳定版之前的预览版不显示
-                    if (!version.IsPrerelease && !release.Prerelease)
-                    {
-                        showPrerelease = false;
-                    }
-                    if (!(showPrerelease ^ version.IsPrerelease))
-                    {
-                        AppendReleaseToStringBuilder(release, markdown);
-                        count++;
-                    }
-                }
-            }
-            else
-            {
-                AppendReleaseToStringBuilder(release, markdown);
-                count++;
-            }
-            if (count >= 10)
-            {
-                break;
-            }
+            AppendReleaseToStringBuilder(release, markdown);
         }
         if (markdown.Length == 0)
         {
