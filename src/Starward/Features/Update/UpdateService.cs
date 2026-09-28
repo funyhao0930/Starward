@@ -332,10 +332,15 @@ internal class UpdateService
     private static async Task ExtractPackageAsync(string packagePath, string extractPath, CancellationToken cancellationToken = default)
     {
         using var fs = File.OpenRead(packagePath);
-        using var archive = new SharpSevenZipExtractor(fs, leaveOpen: true);
         try
         {
-            Task extractTask = Task.Run(() => archive.ExtractArchive(extractPath), cancellationToken);
+            // 7-Zip 的 COM 物件沒有跨 apartment 的封送代理，在 UI 執行緒（STA）建立、到執行緒池（MTA）使用
+            // 會 QueryInterface 失敗（E_NOINTERFACE），所以建立與解壓都要在同一條背景執行緒上
+            Task extractTask = Task.Run(() =>
+            {
+                using var archive = new SharpSevenZipExtractor(fs, leaveOpen: true);
+                archive.ExtractArchive(extractPath);
+            }, cancellationToken);
             while (!extractTask.IsCompleted)
             {
                 await Task.Delay(50, CancellationToken.None);
