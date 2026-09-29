@@ -527,8 +527,15 @@ internal partial class GameInstallHelper
     /// </summary>
     public async Task DownloadToFileAsync(GameInstallContext task, string path, string url, long size, FileChecksum checksum, CancellationToken cancellationToken = default)
     {
+        if (task.VerifiedFiles.TryGetValue(path, out long verifiedSize) && verifiedSize == size && File.Exists(path) && new FileInfo(path).Length == size)
+        {
+            // 暂停前就已经好了的文件
+            Interlocked.Add(ref task._progress_DownloadFinishBytes, size);
+            return;
+        }
         if (await CheckFileInDownloadProgressAsync(task, path, size, checksum, cancellationToken))
         {
+            task.VerifiedFiles[path] = size;
             return;
         }
 
@@ -588,6 +595,7 @@ internal partial class GameInstallHelper
         if (await CheckFileAsync(task, path_tmp, size, checksum, cancellationToken))
         {
             File.Move(path_tmp, path, true);
+            task.VerifiedFiles[path] = size;
         }
         else
         {

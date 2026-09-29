@@ -1,5 +1,7 @@
 using Starward.Core;
 using Starward.Core.HoYoPlay;
+using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
@@ -137,6 +139,14 @@ public class GameInstallContext
     /// 准备好的计划放在这里，暂停后继续时不必重新向服务器要一遍
     /// </summary>
     internal object? VendorState { get; set; }
+
+
+    /// <summary>
+    /// 本次任务里已经下载或校验通过的文件（完整路径 → 大小）。
+    /// 暂停后继续时这些文件只看大小、不再重算校验和，进度也直接算进去，
+    /// 否则几十 GB 的预下载每次继续都要从零重新读一遍。
+    /// </summary>
+    internal ConcurrentDictionary<string, long> VerifiedFiles { get; } = new(StringComparer.OrdinalIgnoreCase);
 
 
 
