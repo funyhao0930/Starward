@@ -95,7 +95,7 @@ public sealed partial class GameBannerAndPost : UserControl
             {
                 _bannerTimer.Start();
             }
-            else if (message.Hide || message.SessionLock)
+            else if (message.Hide || message.SessionLock || message.Deactivate)
             {
                 _bannerTimer.Stop();
             }

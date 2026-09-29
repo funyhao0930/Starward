@@ -66,7 +66,14 @@ public sealed partial class MainView : UserControl
         UpdateNavigationView();
         WeakReferenceMessenger.Default.Register<MainViewNavigateMessage>(this, OnMainViewNavigateMessageReceived);
         WeakReferenceMessenger.Default.Register<BH3GlobalGameServerChangedMessage>(this, OnBH3GlobalGameServerChanged);
-        WeakReferenceMessenger.Default.Register<MainWindowStateChangedMessage>(this, (_, _) => _ = CheckUpdateOrShowRecentUpdateContentAsync());
+        WeakReferenceMessenger.Default.Register<MainWindowStateChangedMessage>(this, (_, m) =>
+        {
+            // 失焦很频繁，而且这时弹更新窗口会打断用户正在做的事
+            if (!m.Deactivate)
+            {
+                _ = CheckUpdateOrShowRecentUpdateContentAsync();
+            }
+        });
     }
 
 

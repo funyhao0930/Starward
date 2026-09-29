@@ -608,7 +608,7 @@ public sealed partial class AppBackground : UserControl
 
     /// <summary>
     /// 视频是因为显示器关闭才暂停的，显示器打开时要接着播。
-    /// 隐藏窗口、锁屏造成的暂停不算，那两种要等窗口再次激活。
+    /// 隐藏窗口、锁屏、失焦造成的暂停不算，那几种要等窗口再次激活。
     /// </summary>
     private bool _videoPausedByDisplayOff;
 
@@ -625,7 +625,7 @@ public sealed partial class AppBackground : UserControl
                     _mediaPlayer.Play();
                     _videoPausedByDisplayOff = false;
                 }
-                else if (message.Hide || message.SessionLock)
+                else if (message.Hide || message.SessionLock || message.Deactivate)
                 {
                     _mediaPlayer.Pause();
                     _videoPausedByDisplayOff = false;

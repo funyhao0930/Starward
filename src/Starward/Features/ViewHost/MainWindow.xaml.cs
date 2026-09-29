@@ -184,7 +184,9 @@ public sealed partial class MainWindow : WindowEx
         if (uMsg == (uint)User32.WindowMessage.WM_ACTIVATE || uMsg == (uint)User32.WindowMessage.WM_POINTERACTIVATE)
         {
             // 窗口激活
-            if (wParam is 0x1 or 0x2)
+            // WM_ACTIVATE 的高位是最小化标记，从最小化还原时会带着它，只看低位
+            nint state = uMsg == (uint)User32.WindowMessage.WM_ACTIVATE ? wParam & 0xFFFF : wParam;
+            if (state is 0x1 or 0x2)
             {
                 // WA_ACTIVE or WA_CLICKACTIVE
                 var now = DateTimeOffset.Now;
@@ -195,6 +197,12 @@ public sealed partial class MainWindow : WindowEx
                     LastActivatedTime = _lastActivatedTime,
                 });
                 _lastActivatedTime = now;
+            }
+            else if (uMsg == (uint)User32.WindowMessage.WM_ACTIVATE && state == 0)
+            {
+                // WA_INACTIVE
+                // 失焦后视频背景和 Banner 轮播没人看，继续跑只是白占 GPU
+                WeakReferenceMessenger.Default.Send(new MainWindowStateChangedMessage { Deactivate = true, CurrentTime = DateTimeOffset.Now });
             }
         }
         else if (uMsg == (uint)User32.WindowMessage.WM_SYSCOMMAND)

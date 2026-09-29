@@ -14,6 +14,12 @@ internal class MainWindowStateChangedMessage
     public bool Hide { get; set; }
 
 
+    /// <summary>
+    /// 窗口失去焦点（切到别的窗口、最小化）
+    /// </summary>
+    public bool Deactivate { get; set; }
+
+
     public bool SessionLock { get; set; }
 
 
