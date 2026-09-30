@@ -79,6 +79,10 @@ public static class KuroGameMapping
                 ChannelName = CoreLang.GameServer_GlobalServer,
                 IconUri = "ms-appx:///Assets/Image/Transparent.png",
                 ChannelIconUri = "ms-appx:///Assets/Image/Transparent.png",
+                // 游戏选择器的卡片图，规格照米哈游的 416×234 缩略图加同尺寸透明 Logo。
+                // 这家没有提供卡片图的接口，取自官方启动器前端包 krfeapp.dat 自带的主视觉与繁中 Logo，放在 Images\Kuro。
+                ThumbnailUri = "ms-appx:///Images/Kuro/WuWa_Thumbnail.jpg",
+                LogoUri = "ms-appx:///Images/Kuro/WuWa_Logo.png",
                 // 启动器安装根目录下的一层外壳，实际运行的是虚幻引擎的 Shipping 进程
                 ExecutableName = Path.Combine(GameFolderName, "Wuthering Waves.exe"),
                 ProcessName = "Client-Win64-Shipping.exe",

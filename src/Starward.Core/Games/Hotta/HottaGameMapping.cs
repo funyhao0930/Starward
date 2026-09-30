@@ -157,6 +157,10 @@ public static class HottaGameMapping
                 ChannelName = CoreLang.GameServer_TaiwanServer,
                 IconUri = "ms-appx:///Assets/Image/Transparent.png",
                 ChannelIconUri = "ms-appx:///Assets/Image/Transparent.png",
+                // 游戏选择器的卡片图，规格照米哈游的 416×234 缩略图加同尺寸透明 Logo。
+                // 这家没有提供卡片图的接口，取自官方启动器的背景图（bgimgs\bg_0.png）与台服平台页的 logo-tc.png，放在 Images\Hotta。
+                ThumbnailUri = "ms-appx:///Images/Hotta/NTE_Thumbnail.jpg",
+                LogoUri = "ms-appx:///Images/Hotta/NTE_Logo.png",
                 // 只能启动官方外壳 NTETWGame.exe，不能像其他游戏那样直接拉起游戏本体。
                 // 外壳不只是启动器，它同时是账号登录的服务端：
                 // 游戏侧的 WPLauncherSDK_64.dll 读同目录的 GameLauncher.config

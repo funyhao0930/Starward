@@ -64,6 +64,10 @@ public static class GryphlineGameMapping
                 DisplayName = CoreLang.Game_Endfield,
                 IconUri = "ms-appx:///Assets/Image/Transparent.png",
                 ChannelIconUri = "ms-appx:///Assets/Image/Transparent.png",
+                // 游戏选择器的卡片图，规格照米哈游的 416×234 缩略图加同尺寸透明 Logo。
+                // 这家没有提供卡片图的接口，取自官网的开服主视觉（kv-obt-pc）与网页 SDK 的标题 SVG，放在 Images\Gryphline。
+                ThumbnailUri = "ms-appx:///Images/Gryphline/Endfield_Thumbnail.jpg",
+                LogoUri = "ms-appx:///Images/Gryphline/Endfield_Logo.png",
                 // Unity 游戏，启动的就是游戏本体
                 ExecutableName = Path.Combine(GameFolderName, "Endfield.exe"),
                 ProcessName = "Endfield.exe",
