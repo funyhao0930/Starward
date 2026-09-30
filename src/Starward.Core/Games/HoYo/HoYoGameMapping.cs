@@ -40,13 +40,13 @@ public static class HoYoGameMapping
 
 
     /// <summary>
-    /// 本分支不提供崩坏3。
+    /// 本分支不提供的游戏，目前为空。
     /// <para/>
     /// 在这里过滤而不是改动 <see cref="GameBiz.AllGameBizs"/>，
-    /// 是为了不动上游的数据定义，将来合并上游改动时不会冲突，
-    /// 想恢复也只需要删掉这一项。
+    /// 是为了不动上游的数据定义，将来合并上游改动时不会冲突。
+    /// 崩坏3曾经排除过，后来又恢复了。
     /// </summary>
-    private static readonly string[] ExcludedGames = [Bh3];
+    private static readonly string[] ExcludedGames = [];
 
 
     /// <summary>

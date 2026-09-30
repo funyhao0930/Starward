@@ -137,15 +137,16 @@ public class GameKeyTests
 
 
     /// <summary>
-    /// 本分支不提供崩坏3
+    /// 崩坏3已恢复提供
     /// </summary>
     [Fact]
-    public void HonkaiImpact3rd_IsExcluded()
+    public void HonkaiImpact3rd_IsSupported()
     {
-        Assert.True(HoYoGameMapping.IsExcluded(HoYoGameMapping.FromGameBiz(GameBiz.bh3_cn)));
-        Assert.True(HoYoGameMapping.IsExcluded(HoYoGameMapping.FromGameBiz(GameBiz.bh3_global)));
-        Assert.False(HoYoGameMapping.IsExcluded(HoYoGameMapping.FromGameBiz(GameBiz.hk4e_cn)));
-        Assert.Empty(HoYoGameMapping.SupportedGameKeys.Where(x => x.GameId is GameBiz.bh3));
+        Assert.False(HoYoGameMapping.IsExcluded(HoYoGameMapping.FromGameBiz(GameBiz.bh3_cn)));
+        Assert.False(HoYoGameMapping.IsExcluded(HoYoGameMapping.FromGameBiz(GameBiz.bh3_global)));
+        Assert.True(HoYoGameMapping.IsSupported(HoYoGameMapping.FromGameBiz(GameBiz.bh3_cn)));
+        Assert.True(HoYoGameMapping.IsSupported(HoYoGameMapping.FromGameBiz(GameBiz.bh3_global)));
+        Assert.Equal(2, HoYoGameMapping.SupportedGameKeys.Count(x => x.GameId is GameBiz.bh3));
     }
 
 }

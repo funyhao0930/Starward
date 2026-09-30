@@ -109,7 +109,7 @@ public class HoYoCatalogProviderTests
 
     /// <summary>
     /// 游戏选择器按 (ProviderId, GameId) 分组显示游戏，每组内是该游戏的所有渠道。
-    /// 崩坏3已从本分支移除，因此只剩三款，渠道与重构前一致。
+    /// 现有 4 款米哈游游戏必须分成 4 组，渠道与重构前一致。
     /// </summary>
     [Fact]
     public void GetGames_GroupsIntoHoYoGamesWithExpectedChannels()
@@ -119,8 +119,8 @@ public class HoYoCatalogProviderTests
             .GroupBy(x => x.Key.GameId)
             .ToDictionary(g => g.Key, g => g.Select(x => x.Key.ChannelId).ToArray());
 
-        Assert.Equal(3, channels.Count);
-        Assert.DoesNotContain("bh3", channels.Keys);
+        Assert.Equal(4, channels.Count);
+        Assert.Equal(["cn", "global"], channels["bh3"]);
         Assert.Equal(["cn", "global", "bilibili"], channels["hk4e"]);
         Assert.Equal(["cn", "global", "bilibili"], channels["hkrpg"]);
         Assert.Equal(["cn", "global", "bilibili"], channels["nap"]);
@@ -128,10 +128,10 @@ public class HoYoCatalogProviderTests
 
 
     /// <summary>
-    /// 崩坏3必须从所有路径消失，包括 HoYoPlay 接口返回的数据
+    /// HoYoPlay 接口返回的崩坏3数据会合并进已适配的崩坏3，而不是变成未适配的新游戏
     /// </summary>
     [Fact]
-    public void GetGames_NeverIncludesExcludedGameEvenFromGameInfo()
+    public void GetGames_MergesBh3GameInfoIntoAdaptedGame()
     {
         var source = new FakeHoYoGameInfoSource
         {
@@ -140,9 +140,9 @@ public class HoYoCatalogProviderTests
         };
         var catalog = new HoYoCatalogProvider(source);
 
-        Assert.DoesNotContain(catalog.GetGames(), x => x.Key.GameId is GameBiz.bh3);
-        Assert.Null(catalog.GetGame(HoYoGameMapping.FromGameBiz(GameBiz.bh3_cn)));
-        Assert.Null(catalog.GetGame(HoYoGameMapping.FromGameBiz(GameBiz.bh3_global)));
+        Assert.Equal(2, catalog.GetGames().Count(x => x.Key.GameId is GameBiz.bh3));
+        Assert.NotNull(catalog.GetGame(HoYoGameMapping.FromGameBiz(GameBiz.bh3_cn)));
+        Assert.NotNull(catalog.GetGame(HoYoGameMapping.FromGameBiz(GameBiz.bh3_global)));
     }
 
 
