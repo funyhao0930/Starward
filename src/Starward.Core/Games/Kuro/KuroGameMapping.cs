@@ -83,8 +83,11 @@ public static class KuroGameMapping
                 ProcessName = "Client-Win64-Shipping.exe",
                 // 官方启动器自己提供的两个开关，取自在线配置的 RHIOptionList 与 commandList，
                 // 说明文字是「游戏异常时选择」。虚幻的写法是 -dx11，不是 Unity 的 -force-d3d11。
-                // 官方的 DX11 选项完整值是「-dx11 -krqlv=hd」，其中 -krqlv=hd 是默认选项也带的，
-                // Starward 一直没有传，这里也只补 DX11 本身，不改既有的启动行为。
+                // 官方的 DX11 选项完整值是「-dx11 -krqlv=hd」，-krqlv=hd 是默认选项也带的。
+                // 3.6.1 及以前不带它也能进游戏，3.7.0 起不带就会在启动时崩溃
+                // （Client.log：launch not by commandlet, use kuro quality! → Fatal error "Use launcher to start game!"），
+                // 所以现在固定带上，DX11 只补 -dx11 本身。
+                LaunchArguments = "-krqlv=hd",
                 DX11LaunchArgument = "-dx11",
                 DisableDlssLaunchArgument = "-slno",
                 ScreenshotPaths = [Path.Combine(GameFolderName, @"Client\Saved\ScreenShot")],

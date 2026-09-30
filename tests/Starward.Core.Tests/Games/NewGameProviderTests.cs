@@ -148,13 +148,14 @@ public class NewGameProviderTests
 
 
     /// <summary>
-    /// 鸣潮与终末地不需要额外的启动参数。
-    /// 鸣潮启动的 Wuthering Waves.exe 是游戏自己的引导程序，官方快捷方式也指向它。
+    /// 终末地不需要额外的启动参数。
+    /// 鸣潮启动的 Wuthering Waves.exe 是游戏自己的引导程序，但 3.7.0 起必须带上官方启动器
+    /// 默认选项里的 -krqlv=hd，否则游戏在启动时崩溃（Use launcher to start game!）。
     /// </summary>
     [Fact]
-    public void WutheringWavesAndEndfield_NeedNoExtraLaunchArguments()
+    public void Endfield_NeedsNoExtraLaunchArguments_WutheringWavesNeedsKrqlv()
     {
-        Assert.Null(KuroGameMapping.GetDescriptors()[0].LaunchArguments);
+        Assert.Equal("-krqlv=hd", KuroGameMapping.GetDescriptors()[0].LaunchArguments);
         Assert.Null(GryphlineGameMapping.GetDescriptors()[0].LaunchArguments);
     }
 
@@ -254,6 +255,8 @@ public class NewGameProviderTests
 
             Assert.Contains("-dx11", command.Arguments, StringComparison.Ordinal);
             Assert.Contains("-slno", command.Arguments, StringComparison.Ordinal);
+            // 3.7.0 起不带 -krqlv=hd 会崩溃在「Use launcher to start game!」
+            Assert.Contains("-krqlv=hd", command.Arguments, StringComparison.Ordinal);
             // Unity 的写法不能跑到虚幻游戏上
             Assert.DoesNotContain("-force-d3d11", command.Arguments, StringComparison.Ordinal);
         }
