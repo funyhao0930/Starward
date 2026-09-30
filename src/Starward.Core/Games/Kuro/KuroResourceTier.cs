@@ -66,6 +66,26 @@ public static class KuroResourceTier
 
 
     /// <summary>
+    /// 解析逗号分隔的分级（安装任务经 RPC 传递时的写法），统一成小写、去掉不认得的、画质从高到低排好
+    /// </summary>
+    public static IReadOnlyList<string> Parse(string? tiers)
+    {
+        if (string.IsNullOrWhiteSpace(tiers))
+        {
+            return [];
+        }
+        var set = new HashSet<string>(tiers.Split([',', ';', ' '], StringSplitOptions.RemoveEmptyEntries).Select(Normalize).OfType<string>());
+        return All.Where(set.Contains).ToList().AsReadOnly();
+    }
+
+
+    /// <summary>
+    /// <see cref="Parse"/> 的反向
+    /// </summary>
+    public static string Format(IEnumerable<string> tiers) => string.Join(',', Parse(string.Join(',', tiers)));
+
+
+    /// <summary>
     /// 启动参数，例如 <c>-krqlv=hd</c>
     /// </summary>
     public static string GetLaunchArgument(string tier) => LaunchArgumentName + (Normalize(tier) ?? Default);

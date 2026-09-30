@@ -425,7 +425,7 @@ public sealed partial class GameLauncherPage : PageBase
             {
                 var item = new Microsoft.UI.Xaml.Controls.RadioMenuFlyoutItem
                 {
-                    Text = GetResourceTierName(tier),
+                    Text = GameResourceTierNames.Get(tier),
                     Tag = tier,
                     GroupName = "ResourceTier",
                     IsChecked = tier == state.LaunchTier,
@@ -433,7 +433,7 @@ public sealed partial class GameLauncherPage : PageBase
                 item.Click += RadioMenuFlyoutItem_ResourceTier_Click;
                 MenuFlyout_ResourceTier.Items.Add(item);
             }
-            ResourceTierText = GetResourceTierName(state.LaunchTier);
+            ResourceTierText = GameResourceTierNames.Get(state.LaunchTier);
             IsResourceTierOptionVisible = true;
         }
         else
@@ -449,21 +449,9 @@ public sealed partial class GameLauncherPage : PageBase
         if (sender is Microsoft.UI.Xaml.Controls.RadioMenuFlyoutItem { Tag: string tier })
         {
             AppConfig.SetResourceTier(CurrentGameBiz, tier);
-            ResourceTierText = GetResourceTierName(tier);
+            ResourceTierText = GameResourceTierNames.Get(tier);
         }
     }
-
-
-    /// <summary>
-    /// 分级的名称，照官方启动器各语言的写法
-    /// </summary>
-    private static string GetResourceTierName(string tier) => tier switch
-    {
-        "uhd" => Lang.GameLauncherPage_ResourceTier_UHD,
-        "hd" => Lang.GameLauncherPage_ResourceTier_HD,
-        "sd" => Lang.GameLauncherPage_ResourceTier_SD,
-        _ => tier.ToUpperInvariant(),
-    };
 
 
     private async void CheckGameVersion()

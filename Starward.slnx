@@ -22,5 +22,6 @@
   </Project>
   <Folder Name="/tests/">
     <Project Path="tests/Starward.Core.Tests/Starward.Core.Tests.csproj" />
+    <Project Path="tests/Starward.RPC.Tests/Starward.RPC.Tests.csproj" />
   </Folder>
 </Solution>

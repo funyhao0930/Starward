@@ -383,6 +383,6 @@
     <value>This is an achievement export from nte-exporter, not a gacha record.</value>
   </data>
   <data name="KuroInstall_UnsupportedResourceTiers" xml:space="preserve">
-    <value>This installation includes resource quality tiers that Starward cannot download yet ({0}). Please update or repair the game with the official launcher.</value>
+    <value>Download data for these resource quality tiers is not available right now ({0}). Please try again later, or use the official launcher.</value>
   </data>
 </root>

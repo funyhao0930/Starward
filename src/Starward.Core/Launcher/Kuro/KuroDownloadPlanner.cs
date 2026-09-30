@@ -66,7 +66,15 @@ public static class KuroDownloadPlanner
     /// <param name="resource">要下载的那一段，default 或 predownload</param>
     public static IReadOnlyList<string> GetCdnBases(KuroLauncherGameIndex index, KuroLauncherGameResource resource)
     {
-        List<KuroLauncherCdn>? cdnList = resource.CdnList is { Count: > 0 } ? resource.CdnList : index.Default?.CdnList;
+        return GetCdnBases(resource.CdnList is { Count: > 0 } ? resource.CdnList : index.Default?.CdnList);
+    }
+
+
+    /// <summary>
+    /// 同上，直接给 CDN 清单（分级配置的 cdnList 在顶层）
+    /// </summary>
+    public static IReadOnlyList<string> GetCdnBases(IEnumerable<KuroLauncherCdn>? cdnList)
+    {
         return (cdnList ?? [])
             .Where(x => !string.IsNullOrWhiteSpace(x.Url))
             .OrderByDescending(x => x.Priority > 0)

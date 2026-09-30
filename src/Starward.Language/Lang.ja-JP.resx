@@ -2743,6 +2743,18 @@
   <data name="GameLauncherPage_ResourceTier_SD" xml:space="preserve">
     <value>標準</value>
   </data>
+  <data name="GameLauncherSettingDialog_ResourceTierDownloadSize" xml:space="preserve">
+    <value>ダウンロード {0}</value>
+  </data>
+  <data name="GameLauncherSettingDialog_ResourceTierDeleteSize" xml:space="preserve">
+    <value>削除 {0}</value>
+  </data>
+  <data name="GameLauncherSettingDialog_KeepAtLeastOneResourceTier" xml:space="preserve">
+    <value>リソース品質を1つ以上残してください</value>
+  </data>
+  <data name="GameLauncherSettingDialog_UpdateBeforeChangingResourceTiers" xml:space="preserve">
+    <value>リソース品質を変更する前にゲームを更新してください</value>
+  </data>
   <data name="GameLauncherPage_GameUpdateAvailable" xml:space="preserve">
     <value>ゲームの更新があります（{0}）</value>
   </data>

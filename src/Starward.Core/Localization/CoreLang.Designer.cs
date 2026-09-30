@@ -853,7 +853,7 @@ namespace Starward.Core.Localization {
         }
 
         /// <summary>
-        ///   查找类似 This installation includes resource quality tiers that Starward cannot download yet ({0}). Please update or repair the game with the official launcher. 的本地化字符串。
+        ///   查找类似 Download data for these resource quality tiers is not available right now ({0}). Please try again later, or use the official launcher. 的本地化字符串。
         /// </summary>
         public static string KuroInstall_UnsupportedResourceTiers {
             get {

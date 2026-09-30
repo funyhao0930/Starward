@@ -54,6 +54,8 @@ public sealed partial class GameLauncherSettingDialog : ContentDialog
 
     private readonly GameInstallService _gameInstallService = AppConfig.GetService<GameInstallService>();
 
+    private readonly GamePackageInfoProviderRegistry _packageInfoRegistry = AppConfig.GetService<GamePackageInfoProviderRegistry>();
+
 
     private readonly BackgroundService _backgroundService = AppConfig.GetService<BackgroundService>();
 
@@ -291,6 +293,7 @@ public sealed partial class GameLauncherSettingDialog : ContentDialog
                 UninstallAndRepairEnabled = false;
             }
             await InitializeAudioLanguageAsync();
+            await InitializeResourceTiersAsync();
         }
         catch (Exception ex)
         {
@@ -524,6 +527,187 @@ public sealed partial class GameLauncherSettingDialog : ContentDialog
             _logger.LogError(ex, "Repair game internal {GameBiz}", CurrentGameBiz);
         }
     }
+
+
+
+
+    #region 资源分级
+
+
+
+    private const double GB = 1 << 30;
+
+
+    /// <summary>
+    /// 可选的资源分级与大小，没有分级的游戏为 null
+    /// </summary>
+    private IReadOnlyList<GameResourceTierPackage>? _resourceTiers;
+
+
+    /// <summary>
+    /// 本机装好的分级
+    /// </summary>
+    private IReadOnlyList<string> _installedTiers = [];
+
+
+    /// <summary>
+    /// 现在不能变更分级的原因（例如还没更新），可以时为 null
+    /// </summary>
+    private string? _resourceTierBlockedReason;
+
+
+    /// <summary>
+    /// 程序代码在填选项时也会触发 SelectionChanged，那时不算玩家改了选择
+    /// </summary>
+    private bool _initializingResourceTiers;
+
+
+    public string? ResourceTierChangeText { get; set => SetProperty(ref field, value); }
+
+
+    public bool CanApplyResourceTiers { get; set => SetProperty(ref field, value); }
+
+
+    /// <summary>
+    /// 鸣潮的资源分级：勾选想要的几档，套用后交给安装器加装缺的、删掉不要的。
+    /// <para/>
+    /// 不按游戏判断：安装包信息给得出分级、启动 Provider 认得本机装了哪几档，才显示这一块。
+    /// 只在已是最新版本时开放：安装器把「本机已是目标版本」当成只变更分级，原有文件只看大小，
+    /// 版本落后时变更分级等于不打补丁地整包重下。
+    /// </summary>
+    private async Task InitializeResourceTiersAsync()
+    {
+        try
+        {
+            StackPanel_ResourceTiers.Visibility = Visibility.Collapsed;
+            if (IsHoYoPlayGame
+                || InstallPath is null
+                || !SupportsInstall
+                || _packageInfoRegistry.GetProvider(CurrentGameKey) is not IGamePackageInfoProvider provider
+                || _providerRegistry.GetLaunchProvider(CurrentGameKey.ProviderId) is not IGameResourceTierProvider tierProvider)
+            {
+                return;
+            }
+            IReadOnlyList<GameResourceTierPackage>? tiers = await provider.GetResourceTiersAsync(CurrentGameKey);
+            if (tiers is not { Count: > 0 } || InstallPath is null)
+            {
+                return;
+            }
+            _resourceTiers = tiers;
+            _installedTiers = tierProvider.GetResourceTierState(CurrentGameKey, InstallPath).InstalledTiers;
+            GamePackageState? state = await provider.GetStateAsync(CurrentGameKey, InstallPath);
+            // 3.7.0 以前的安装没有分级目录，更新上来才会有
+            _resourceTierBlockedReason = _installedTiers.Count == 0 || state?.UpdateAvailable is true
+                                       ? Lang.GameLauncherSettingDialog_UpdateBeforeChangingResourceTiers
+                                       : null;
+
+            _initializingResourceTiers = true;
+            Segmented_ResourceTiers.Items.Clear();
+            foreach (GameResourceTierPackage tier in tiers)
+            {
+                var item = new SegmentedItem { Content = GameResourceTierNames.Get(tier.Tier), Tag = tier.Tier };
+                Segmented_ResourceTiers.Items.Add(item);
+                if (_installedTiers.Contains(tier.Tier))
+                {
+                    Segmented_ResourceTiers.SelectedItems.Add(item);
+                }
+            }
+            _initializingResourceTiers = false;
+            StackPanel_ResourceTiers.Visibility = Visibility.Visible;
+            UpdateResourceTierChange();
+        }
+        catch (Exception ex)
+        {
+            _initializingResourceTiers = false;
+            _logger.LogError(ex, "Initialize resource tiers ({biz})", CurrentGameBiz);
+        }
+    }
+
+
+    private List<string> GetDesiredResourceTiers()
+    {
+        return Segmented_ResourceTiers.SelectedItems.Cast<SegmentedItem>().Select(x => x.Tag as string).OfType<string>().ToList();
+    }
+
+
+    private void Segmented_ResourceTiers_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (!_initializingResourceTiers)
+        {
+            UpdateResourceTierChange();
+        }
+    }
+
+
+    /// <summary>
+    /// 说明这次变更要下载多少、删掉多少，决定能不能套用
+    /// </summary>
+    private void UpdateResourceTierChange()
+    {
+        CanApplyResourceTiers = false;
+        if (_resourceTiers is null)
+        {
+            ResourceTierChangeText = null;
+            return;
+        }
+        if (_resourceTierBlockedReason is not null)
+        {
+            ResourceTierChangeText = _resourceTierBlockedReason;
+            return;
+        }
+        List<string> desired = GetDesiredResourceTiers();
+        if (desired.Count == 0)
+        {
+            ResourceTierChangeText = Lang.GameLauncherSettingDialog_KeepAtLeastOneResourceTier;
+            return;
+        }
+        long download = desired.Except(_installedTiers).Sum(x => _resourceTiers.FirstOrDefault(y => y.Tier == x)?.TierBytes ?? 0);
+        long delete = _installedTiers.Except(desired).Sum(x => _resourceTiers.FirstOrDefault(y => y.Tier == x)?.TierBytes ?? 0);
+        var parts = new List<string>();
+        if (download > 0)
+        {
+            parts.Add(string.Format(Lang.GameLauncherSettingDialog_ResourceTierDownloadSize, $"{download / GB:F2} GB"));
+        }
+        if (delete > 0)
+        {
+            parts.Add(string.Format(Lang.GameLauncherSettingDialog_ResourceTierDeleteSize, $"{delete / GB:F2} GB"));
+        }
+        ResourceTierChangeText = parts.Count > 0 ? string.Join("  ·  ", parts) : null;
+        // 游戏在跑、或已有任务在进行时（修复按钮也因此不能按）都不能动文件
+        CanApplyResourceTiers = parts.Count > 0 && UninstallAndRepairEnabled && Button_RepairGame.IsEnabled;
+    }
+
+
+    [RelayCommand]
+    private async Task ApplyResourceTiersAsync()
+    {
+        try
+        {
+            if (!Directory.Exists(InstallPath) || InstallGameId is not GameId installGameId)
+            {
+                return;
+            }
+            List<string> desired = GetDesiredResourceTiers();
+            if (desired.Count == 0)
+            {
+                return;
+            }
+            GameInstallContext? task = await _gameInstallService.StartInstallAsync(installGameId, InstallPath, AudioLanguage.None, string.Join(',', desired));
+            if (task is not null && task.State is not GameInstallState.Stop and not GameInstallState.Error)
+            {
+                WeakReferenceMessenger.Default.Send(new GameInstallTaskStartedMessage(task));
+                Close();
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Apply resource tiers {GameBiz}", CurrentGameBiz);
+        }
+    }
+
+
+
+    #endregion
 
 
 

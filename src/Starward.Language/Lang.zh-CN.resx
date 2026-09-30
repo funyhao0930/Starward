@@ -2744,6 +2744,18 @@
   <data name="GameLauncherPage_ResourceTier_SD" xml:space="preserve">
     <value>流畅</value>
   </data>
+  <data name="GameLauncherSettingDialog_ResourceTierDownloadSize" xml:space="preserve">
+    <value>需下载 {0}</value>
+  </data>
+  <data name="GameLauncherSettingDialog_ResourceTierDeleteSize" xml:space="preserve">
+    <value>删除 {0}</value>
+  </data>
+  <data name="GameLauncherSettingDialog_KeepAtLeastOneResourceTier" xml:space="preserve">
+    <value>至少要保留一种资源等级</value>
+  </data>
+  <data name="GameLauncherSettingDialog_UpdateBeforeChangingResourceTiers" xml:space="preserve">
+    <value>请先更新游戏，再变更资源等级</value>
+  </data>
   <data name="GameLauncherPage_DetailsGt" xml:space="preserve">
     <value>说明 &gt;</value>
   </data>

@@ -1,4 +1,5 @@
 using Starward.Core.Games;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -41,7 +42,26 @@ public interface IGamePackageInfoProvider
     /// <param name="installPath">Starward 记录的安装路径</param>
     Task<GamePackageState?> GetStateAsync(GameKey key, string installPath, CancellationToken cancellationToken = default);
 
+
+    /// <summary>
+    /// 可选的资源分级与各自的大小，画质从高到低（鸣潮 3.7.0 起的「用户端资源分级」）。
+    /// 没有分级的游戏、或查不到时返回 null，界面就不显示分级的选项。
+    /// </summary>
+    Task<IReadOnlyList<GameResourceTierPackage>?> GetResourceTiersAsync(GameKey key, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult<IReadOnlyList<GameResourceTierPackage>?>(null);
+    }
+
 }
+
+
+/// <summary>
+/// 一档资源的大小
+/// </summary>
+/// <param name="Tier">分级，例如 hd</param>
+/// <param name="InstallBytes">全新安装这一档要下载、也是装完占用的字节数（含共用的部分）</param>
+/// <param name="TierBytes">只属于这一档的字节数，在已安装的游戏上加装或删除这一档时的大小</param>
+public sealed record GameResourceTierPackage(string Tier, long InstallBytes, long TierBytes);
 
 
 /// <summary>

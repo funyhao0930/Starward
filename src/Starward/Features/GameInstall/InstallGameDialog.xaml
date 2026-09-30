@@ -90,6 +90,24 @@
 
 
 
+            <!--  Select Resource Tier：鸣潮的资源分级，与语音包不会同时出现  -->
+            <StackPanel x:Name="StackPanel_SelectResourceTier"
+                        Margin="0,8,0,0"
+                        Spacing="4"
+                        Visibility="Collapsed">
+                <TextBlock Margin="1,0,0,0"
+                           FontSize="12"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                           IsTextScaleFactorEnabled="False"
+                           Text="{x:Bind lang:Lang.GameLauncherPage_ResourceTier}" />
+                <cwc:Segmented x:Name="Segmented_SelectResourceTier"
+                               HorizontalAlignment="Stretch"
+                               SelectionChanged="Segmented_SelectResourceTier_SelectionChanged"
+                               SelectionMode="Single" />
+            </StackPanel>
+
+
+
             <!--  Free Space  -->
             <StackPanel x:Name="StackPanel_FreeSpace"
                         Margin="1,8,0,0"

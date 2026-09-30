@@ -2682,6 +2682,42 @@ namespace Starward.Language {
         }
 
         /// <summary>
+        ///   查找类似 Download {0} 的本地化字符串。
+        /// </summary>
+        public static string GameLauncherSettingDialog_ResourceTierDownloadSize {
+            get {
+                return ResourceManager.GetString("GameLauncherSettingDialog_ResourceTierDownloadSize", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 Delete {0} 的本地化字符串。
+        /// </summary>
+        public static string GameLauncherSettingDialog_ResourceTierDeleteSize {
+            get {
+                return ResourceManager.GetString("GameLauncherSettingDialog_ResourceTierDeleteSize", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 Keep at least one resource quality. 的本地化字符串。
+        /// </summary>
+        public static string GameLauncherSettingDialog_KeepAtLeastOneResourceTier {
+            get {
+                return ResourceManager.GetString("GameLauncherSettingDialog_KeepAtLeastOneResourceTier", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 Update the game before changing the resource quality. 的本地化字符串。
+        /// </summary>
+        public static string GameLauncherSettingDialog_UpdateBeforeChangingResourceTiers {
+            get {
+                return ResourceManager.GetString("GameLauncherSettingDialog_UpdateBeforeChangingResourceTiers", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 No Write Permission 的本地化字符串。
         /// </summary>
         public static string GameLauncherPage_NoWritePermission {

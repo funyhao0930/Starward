@@ -30,6 +30,11 @@ public class GameInstallContext
     /// </summary>
     public string? HardLinkPath { get; init; }
 
+    /// <summary>
+    /// 安装时想要的资源分级（鸣潮），逗号分隔，例如 <c>hd,sd</c>；为 null 时由安装器照本机现状决定
+    /// </summary>
+    public string? ResourceTiers { get; set; }
+
 
     public long Timestamp { get; set; }
 
@@ -238,6 +243,8 @@ public partial class GameInstallContextDTO
             InstallPath = InstallPath,
         };
         task.Operation = (GameInstallOperation)Operation;
+        // 与 Operation 一样跟着更新：RPC 那边换了分级会换一个任务，界面这边留着的旧值会让「继续」变回旧的分级
+        task.ResourceTiers = string.IsNullOrEmpty(ResourceTiers) ? null : ResourceTiers;
         task.Timestamp = Timestamp;
         task.State = (GameInstallState)State;
         task.Progress_DownloadTotalBytes = ProgressDownloadTotalBytes;
@@ -281,6 +288,7 @@ public partial class GameInstallContextDTO
         StorageWriteSpeed = task.StorageWriteSpeed,
         RemainTimeSeconds = task.RemainTimeSeconds,
         DownloadMode = (int)task.DownloadMode,
+        ResourceTiers = task.ResourceTiers ?? "",
     };
 
 }
@@ -298,7 +306,8 @@ public partial class GameInstallRequest
         GameId = GetGameId(),
         HardLinkPath = HardLinkPath,
         InstallPath = InstallPath,
-        Operation = (GameInstallOperation)Operation
+        Operation = (GameInstallOperation)Operation,
+        ResourceTiers = string.IsNullOrEmpty(ResourceTiers) ? null : ResourceTiers,
     };
 
 
@@ -312,6 +321,7 @@ public partial class GameInstallRequest
             Operation = (int)task.Operation,
             AudioLanguage = (int)task.AudioLanguage,
             HardLinkPath = task.HardLinkPath,
+            ResourceTiers = task.ResourceTiers ?? "",
         };
     }
 

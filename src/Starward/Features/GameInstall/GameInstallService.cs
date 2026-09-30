@@ -209,9 +209,10 @@ internal class GameInstallService
 
 
 
-    public async Task<GameInstallContext?> StartInstallAsync(GameId gameId, string installPath, AudioLanguage audioLanguage)
+    /// <param name="resourceTiers">想要的资源分级（鸣潮），逗号分隔。在已安装的游戏上带不同的分级就是加装或删除分级。</param>
+    public async Task<GameInstallContext?> StartInstallAsync(GameId gameId, string installPath, AudioLanguage audioLanguage, string? resourceTiers = null)
     {
-        return await StartOrContinueTaskAsync(GameInstallOperation.Install, gameId, installPath, audioLanguage);
+        return await StartOrContinueTaskAsync(GameInstallOperation.Install, gameId, installPath, audioLanguage, resourceTiers);
     }
 
 
@@ -237,7 +238,7 @@ internal class GameInstallService
 
 
 
-    private async Task<GameInstallContext?> StartOrContinueTaskAsync(GameInstallOperation operation, GameId gameId, string installPath, AudioLanguage audioLanguage)
+    private async Task<GameInstallContext?> StartOrContinueTaskAsync(GameInstallOperation operation, GameId gameId, string installPath, AudioLanguage audioLanguage, string? resourceTiers = null)
     {
         var request = new GameInstallRequest
         {
@@ -247,17 +248,19 @@ internal class GameInstallService
             Operation = (int)operation,
             AudioLanguage = (int)audioLanguage,
             HardLinkPath = await GetHardLinkPathAsync(gameId, installPath),
+            ResourceTiers = resourceTiers ?? "",
         };
         if (await _rpcService.EnsureRpcServerRunningAsync())
         {
             _logger.LogInformation("""
-                Start game install task: 
+                Start game install task:
                 Operation: {operation}
                 GameId: {gameId} {gameBiz}
                 InstallPath: {installPath}
                 AudioLanguage: {audioLanguage}
                 HardLinkPath: {hardLinkPath}
-                """, operation, gameId.Id, gameId.GameBiz, installPath, audioLanguage, request.HardLinkPath);
+                ResourceTiers: {resourceTiers}
+                """, operation, gameId.Id, gameId.GameBiz, installPath, audioLanguage, request.HardLinkPath, resourceTiers);
             var dto = await _gameInstallerClient.StartOrContinueTaskAsync(request, deadline: DateTime.UtcNow.AddSeconds(3));
             StartUpdateTaskProgress();
             return AddOrUpdateTask(dto);

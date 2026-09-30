@@ -84,6 +84,20 @@ public sealed partial class InstallGameDialog : ContentDialog
 
 
     /// <summary>
+    /// 可选的资源分级（鸣潮），没有分级的游戏为 null
+    /// </summary>
+    private IReadOnlyList<GameResourceTierPackage>? _vendorTiers;
+
+
+    /// <summary>
+    /// 选中的资源分级，没有分级可选时为 null
+    /// </summary>
+    private GameResourceTierPackage? SelectedResourceTier => (Segmented_SelectResourceTier.SelectedItem as SegmentedItem)?.Tag is string tier
+                                                             ? _vendorTiers?.FirstOrDefault(x => x.Tier == tier)
+                                                             : null;
+
+
+    /// <summary>
     /// 自动创建的子目录名。米哈游游戏沿用 GameBiz（hk4e_cn 等），其他游戏用官方的默认目录名。
     /// </summary>
     private string DefaultFolderName => CurrentGameId?.GameBiz.Value
@@ -115,7 +129,8 @@ public sealed partial class InstallGameDialog : ContentDialog
 
 
     /// <summary>
-    /// 非米哈游游戏没有语音包可选，也不能硬链接，只需要知道多大
+    /// 非米哈游游戏没有语音包可选，也不能硬链接，只需要知道多大。
+    /// 鸣潮另外可以选资源分级，和官方启动器下载前的「选择资源品质」一样。
     /// </summary>
     private async Task GetVendorPackageAsync(IGamePackageInfoProvider provider)
     {
@@ -126,6 +141,11 @@ public sealed partial class InstallGameDialog : ContentDialog
             {
                 _logger.LogWarning("Package size of ({key}) is not available.", CurrentGameKey);
                 return;
+            }
+            _vendorTiers = await provider.GetResourceTiersAsync(CurrentGameKey);
+            if (_vendorTiers is { Count: > 0 })
+            {
+                InitializeResourceTiers(_vendorTiers);
             }
             ComputePackageSize();
             CheckCanStartInstallation();
@@ -138,10 +158,46 @@ public sealed partial class InstallGameDialog : ContentDialog
 
 
 
+    /// <summary>
+    /// 列出各档资源与全新安装的大小，默认选官方的默认值 HD
+    /// </summary>
+    private void InitializeResourceTiers(IReadOnlyList<GameResourceTierPackage> tiers)
+    {
+        Segmented_SelectResourceTier.Items.Clear();
+        SegmentedItem? selected = null;
+        foreach (GameResourceTierPackage tier in tiers)
+        {
+            var item = new SegmentedItem
+            {
+                Content = $"{GameResourceTierNames.Get(tier.Tier)}  {tier.InstallBytes / GB:F2} GB",
+                Tag = tier.Tier,
+            };
+            Segmented_SelectResourceTier.Items.Add(item);
+            if (selected is null || tier.Tier is "hd")
+            {
+                selected = item;
+            }
+        }
+        Segmented_SelectResourceTier.SelectedItem = selected;
+        StackPanel_SelectResourceTier.Visibility = Visibility.Visible;
+    }
+
+
+
+    private void Segmented_SelectResourceTier_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        ComputePackageSize();
+        CheckCanStartInstallation();
+    }
+
+
+
     private void InstallGameDialog_Unloaded(object sender, RoutedEventArgs e)
     {
         Segmented_SelectLanguage.SelectionChanged -= Segmented_SelectLanguage_SelectionChanged;
         Segmented_SelectLanguage.Items.Clear();
+        Segmented_SelectResourceTier.SelectionChanged -= Segmented_SelectResourceTier_SelectionChanged;
+        Segmented_SelectResourceTier.Items.Clear();
     }
 
 
@@ -322,7 +378,7 @@ public sealed partial class InstallGameDialog : ContentDialog
             List<string?> langs = Segmented_SelectLanguage.SelectedItems.Cast<SegmentedItem>().Select(x => x.Tag as string).ToList();
             if (_vendorSize is not null)
             {
-                size = _vendorSize.InstallBytes;
+                size = SelectedResourceTier?.InstallBytes ?? _vendorSize.InstallBytes;
             }
             else if (_gamePackage is not null)
             {
@@ -479,7 +535,7 @@ public sealed partial class InstallGameDialog : ContentDialog
             {
                 return;
             }
-            GameInstallContext? task = await _gameInstallService.StartInstallAsync(installGameId, InstallationPath, _audioLanguage);
+            GameInstallContext? task = await _gameInstallService.StartInstallAsync(installGameId, InstallationPath, _audioLanguage, SelectedResourceTier?.Tier);
             if (task is not null && task.State is not GameInstallState.Stop and not GameInstallState.Error)
             {
                 GameLauncherService.ChangeGameInstallPath(CurrentGameKey, InstallationPath);

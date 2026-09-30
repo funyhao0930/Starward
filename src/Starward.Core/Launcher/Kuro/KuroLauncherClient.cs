@@ -37,6 +37,14 @@ public class KuroLauncherClient
 
 
     /// <summary>
+    /// 官方新启动器（3.0.x，支持资源分级）换用的 AppKey，appId 不变。
+    /// 它自己的配置在 <c>launcher/app/{APP_ID}_{OFFICIAL_APP_KEY}/index.json</c>，
+    /// 游戏配置见 <see cref="GetOfficialGameIndexAsync"/>。取自 GitHub 上 JLLSS/WuWa-Resource-Data 记下的地址。
+    /// </summary>
+    private const string OFFICIAL_APP_KEY = "P7xcUZnEr1AXIGON25E6KjpOgTlVrg6e";
+
+
+    /// <summary>
     /// 背景图这一路比其他配置多一段令牌，与账号和登录状态无关。
     /// <para/>
     /// 令牌不是固定的：官方启动器每次从自身配置的 <c>functionCode.background</c> 读，
@@ -200,6 +208,20 @@ public class KuroLauncherClient
     {
         return await GetFromCdnAsync<KuroLauncherGameIndex>(
             host => $"{host}/launcher/game/{GAME_ID}/{APP_ID}_{APP_KEY}/index.json",
+            cancellationToken);
+    }
+
+
+    /// <summary>
+    /// 新启动器的分级游戏配置，两个 CDN 都取不到时返回 null。
+    /// <para/>
+    /// 路径又是另一种排法：<c>launcher/game/{APP_ID}_{AppKey}/{GAME_ID}/official/index.json</c>，
+    /// 而且要用新的 AppKey，拿旧的 AppKey 套这个路径是 404。
+    /// </summary>
+    public async Task<KuroOfficialGameIndex?> GetOfficialGameIndexAsync(CancellationToken cancellationToken = default)
+    {
+        return await GetFromCdnAsync<KuroOfficialGameIndex>(
+            host => $"{host}/launcher/game/{APP_ID}_{OFFICIAL_APP_KEY}/{GAME_ID}/official/index.json",
             cancellationToken);
     }
 

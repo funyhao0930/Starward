@@ -107,7 +107,9 @@ internal class GameInstallService
     {
         if (_tasks.TryGetValue(request.GetGameId(), out GameInstallContext? context))
         {
-            if (context.Operation != (GameInstallOperation)request.Operation)
+            // 同样是安装，但要的资源分级换了（例如暂停中的加装流畅改成加装极致），也算新任务
+            if (context.Operation != (GameInstallOperation)request.Operation
+                || !string.Equals(context.ResourceTiers ?? "", request.ResourceTiers ?? "", StringComparison.OrdinalIgnoreCase))
             {
                 // 操作不一样，则取消上次任务
                 _logger.LogInformation("The new task operation is different from the previous task, cancel the previous task, GameBiz: {game_biz}, Operation: {operation}", context.GameId.GameBiz, context.Operation);
@@ -224,7 +226,8 @@ internal class GameInstallService
                 InstallPath: {installPath}
                 AudioLanguage: {audioLanguage}
                 HardLinkPath: {hardLinkPath}
-                """, context.Operation, context.GameId.Id, context.GameId.GameBiz, context.InstallPath, context.AudioLanguage, context.HardLinkPath);
+                ResourceTiers: {resourceTiers}
+                """, context.Operation, context.GameId.Id, context.GameId.GameBiz, context.InstallPath, context.AudioLanguage, context.HardLinkPath, context.ResourceTiers);
             Directory.CreateDirectory(context.InstallPath);
             if (TryGetVendor(context, out IGameInstallVendor? vendor, out GameKey vendorKey))
             {

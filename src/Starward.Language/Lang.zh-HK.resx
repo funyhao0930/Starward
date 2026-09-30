@@ -2743,6 +2743,18 @@
   <data name="GameLauncherPage_ResourceTier_SD" xml:space="preserve">
     <value>流暢</value>
   </data>
+  <data name="GameLauncherSettingDialog_ResourceTierDownloadSize" xml:space="preserve">
+    <value>需下載 {0}</value>
+  </data>
+  <data name="GameLauncherSettingDialog_ResourceTierDeleteSize" xml:space="preserve">
+    <value>刪除 {0}</value>
+  </data>
+  <data name="GameLauncherSettingDialog_KeepAtLeastOneResourceTier" xml:space="preserve">
+    <value>至少要保留一種資源品質</value>
+  </data>
+  <data name="GameLauncherSettingDialog_UpdateBeforeChangingResourceTiers" xml:space="preserve">
+    <value>請先更新遊戲，再變更資源品質</value>
+  </data>
   <data name="GameLauncherPage_DetailsGt" xml:space="preserve">
     <value>說明 &gt;</value>
   </data>

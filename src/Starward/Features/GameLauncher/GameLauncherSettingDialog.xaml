@@ -335,6 +335,33 @@
                                     Visibility="Collapsed" />
                         </StackPanel>
 
+                        <!--  资源品质（鸣潮）：勾选想要的分级，套用后由安装器在后台加装或删除  -->
+                        <StackPanel x:Name="StackPanel_ResourceTiers"
+                                    Spacing="8"
+                                    Visibility="Collapsed">
+                            <TextBlock Text="{x:Bind lang:Lang.GameLauncherPage_ResourceTier}" />
+                            <cwc:Segmented x:Name="Segmented_ResourceTiers"
+                                           HorizontalAlignment="Stretch"
+                                           SelectionChanged="Segmented_ResourceTiers_SelectionChanged"
+                                           SelectionMode="Multiple" />
+                            <Grid ColumnSpacing="12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock VerticalAlignment="Center"
+                                           FontSize="12"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                           Text="{x:Bind ResourceTierChangeText}"
+                                           TextWrapping="Wrap" />
+                                <Button Grid.Column="1"
+                                        Command="{x:Bind ApplyResourceTiersCommand}"
+                                        Content="{x:Bind lang:Lang.Common_Apply}"
+                                        IsEnabled="{x:Bind CanApplyResourceTiers}"
+                                        Style="{ThemeResource AccentButtonStyle}" />
+                            </Grid>
+                        </StackPanel>
+
                         <!--  选择语音包  -->
                         <cwc:Segmented x:Name="Segmented_SelectLanguage"
                                        HorizontalAlignment="Stretch"

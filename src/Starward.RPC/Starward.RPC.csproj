@@ -36,6 +36,10 @@
 	  <ProjectReference Include="..\Starward.Setup.Core\Starward.Setup.Core.csproj" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <InternalsVisibleTo Include="Starward.RPC.Tests" />
+	</ItemGroup>
+
 	<!--<ItemGroup>
 	  <None Update="appsettings.json">
 	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

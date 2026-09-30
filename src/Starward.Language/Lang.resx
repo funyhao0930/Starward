@@ -2744,6 +2744,18 @@ You are welcome to submit the exported data to the following repository:</value>
   <data name="GameLauncherPage_ResourceTier_SD" xml:space="preserve">
     <value>SD</value>
   </data>
+  <data name="GameLauncherSettingDialog_ResourceTierDownloadSize" xml:space="preserve">
+    <value>Download {0}</value>
+  </data>
+  <data name="GameLauncherSettingDialog_ResourceTierDeleteSize" xml:space="preserve">
+    <value>Delete {0}</value>
+  </data>
+  <data name="GameLauncherSettingDialog_KeepAtLeastOneResourceTier" xml:space="preserve">
+    <value>Keep at least one resource quality.</value>
+  </data>
+  <data name="GameLauncherSettingDialog_UpdateBeforeChangingResourceTiers" xml:space="preserve">
+    <value>Update the game before changing the resource quality.</value>
+  </data>
   <data name="GameLauncherPage_DetailsGt" xml:space="preserve">
     <value>Details &gt;</value>
   </data>
