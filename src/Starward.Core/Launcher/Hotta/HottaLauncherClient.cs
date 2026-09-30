@@ -11,11 +11,21 @@ namespace Starward.Core.Launcher.Hotta;
 /// 而且每个文件都以 <c>.zip</c> 的形式发布——直接请求原始路径服务器返回 403。
 /// 因此这里比其他几家多一层解压。
 /// <para/>
-/// 所有地址都不写死：起点是游戏自己 Config.ini 里给出的 Version.ini 地址，
+/// 文件清单这一路的地址都不写死：起点是游戏自己 Config.ini 里给出的 Version.ini 地址，
 /// 之后每一步的地址都由上一步的文件给出。换了代理商或域名不必改这里。
+/// 启动页的横幅与新闻是例外，见 <see cref="TAIWAN_WEBSITE"/>。
 /// </summary>
 public class HottaLauncherClient
 {
+
+    /// <summary>
+    /// 台服官网，启动页的横幅与新闻都是它的 CMS 片段，见 <see cref="HottaContentMapper"/>。
+    /// <para/>
+    /// 这是全类唯一写死的地址：官方外壳首页的网页地址是执行时才取得的，
+    /// 本机的 Config.ini、UserData 与 ResData 资源包里都没有，没有起点可读。
+    /// </summary>
+    public const string TAIWAN_WEBSITE = "https://nte.iwplay.com.tw";
+
 
     private readonly HttpClient _httpClient;
 
@@ -90,6 +100,31 @@ public class HottaLauncherClient
         using var buffer = new MemoryStream();
         await entryStream.CopyToAsync(buffer, cancellationToken);
         return buffer.ToArray();
+    }
+
+
+    /// <summary>
+    /// 官网首页的横幅，包括已经下架与尚未上架的，由 <see cref="HottaContentMapper.ToGameContent"/> 按时间筛
+    /// </summary>
+    /// <param name="website">官网地址，如 <see cref="TAIWAN_WEBSITE"/></param>
+    public async Task<List<HottaBanner>> GetBannersAsync(string website, CancellationToken cancellationToken = default)
+    {
+        var uri = new Uri(new Uri(website), HottaContentMapper.BannerPath);
+        string html = await _httpClient.GetStringAsync(uri, cancellationToken);
+        return HottaContentMapper.ParseBanners(html, uri);
+    }
+
+
+    /// <summary>
+    /// 官网的一个新闻分页
+    /// </summary>
+    /// <param name="website">官网地址，如 <see cref="TAIWAN_WEBSITE"/></param>
+    /// <param name="path">分页片段的路径，见 <see cref="HottaContentMapper.NewsLists"/></param>
+    public async Task<List<HottaNewsItem>> GetNewsAsync(string website, string path, CancellationToken cancellationToken = default)
+    {
+        var uri = new Uri(new Uri(website), path);
+        string html = await _httpClient.GetStringAsync(uri, cancellationToken);
+        return HottaContentMapper.ParseNews(html, uri);
     }
 
 

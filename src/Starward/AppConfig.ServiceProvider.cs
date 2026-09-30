@@ -113,6 +113,7 @@ public static partial class AppConfig
             sc.AddSingleton<IGameLauncherContentProvider, HoYoLauncherContentProvider>();
             sc.AddSingleton<IGameLauncherContentProvider, KuroLauncherContentProvider>();
             sc.AddSingleton<IGameLauncherContentProvider, GryphlineLauncherContentProvider>();
+            sc.AddSingleton<IGameLauncherContentProvider, HottaLauncherContentProvider>();
 
             // 启动页的角色卡片，米哈游那边是实时便笺，另有一套
             sc.AddSingleton<RoleCardProviderRegistry>();

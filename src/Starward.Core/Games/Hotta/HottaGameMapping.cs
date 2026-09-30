@@ -5,8 +5,8 @@ namespace Starward.Core.Games.Hotta;
 /// <summary>
 /// 异环（Neverness to Everness）。
 /// <para/>
-/// 本阶段只支持启动、搜索、截图与游玩时间，不实现下载与更新。
-/// 所有资料都来自本机官方启动器的 Config.ini 与注册表，没有调用任何在线接口。
+/// 不实现下载与更新。启动相关的资料都来自本机官方启动器的 Config.ini 与注册表；
+/// 背景图、启动页的横幅与资讯另走线上，见 <c>Starward.Core.Launcher.Hotta</c>。
 /// </summary>
 public static class HottaGameMapping
 {
@@ -142,6 +142,7 @@ public static class HottaGameMapping
                                              | GameCapability.Screenshot
                                              | GameCapability.PlayTime
                                              | GameCapability.Gacha
+                                             | GameCapability.Announcement
                                              | GameCapability.GameSetting;
 
 
