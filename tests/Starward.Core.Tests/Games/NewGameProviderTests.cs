@@ -149,13 +149,13 @@ public class NewGameProviderTests
 
     /// <summary>
     /// 终末地不需要额外的启动参数。
-    /// 鸣潮启动的 Wuthering Waves.exe 是游戏自己的引导程序，但 3.7.0 起必须带上官方启动器
-    /// 默认选项里的 -krqlv=hd，否则游戏在启动时崩溃（Use launcher to start game!）。
+    /// 鸣潮 3.7.0 起必须带 -krqlv=（资源分级），否则游戏在启动时崩溃（Use launcher to start game!），
+    /// 但带哪一档要看本机装了什么，所以不写在游戏描述里，由 KuroGameLaunchProvider 在启动时决定。
     /// </summary>
     [Fact]
-    public void Endfield_NeedsNoExtraLaunchArguments_WutheringWavesNeedsKrqlv()
+    public void Endfield_And_WutheringWaves_HaveNoFixedLaunchArguments()
     {
-        Assert.Equal("-krqlv=hd", KuroGameMapping.GetDescriptors()[0].LaunchArguments);
+        Assert.Null(KuroGameMapping.GetDescriptors()[0].LaunchArguments);
         Assert.Null(GryphlineGameMapping.GetDescriptors()[0].LaunchArguments);
     }
 
@@ -247,7 +247,7 @@ public class NewGameProviderTests
 
             var catalog = new SimpleGameCatalogProvider(KuroGameMapping.ProviderId, KuroGameMapping.GetDescriptors);
             var settings = new FakeGameLaunchSettings { EnableDX11 = true, DisableDlss = true };
-            var provider = new SimpleGameLaunchProvider(KuroGameMapping.ProviderId, catalog, settings);
+            var provider = new KuroGameLaunchProvider(catalog, settings);
             GameLaunchCommand command = await provider.CreateLaunchCommandAsync(
                 descriptor.Key,
                 new GameLaunchOptions { InstallPath = root },
@@ -255,7 +255,8 @@ public class NewGameProviderTests
 
             Assert.Contains("-dx11", command.Arguments, StringComparison.Ordinal);
             Assert.Contains("-slno", command.Arguments, StringComparison.Ordinal);
-            // 3.7.0 起不带 -krqlv=hd 会崩溃在「Use launcher to start game!」
+            // 3.7.0 起不带 -krqlv 会崩溃在「Use launcher to start game!」；
+            // 这里没有放任何分级目录，退回官方的默认值 HD
             Assert.Contains("-krqlv=hd", command.Arguments, StringComparison.Ordinal);
             // Unity 的写法不能跑到虚幻游戏上
             Assert.DoesNotContain("-force-d3d11", command.Arguments, StringComparison.Ordinal);

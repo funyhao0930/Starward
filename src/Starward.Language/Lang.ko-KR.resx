@@ -2732,6 +2732,18 @@
   <data name="GameLauncherPage_DisableDLSS" xml:space="preserve">
     <value>DLSS 비활성화</value>
   </data>
+  <data name="GameLauncherPage_ResourceTier" xml:space="preserve">
+    <value>리소스 등급</value>
+  </data>
+  <data name="GameLauncherPage_ResourceTier_UHD" xml:space="preserve">
+    <value>최고 품질</value>
+  </data>
+  <data name="GameLauncherPage_ResourceTier_HD" xml:space="preserve">
+    <value>고품질</value>
+  </data>
+  <data name="GameLauncherPage_ResourceTier_SD" xml:space="preserve">
+    <value>표준 품질</value>
+  </data>
   <data name="GameLauncherPage_GameUpdateAvailable" xml:space="preserve">
     <value>게임 업데이트 있음 ({0})</value>
   </data>

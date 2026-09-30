@@ -2729,6 +2729,18 @@ Bạn có chấp nhận rủi ro và tiếp tục?</value>
   <data name="GameLauncherPage_DisableDLSS" xml:space="preserve">
     <value>Tắt DLSS</value>
   </data>
+  <data name="GameLauncherPage_ResourceTier" xml:space="preserve">
+    <value>Chất lượng tài nguyên</value>
+  </data>
+  <data name="GameLauncherPage_ResourceTier_UHD" xml:space="preserve">
+    <value>UHD</value>
+  </data>
+  <data name="GameLauncherPage_ResourceTier_HD" xml:space="preserve">
+    <value>HD</value>
+  </data>
+  <data name="GameLauncherPage_ResourceTier_SD" xml:space="preserve">
+    <value>SD</value>
+  </data>
   <data name="GameLauncherPage_GameUpdateAvailable" xml:space="preserve">
     <value>Có bản cập nhật game ({0})</value>
   </data>

@@ -2732,6 +2732,18 @@ Puede enviar los datos exportados al siguiente repositorio:</value>
   <data name="GameLauncherPage_DisableDLSS" xml:space="preserve">
     <value>Desactivar DLSS</value>
   </data>
+  <data name="GameLauncherPage_ResourceTier" xml:space="preserve">
+    <value>Calidad de recursos</value>
+  </data>
+  <data name="GameLauncherPage_ResourceTier_UHD" xml:space="preserve">
+    <value>Máxima</value>
+  </data>
+  <data name="GameLauncherPage_ResourceTier_HD" xml:space="preserve">
+    <value>Alta</value>
+  </data>
+  <data name="GameLauncherPage_ResourceTier_SD" xml:space="preserve">
+    <value>Rendimiento</value>
+  </data>
   <data name="GameLauncherPage_GameUpdateAvailable" xml:space="preserve">
     <value>Actualización del juego disponible ({0})</value>
   </data>

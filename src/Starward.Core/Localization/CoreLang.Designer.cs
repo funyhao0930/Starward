@@ -851,5 +851,14 @@ namespace Starward.Core.Localization {
                 return ResourceManager.GetString("Gacha_TheFileIsAnNteExporterAchievementFile", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   查找类似 This installation includes resource quality tiers that Starward cannot download yet ({0}). Please update or repair the game with the official launcher. 的本地化字符串。
+        /// </summary>
+        public static string KuroInstall_UnsupportedResourceTiers {
+            get {
+                return ResourceManager.GetString("KuroInstall_UnsupportedResourceTiers", resourceCulture);
+            }
+        }
     }
 }

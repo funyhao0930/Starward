@@ -2731,6 +2731,18 @@
   <data name="GameLauncherPage_DisableDLSS" xml:space="preserve">
     <value>停用 DLSS</value>
   </data>
+  <data name="GameLauncherPage_ResourceTier" xml:space="preserve">
+    <value>資源品質</value>
+  </data>
+  <data name="GameLauncherPage_ResourceTier_UHD" xml:space="preserve">
+    <value>極致</value>
+  </data>
+  <data name="GameLauncherPage_ResourceTier_HD" xml:space="preserve">
+    <value>高畫質</value>
+  </data>
+  <data name="GameLauncherPage_ResourceTier_SD" xml:space="preserve">
+    <value>流暢</value>
+  </data>
   <data name="GameLauncherPage_DetailsGt" xml:space="preserve">
     <value>說明 &gt;</value>
   </data>

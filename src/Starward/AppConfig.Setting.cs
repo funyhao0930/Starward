@@ -650,6 +650,23 @@ public static partial class AppConfig
     }
 
 
+    /// <summary>
+    /// 启动时用的资源分级（鸣潮的 uhd / hd / sd），没选过时为 null
+    /// </summary>
+    public static string? GetResourceTier(GameBiz biz)
+    {
+        return GetValue<string>(default, $"resource_tier_{biz}");
+    }
+
+    /// <summary>
+    /// 启动时用的资源分级
+    /// </summary>
+    public static void SetResourceTier(GameBiz biz, string? value)
+    {
+        SetValue(value, $"resource_tier_{biz}");
+    }
+
+
     #endregion
 
 

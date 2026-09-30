@@ -2646,6 +2646,42 @@ namespace Starward.Language {
         }
 
         /// <summary>
+        ///   查找类似 Resource quality 的本地化字符串。
+        /// </summary>
+        public static string GameLauncherPage_ResourceTier {
+            get {
+                return ResourceManager.GetString("GameLauncherPage_ResourceTier", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 UHD 的本地化字符串。
+        /// </summary>
+        public static string GameLauncherPage_ResourceTier_UHD {
+            get {
+                return ResourceManager.GetString("GameLauncherPage_ResourceTier_UHD", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 HD 的本地化字符串。
+        /// </summary>
+        public static string GameLauncherPage_ResourceTier_HD {
+            get {
+                return ResourceManager.GetString("GameLauncherPage_ResourceTier_HD", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 SD 的本地化字符串。
+        /// </summary>
+        public static string GameLauncherPage_ResourceTier_SD {
+            get {
+                return ResourceManager.GetString("GameLauncherPage_ResourceTier_SD", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   查找类似 No Write Permission 的本地化字符串。
         /// </summary>
         public static string GameLauncherPage_NoWritePermission {

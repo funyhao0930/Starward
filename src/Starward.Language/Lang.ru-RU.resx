@@ -2752,6 +2752,18 @@ ChatGPT может допускать ошибки. Проверьте важн�
   <data name="GameLauncherPage_DisableDLSS" xml:space="preserve">
     <value>Отключить DLSS</value>
   </data>
+  <data name="GameLauncherPage_ResourceTier" xml:space="preserve">
+    <value>Качество ресурсов</value>
+  </data>
+  <data name="GameLauncherPage_ResourceTier_UHD" xml:space="preserve">
+    <value>UHD</value>
+  </data>
+  <data name="GameLauncherPage_ResourceTier_HD" xml:space="preserve">
+    <value>HD</value>
+  </data>
+  <data name="GameLauncherPage_ResourceTier_SD" xml:space="preserve">
+    <value>SD</value>
+  </data>
   <data name="GameLauncherPage_GameUpdateAvailable" xml:space="preserve">
     <value>Доступно обновление игры ({0})</value>
   </data>

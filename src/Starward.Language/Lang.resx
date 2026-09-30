@@ -2732,6 +2732,18 @@ You are welcome to submit the exported data to the following repository:</value>
   <data name="GameLauncherPage_DisableDLSS" xml:space="preserve">
     <value>Disable DLSS</value>
   </data>
+  <data name="GameLauncherPage_ResourceTier" xml:space="preserve">
+    <value>Resource quality</value>
+  </data>
+  <data name="GameLauncherPage_ResourceTier_UHD" xml:space="preserve">
+    <value>UHD</value>
+  </data>
+  <data name="GameLauncherPage_ResourceTier_HD" xml:space="preserve">
+    <value>HD</value>
+  </data>
+  <data name="GameLauncherPage_ResourceTier_SD" xml:space="preserve">
+    <value>SD</value>
+  </data>
   <data name="GameLauncherPage_DetailsGt" xml:space="preserve">
     <value>Details &gt;</value>
   </data>

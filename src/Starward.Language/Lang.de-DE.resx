@@ -2730,6 +2730,18 @@ Sie sind herzlich eingeladen, die exportierten Daten an das folgende Repository 
   <data name="GameLauncherPage_DisableDLSS" xml:space="preserve">
     <value>DLSS deaktivieren</value>
   </data>
+  <data name="GameLauncherPage_ResourceTier" xml:space="preserve">
+    <value>Ressourcenstufe</value>
+  </data>
+  <data name="GameLauncherPage_ResourceTier_UHD" xml:space="preserve">
+    <value>UHD</value>
+  </data>
+  <data name="GameLauncherPage_ResourceTier_HD" xml:space="preserve">
+    <value>HD</value>
+  </data>
+  <data name="GameLauncherPage_ResourceTier_SD" xml:space="preserve">
+    <value>SD</value>
+  </data>
   <data name="GameLauncherPage_GameUpdateAvailable" xml:space="preserve">
     <value>Spiel-Update verfügbar ({0})</value>
   </data>

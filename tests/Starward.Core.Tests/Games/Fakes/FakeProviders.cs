@@ -87,6 +87,8 @@ internal class FakeGameLaunchSettings : IGameLaunchSettings
 
     public bool DisableDlss { get; set; }
 
+    public string? ResourceTier { get; set; }
+
     public bool EnableThirdPartyTool { get; set; }
 
     public string? ThirdPartyToolPath { get; set; }
@@ -104,6 +106,8 @@ internal class FakeGameLaunchSettings : IGameLaunchSettings
     public bool GetEnableDX11(GameKey key) => EnableDX11;
 
     public bool GetDisableDlss(GameKey key) => DisableDlss;
+
+    public string? GetResourceTier(GameKey key) => ResourceTier;
 
     public bool GetEnableThirdPartyTool(GameKey key) => EnableThirdPartyTool;
 

@@ -23,6 +23,12 @@ public class SimpleGameLaunchProvider : IGameLaunchProvider
     public string ProviderId { get; }
 
 
+    /// <summary>
+    /// 用户设置，给要看设置决定参数的子类用
+    /// </summary>
+    protected IGameLaunchSettings Settings => _settings;
+
+
     public ValueTask<string?> GetExecutableNameAsync(GameKey key, CancellationToken cancellationToken = default)
     {
         return ValueTask.FromResult(_catalog.GetGame(key)?.ExecutableName);
@@ -74,12 +80,8 @@ public class SimpleGameLaunchProvider : IGameLaunchProvider
         }
 
         // 游戏本身需要的固定参数，加上用户自定义的参数
-        string? arg = descriptor.LaunchArguments;
-        string? custom = _settings.GetStartArgument(key)?.Trim();
-        if (!string.IsNullOrWhiteSpace(custom))
-        {
-            arg = string.IsNullOrWhiteSpace(arg) ? custom : $"{arg} {custom}";
-        }
+        string? installPath = Directory.Exists(options.InstallPath) ? options.InstallPath : options.ConfiguredInstallPath;
+        string? arg = BuildArguments(descriptor, key, installPath, _settings.GetStartArgument(key)?.Trim());
         if (_settings.GetUsePopupWindow(key))
         {
             arg += " -popupwindow";
@@ -121,6 +123,28 @@ public class SimpleGameLaunchProvider : IGameLaunchProvider
                                                 Path.GetFileName(exeName),
                                                 StringComparison.OrdinalIgnoreCase),
         });
+    }
+
+
+    /// <summary>
+    /// 游戏本身需要的固定参数加上用户自定义的参数，游戏的在前。
+    /// 固定参数要看本机装了什么才能决定的游戏（鸣潮的资源分级）覆写这里。
+    /// </summary>
+    /// <param name="installPath">游戏安装目录，可能为 null 或不存在（例如改用第三方工具启动）</param>
+    /// <param name="startArgument">用户自定义的参数，已去掉首尾空白</param>
+    protected virtual string? BuildArguments(GameDescriptor descriptor, GameKey key, string? installPath, string? startArgument)
+    {
+        return JoinArguments(descriptor.LaunchArguments, startArgument);
+    }
+
+
+    /// <summary>
+    /// 用空格连接参数，跳过空的；全部为空时返回 null
+    /// </summary>
+    protected static string? JoinArguments(params string?[] arguments)
+    {
+        string joined = string.Join(' ', arguments.Where(x => !string.IsNullOrWhiteSpace(x)));
+        return joined.Length > 0 ? joined : null;
     }
 
 }

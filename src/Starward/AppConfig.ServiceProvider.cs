@@ -87,7 +87,8 @@ public static partial class AppConfig
 
             // 仅支持启动的游戏，目录是固定的，启动流程也没有特殊之处，
             // 因此复用通用的 Simple 实现，不必各自写一套。
-            AddSimpleGameProvider(sc, KuroGameMapping.ProviderId, KuroGameMapping.GetDescriptors);
+            // 鸣潮只多一个要看本机装了哪几档资源才能决定的参数（-krqlv），启动 Provider 另有子类。
+            AddSimpleGameProvider(sc, KuroGameMapping.ProviderId, KuroGameMapping.GetDescriptors, (catalog, settings) => new KuroGameLaunchProvider(catalog, settings));
             sc.AddSingleton<IGameDiscoveryProvider, KuroDiscoveryProvider>();
 
             AddSimpleGameProvider(sc, HottaGameMapping.ProviderId, HottaGameMapping.GetDescriptors);
@@ -201,16 +202,20 @@ public static partial class AppConfig
     /// 目录与启动使用 <see cref="SimpleGameCatalogProvider"/> 与 <see cref="SimpleGameLaunchProvider"/>，
     /// 搜索由各供应商自行实现，因为每家写入安装路径的位置都不同。
     /// </summary>
-    private static void AddSimpleGameProvider(IServiceCollection sc, string providerId, Func<IReadOnlyList<GameDescriptor>> descriptorFactory)
+    /// <param name="launchProviderFactory">启动参数要另外决定的游戏传入 <see cref="SimpleGameLaunchProvider"/> 的子类，其余为 null</param>
+    private static void AddSimpleGameProvider(IServiceCollection sc, string providerId, Func<IReadOnlyList<GameDescriptor>> descriptorFactory,
+                                              Func<IGameCatalogProvider, IGameLaunchSettings, SimpleGameLaunchProvider>? launchProviderFactory = null)
     {
         // 图标从已安装游戏的可执行文件中提取，不把美术资源复制进代码仓库
         sc.AddSingleton<IGameCatalogProvider>(sp => new LocalIconGameCatalogProvider(
             new SimpleGameCatalogProvider(providerId, descriptorFactory),
             sp.GetRequiredService<ILogger<LocalIconGameCatalogProvider>>()));
-        sc.AddSingleton<IGameLaunchProvider>(sp => new SimpleGameLaunchProvider(
-            providerId,
-            new SimpleGameCatalogProvider(providerId, descriptorFactory),
-            sp.GetRequiredService<IGameLaunchSettings>()));
+        sc.AddSingleton<IGameLaunchProvider>(sp =>
+        {
+            var catalog = new SimpleGameCatalogProvider(providerId, descriptorFactory);
+            var settings = sp.GetRequiredService<IGameLaunchSettings>();
+            return launchProviderFactory?.Invoke(catalog, settings) ?? new SimpleGameLaunchProvider(providerId, catalog, settings);
+        });
     }
 
 

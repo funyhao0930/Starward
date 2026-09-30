@@ -320,7 +320,19 @@ public sealed partial class GameLauncherPage : PageBase
 
 
     /// <summary>
-    /// 两个开关都没有时整块都不显示
+    /// 是否显示资源分级选单：装了不止一档才有得选
+    /// </summary>
+    public bool IsResourceTierOptionVisible { get; set => SetProperty(ref field, value); }
+
+
+    /// <summary>
+    /// 启动时会用的资源分级
+    /// </summary>
+    public string? ResourceTierText { get; set => SetProperty(ref field, value); }
+
+
+    /// <summary>
+    /// 开关与分级选单都没有时整块都不显示
     /// </summary>
     public bool IsLaunchOptionsVisible { get; set => SetProperty(ref field, value); }
 
@@ -369,7 +381,7 @@ public sealed partial class GameLauncherPage : PageBase
         GameDescriptor? descriptor = CurrentGameKey.IsValid ? _providerRegistry.GetGame(CurrentGameKey) : null;
         IsDX11OptionVisible = !string.IsNullOrWhiteSpace(descriptor?.DX11LaunchArgument);
         IsDisableDlssOptionVisible = !string.IsNullOrWhiteSpace(descriptor?.DisableDlssLaunchArgument);
-        IsLaunchOptionsVisible = IsDX11OptionVisible || IsDisableDlssOptionVisible;
+        IsLaunchOptionsVisible = IsDX11OptionVisible || IsDisableDlssOptionVisible || IsResourceTierOptionVisible;
         if (IsDX11OptionVisible)
         {
             EnableDX11 = AppConfig.GetEnableDX11(CurrentGameBiz);
@@ -381,12 +393,86 @@ public sealed partial class GameLauncherPage : PageBase
     }
 
 
+    /// <summary>
+    /// 检查装了哪几档资源（鸣潮 3.7.0 起的「用户端资源分级」）。
+    /// <para/>
+    /// 同样不按游戏判断：启动 Provider 实现了 <see cref="IGameResourceTierProvider"/> 才有这回事。
+    /// 只装了一档时没得选，启动时自动带那一档，选单也就不显示。
+    /// 安装目录与装了哪几档都会变（换目录、安装或修复完成），所以跟着 <see cref="CheckGameVersion"/> 一起重查。
+    /// </summary>
+    private void CheckResourceTiers()
+    {
+        GameResourceTierState? state = null;
+        try
+        {
+            if (GameInstallPath is not null
+                && !IsInstallPathRemovableTipEnabled
+                && CurrentGameKey.IsValid
+                && _providerRegistry.GetLaunchProvider(CurrentGameKey.ProviderId) is IGameResourceTierProvider provider)
+            {
+                state = provider.GetResourceTierState(CurrentGameKey, GameInstallPath);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Check resource tiers");
+        }
+
+        MenuFlyout_ResourceTier.Items.Clear();
+        if (state is { InstalledTiers.Count: > 1 })
+        {
+            foreach (string tier in state.InstalledTiers)
+            {
+                var item = new Microsoft.UI.Xaml.Controls.RadioMenuFlyoutItem
+                {
+                    Text = GetResourceTierName(tier),
+                    Tag = tier,
+                    GroupName = "ResourceTier",
+                    IsChecked = tier == state.LaunchTier,
+                };
+                item.Click += RadioMenuFlyoutItem_ResourceTier_Click;
+                MenuFlyout_ResourceTier.Items.Add(item);
+            }
+            ResourceTierText = GetResourceTierName(state.LaunchTier);
+            IsResourceTierOptionVisible = true;
+        }
+        else
+        {
+            IsResourceTierOptionVisible = false;
+        }
+        IsLaunchOptionsVisible = IsDX11OptionVisible || IsDisableDlssOptionVisible || IsResourceTierOptionVisible;
+    }
+
+
+    private void RadioMenuFlyoutItem_ResourceTier_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Microsoft.UI.Xaml.Controls.RadioMenuFlyoutItem { Tag: string tier })
+        {
+            AppConfig.SetResourceTier(CurrentGameBiz, tier);
+            ResourceTierText = GetResourceTierName(tier);
+        }
+    }
+
+
+    /// <summary>
+    /// 分级的名称，照官方启动器各语言的写法
+    /// </summary>
+    private static string GetResourceTierName(string tier) => tier switch
+    {
+        "uhd" => Lang.GameLauncherPage_ResourceTier_UHD,
+        "hd" => Lang.GameLauncherPage_ResourceTier_HD,
+        "sd" => Lang.GameLauncherPage_ResourceTier_SD,
+        _ => tier.ToUpperInvariant(),
+    };
+
+
     private async void CheckGameVersion()
     {
         try
         {
             GameInstallPath = GameLauncherService.GetGameInstallPath(CurrentGameKey, out bool storageRemoved);
             IsInstallPathRemovableTipEnabled = storageRemoved;
+            CheckResourceTiers();
             if (GameInstallPath is null || storageRemoved)
             {
                 GameState = GameState.InstallGame;

@@ -38,6 +38,12 @@ public interface IGameLaunchSettings
 
 
     /// <summary>
+    /// 启动页上选的资源分级，没选过时为 null，见 <see cref="IGameResourceTierProvider"/>
+    /// </summary>
+    string? GetResourceTier(GameKey key);
+
+
+    /// <summary>
     /// 启用第三方工具启动
     /// </summary>
     bool GetEnableThirdPartyTool(GameKey key);

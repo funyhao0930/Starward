@@ -4,6 +4,7 @@ using Polly.Retry;
 using Starward.Core.Games;
 using Starward.Core.Games.Kuro;
 using Starward.Core.Launcher.Kuro;
+using Starward.Core.Localization;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -194,6 +195,7 @@ internal class KuroGameInstaller : IGameInstallVendor
 
         KuroResourceIndex fullIndex = await _launcherClient.GetResourceIndexAsync(cdnBases, config.IndexFile, cancellationToken)
             ?? throw new InvalidOperationException("Wuthering Waves file index is not available.");
+        EnsureResourceTiersCovered(gameDir, fullIndex);
 
         string? localVersion = null;
         KuroPatchPlan? patchPlan = null;
@@ -248,6 +250,28 @@ internal class KuroGameInstaller : IGameInstallVendor
             """, context.Operation, localVersion, targetVersion, fullIndex.Resource.Count, fullIndex.Resource.Sum(x => x.Size),
             patchPlan?.Diffs.Count, patchPlan?.Files.Count, patchPlan?.DownloadSize, string.Join(", ", cdnBases));
         return plan;
+    }
+
+
+
+    /// <summary>
+    /// 本机装的资源分级，清单里都要有，否则不动手。
+    /// <para/>
+    /// 公开的旧版游戏配置只有 HD。本机另外装了极致或流畅（官方新启动器的分级测试）时，
+    /// 照这份清单只会更新共用文件与 HD，那几档留在旧版本，带着它们的参数启动就会出错；
+    /// 只装了流畅的，差分还会因为找不到旧的 HD 文件而改成整包下载一份用不到的 HD。
+    /// 修复不删那几档（多余文件只清 Paks），但同样没有校验它们。
+    /// </summary>
+    private void EnsureResourceTiersCovered(string gameDir, KuroResourceIndex index)
+    {
+        IReadOnlyList<string> installed = KuroResourceTier.GetInstalledTiers(gameDir);
+        IReadOnlyList<string> covered = KuroResourceTier.GetTiersInIndex(index.Resource.Select(x => x.Dest));
+        List<string> missing = installed.Except(covered).ToList();
+        if (missing.Count > 0)
+        {
+            _logger.LogWarning("Wuthering Waves has resource tiers {installed}, but the index only covers {covered}.", installed, covered);
+            throw new NotSupportedException(string.Format(CoreLang.KuroInstall_UnsupportedResourceTiers, string.Join(", ", missing.Select(x => x.ToUpperInvariant()))));
+        }
     }
 
 

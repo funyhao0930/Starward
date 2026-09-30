@@ -370,4 +370,7 @@
   <data name="Gacha_TheFileIsAnNteExporterAchievementFile" xml:space="preserve">
     <value>這是 nte-exporter 的成就匯出，不是抽卡記錄</value>
   </data>
+  <data name="KuroInstall_UnsupportedResourceTiers" xml:space="preserve">
+    <value>本機裝了 Starward 目前還不能下載的資源品質（{0}），請改用官方啟動器更新或修復遊戲。</value>
+  </data>
 </root>

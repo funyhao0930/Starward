@@ -5,6 +5,7 @@ namespace Starward.Core.Games.Kuro;
 /// <para/>
 /// 安装、更新、修复与预下载走官方启动器同一套在线配置（见 <see cref="Launcher.Kuro.KuroLauncherClient"/>），
 /// 下载在 RPC 进程里完成；搜索、截图与游玩时间仍只读本机的官方启动器目录与注册表。
+/// 启动参数要看装了哪几档资源，见 <see cref="KuroGameLaunchProvider"/>。
 /// </summary>
 public static class KuroGameMapping
 {
@@ -83,11 +84,8 @@ public static class KuroGameMapping
                 ProcessName = "Client-Win64-Shipping.exe",
                 // 官方启动器自己提供的两个开关，取自在线配置的 RHIOptionList 与 commandList，
                 // 说明文字是「游戏异常时选择」。虚幻的写法是 -dx11，不是 Unity 的 -force-d3d11。
-                // 官方的 DX11 选项完整值是「-dx11 -krqlv=hd」，-krqlv=hd 是默认选项也带的。
-                // 3.6.1 及以前不带它也能进游戏，3.7.0 起不带就会在启动时崩溃
-                // （Client.log：launch not by commandlet, use kuro quality! → Fatal error "Use launcher to start game!"），
-                // 所以现在固定带上，DX11 只补 -dx11 本身。
-                LaunchArguments = "-krqlv=hd",
+                // 没有固定参数：3.7.0 起必须带的 -krqlv=（资源分级）要看本机装了哪几档，
+                // 由 KuroGameLaunchProvider 在启动时决定，见 KuroResourceTier。
                 DX11LaunchArgument = "-dx11",
                 DisableDlssLaunchArgument = "-slno",
                 ScreenshotPaths = [Path.Combine(GameFolderName, @"Client\Saved\ScreenShot")],

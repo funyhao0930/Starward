@@ -44,6 +44,12 @@ internal class AppConfigGameLaunchSettings : IGameLaunchSettings
     }
 
 
+    public string? GetResourceTier(GameKey key)
+    {
+        return AppConfig.GetResourceTier(SettingsKey(key));
+    }
+
+
     public bool GetEnableThirdPartyTool(GameKey key)
     {
         return AppConfig.GetEnableThirdPartyTool(SettingsKey(key));

@@ -633,7 +633,7 @@
             </Border>
 
 
-            <!--  额外的启动开关：终末地的 DX11，鸣潮的 DX11 与停用 DLSS  -->
+            <!--  额外的启动开关：终末地的 DX11，鸣潮的资源分级、DX11 与停用 DLSS  -->
             <!--  与 DX12 选项同一个位置，两者不会同时出现：DX12 只给有下载器的米哈游游戏  -->
             <Border Grid.Row="1"
                     Grid.Column="0"
@@ -648,6 +648,29 @@
                 <StackPanel Margin="0,-2,0,-2"
                             Orientation="Horizontal"
                             Spacing="8">
+                    <!--  资源分级：装了不止一档才有得选，与官方启动器开始按钮旁的切换是同一件事  -->
+                    <Button Margin="-6,0,0,0"
+                            Padding="6,2,6,2"
+                            VerticalAlignment="Center"
+                            Style="{ThemeResource DateTimePickerFlyoutButtonStyle}"
+                            ToolTipService.ToolTip="{x:Bind lang:Lang.GameLauncherPage_ResourceTier}"
+                            Visibility="{x:Bind IsResourceTierOptionVisible}">
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <TextBlock Margin="0,0,0,2"
+                                       VerticalAlignment="Center"
+                                       FontSize="12"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                       IsTextScaleFactorEnabled="False"
+                                       Text="{x:Bind ResourceTierText}" />
+                            <FontIcon VerticalAlignment="Center"
+                                      FontSize="8"
+                                      Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                      Glyph="&#xE70E;" />
+                        </StackPanel>
+                        <Button.Flyout>
+                            <MenuFlyout x:Name="MenuFlyout_ResourceTier" Placement="Top" />
+                        </Button.Flyout>
+                    </Button>
                     <CheckBox MinWidth="0"
                               VerticalAlignment="Center"
                               VerticalContentAlignment="Center"
