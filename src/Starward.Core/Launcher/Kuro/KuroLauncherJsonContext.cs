@@ -4,6 +4,7 @@ namespace Starward.Core.Launcher.Kuro;
 
 
 [JsonSerializable(typeof(KuroLauncherBackground))]
+[JsonSerializable(typeof(KuroLauncherConfig))]
 [JsonSerializable(typeof(KuroLauncherGameIndex))]
 [JsonSerializable(typeof(KuroLauncherInformation))]
 [JsonSerializable(typeof(KuroResourceIndex))]

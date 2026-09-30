@@ -37,13 +37,14 @@ public class KuroLauncherClient
 
 
     /// <summary>
-    /// 背景图这一路比其他配置多一段固定令牌，写死在官方启动器的网页前端里，
-    /// 与账号和登录状态无关。
+    /// 背景图这一路比其他配置多一段令牌，与账号和登录状态无关。
     /// <para/>
-    /// 官方替换前端时它有可能跟着换，那时接口会返回 404，
-    /// 调用方按「拿不到在线背景」处理即可，不影响其他功能。
+    /// 令牌不是固定的：官方启动器每次从自身配置的 <c>functionCode.background</c> 读，
+    /// 并随游戏版本轮换。旧令牌的路径不会下架，而是一直返回旧版本的美术，
+    /// 所以写死令牌不会报错，只会让背景停在旧版本上（3.7.0 就是这样）。
+    /// 这里的值只在取不到启动器配置时兜底用。
     /// </summary>
-    private const string BACKGROUND_TOKEN = "nmJutnA7saYMz2eJ46CL8mB3VUEZvyCs";
+    private const string FALLBACK_BACKGROUND_TOKEN = "lv1emIbKHn38mW6zgxiFqU3Uw8nwstj6";
 
 
     /// <summary>
@@ -123,8 +124,49 @@ public class KuroLauncherClient
         {
             language = DEFAULT_LANGUAGE;
         }
+        string token = await GetBackgroundTokenAsync(cancellationToken);
         return await GetFromCdnAsync<KuroLauncherBackground>(
-            host => $"{host}/launcher/{APP_ID}_{APP_KEY}/{GAME_ID}/background/{BACKGROUND_TOKEN}/{language}.json",
+            host => $"{host}/launcher/{APP_ID}_{APP_KEY}/{GAME_ID}/background/{token}/{language}.json",
+            cancellationToken);
+    }
+
+
+    /// <summary>
+    /// 当前版本的背景图令牌，取不到启动器配置时退回内置值。
+    /// </summary>
+    private async Task<string> GetBackgroundTokenAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            KuroLauncherConfig? config = await GetLauncherConfigAsync(cancellationToken);
+            string? token = config?.FunctionCode?.Background;
+            if (!string.IsNullOrWhiteSpace(token))
+            {
+                return token;
+            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch
+        {
+            // 配置取不到时内置令牌至少还能给出一张（可能是旧版本的）背景
+        }
+        return FALLBACK_BACKGROUND_TOKEN;
+    }
+
+
+    /// <summary>
+    /// 官方启动器自身的配置，两个 CDN 都取不到时返回 null。
+    /// <para/>
+    /// 路径是 <c>launcher/launcher/{APP_ID}_{APP_KEY}/{GAME_ID}</c>，多一段 <c>launcher</c>，
+    /// 与游戏配置 <see cref="GetGameIndexAsync"/> 是两份不同的文件。
+    /// </summary>
+    public async Task<KuroLauncherConfig?> GetLauncherConfigAsync(CancellationToken cancellationToken = default)
+    {
+        return await GetFromCdnAsync<KuroLauncherConfig>(
+            host => $"{host}/launcher/launcher/{APP_ID}_{APP_KEY}/{GAME_ID}/index.json",
             cancellationToken);
     }
 

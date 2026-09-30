@@ -1,8 +1,14 @@
 using Starward.Core.HoYoPlay;
 using Starward.Core.Launcher.Kuro;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Net;
+using System.Net.Http;
+using System.Text;
 using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace Starward.Core.Tests.Launcher;
@@ -10,7 +16,8 @@ namespace Starward.Core.Tests.Launcher;
 /// <summary>
 /// 鸣潮官方启动器的背景图配置。
 /// <para/>
-/// 全部离线：JSON 是照真实响应的形状手写的，不碰真实接口。
+/// 全部离线：JSON 是照真实响应的形状手写的，不碰真实接口；
+/// 走 HTTP 的测试用假的 <see cref="HttpMessageHandler"/>。
 /// </summary>
 public class KuroLauncherBackgroundTests
 {
@@ -176,6 +183,69 @@ public class KuroLauncherBackgroundTests
     public void GetLanguageCode_FallsBackToEnglishForUnsupportedLanguages()
     {
         Assert.Equal("en", KuroLauncherClient.GetLanguageCode(new CultureInfo("pl-PL")));
+    }
+
+
+
+    /// <summary>
+    /// 背景图路径里的令牌要取自启动器配置的 <c>functionCode.background</c>。
+    /// 官方随版本轮换这个令牌，而旧令牌的路径仍返回旧美术，写死就会停在旧版本上。
+    /// </summary>
+    [Fact]
+    public async Task GetBackgroundAsync_UsesTokenFromLauncherConfig()
+    {
+        var handler = new StubHandler(url => url switch
+        {
+            _ when url.EndsWith("/launcher/launcher/50004_obOHXFrFanqsaIEOmuKroCcbZkQRBC7c/G153/index.json")
+                => """{"functionCode":{"background":"newToken0001"}}""",
+            _ when url.Contains("/background/newToken0001/zh-Hant.json") => VideoJson,
+            _ => null,
+        });
+        var client = new KuroLauncherClient(new HttpClient(handler));
+
+        KuroLauncherBackground? background = await client.GetBackgroundAsync("zh-Hant");
+
+        Assert.NotNull(background);
+        Assert.Equal("https://example.invalid/launcher/clientUpload/video0001.mp4", background.BackgroundFile);
+    }
+
+
+    /// <summary>
+    /// 启动器配置取不到时退回内置令牌，而不是整个背景都不要了
+    /// </summary>
+    [Fact]
+    public async Task GetBackgroundAsync_FallsBackToBuiltInTokenWhenConfigUnavailable()
+    {
+        var handler = new StubHandler(url => url.Contains("/background/") ? VideoJson : null);
+        var client = new KuroLauncherClient(new HttpClient(handler));
+
+        KuroLauncherBackground? background = await client.GetBackgroundAsync("zh-Hant");
+
+        Assert.NotNull(background);
+        Assert.Contains(handler.Requests, x => x.Contains("/background/lv1emIbKHn38mW6zgxiFqU3Uw8nwstj6/"));
+    }
+
+
+    /// <summary>
+    /// 按网址回 JSON，回 null 的网址当 404
+    /// </summary>
+    private sealed class StubHandler(Func<string, string?> responder) : HttpMessageHandler
+    {
+        public List<string> Requests { get; } = [];
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            string url = request.RequestUri!.ToString();
+            lock (Requests)
+            {
+                Requests.Add(url);
+            }
+            string? json = responder(url);
+            var response = json is null
+                ? new HttpResponseMessage(HttpStatusCode.NotFound)
+                : new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(json, Encoding.UTF8, "application/json") };
+            return Task.FromResult(response);
+        }
     }
 
 }
