@@ -289,6 +289,17 @@ internal class KuroGameInstaller : IGameInstallVendor
         {
             throw new InvalidOperationException("Wuthering Waves download config has no CDN.");
         }
+        // 在已装好的游戏上变更分级，只有本机已是目标版本时才成立。版本不同时照做就是不打补丁地整包重下，
+        // 旧版本留下的 pak 也不会清掉；分级配置落后于旧版配置时（只装 HD 的已照旧版配置更新上去）
+        // 还会把共用文件盖回旧版本。界面只在已是最新版本时才开放，这里防它读到的版本信息过时。
+        if (context.Operation is GameInstallOperation.Install
+            && installed.Count > 0
+            && localVersion is not null
+            && !string.Equals(localVersion, targetVersion, StringComparison.OrdinalIgnoreCase)
+            && !installed.ToHashSet().SetEquals(tiers))
+        {
+            throw new InvalidOperationException(string.Format(CoreLang.KuroInstall_UpdateBeforeChangingResourceTiers, localVersion, targetVersion));
+        }
         stagingRoot = KuroDownloadPlanner.GetStagingDirectory(context.InstallPath, targetVersion);
 
         var packPlans = new List<KuroPackPlan>(configs.Count);

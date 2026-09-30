@@ -385,4 +385,7 @@
   <data name="KuroInstall_UnsupportedResourceTiers" xml:space="preserve">
     <value>Download data for these resource quality tiers is not available right now ({0}). Please try again later, or use the official launcher.</value>
   </data>
+  <data name="KuroInstall_UpdateBeforeChangingResourceTiers" xml:space="preserve">
+    <value>Update the game before changing the resource quality ({0} → {1}).</value>
+  </data>
 </root>

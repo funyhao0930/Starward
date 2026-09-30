@@ -596,8 +596,9 @@ public sealed partial class GameLauncherSettingDialog : ContentDialog
             _resourceTiers = tiers;
             _installedTiers = tierProvider.GetResourceTierState(CurrentGameKey, InstallPath).InstalledTiers;
             GamePackageState? state = await provider.GetStateAsync(CurrentGameKey, InstallPath);
-            // 3.7.0 以前的安装没有分级目录，更新上来才会有
-            _resourceTierBlockedReason = _installedTiers.Count == 0 || state?.UpdateAvailable is true
+            // 3.7.0 以前的安装没有分级目录，更新上来才会有。
+            // 读不到版本状态时也不开放：分不清是否最新，而版本落后时变更分级会整包重下
+            _resourceTierBlockedReason = _installedTiers.Count == 0 || state is not { UpdateAvailable: false }
                                        ? Lang.GameLauncherSettingDialog_UpdateBeforeChangingResourceTiers
                                        : null;
 

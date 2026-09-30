@@ -373,4 +373,7 @@
   <data name="KuroInstall_UnsupportedResourceTiers" xml:space="preserve">
     <value>目前无法获取这些资源等级的下载数据（{0}），请稍后再试，或改用官方启动器。</value>
   </data>
+  <data name="KuroInstall_UpdateBeforeChangingResourceTiers" xml:space="preserve">
+    <value>请先更新游戏，再变更资源等级（{0} → {1}）。</value>
+  </data>
 </root>

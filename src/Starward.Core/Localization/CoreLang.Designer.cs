@@ -860,5 +860,14 @@ namespace Starward.Core.Localization {
                 return ResourceManager.GetString("KuroInstall_UnsupportedResourceTiers", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   查找类似 Update the game before changing the resource quality ({0} → {1}). 的本地化字符串。
+        /// </summary>
+        public static string KuroInstall_UpdateBeforeChangingResourceTiers {
+            get {
+                return ResourceManager.GetString("KuroInstall_UpdateBeforeChangingResourceTiers", resourceCulture);
+            }
+        }
     }
 }

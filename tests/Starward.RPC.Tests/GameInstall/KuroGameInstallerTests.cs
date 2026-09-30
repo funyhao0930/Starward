@@ -389,6 +389,48 @@ public sealed class KuroGameInstallerTests : IDisposable
 
 
     /// <summary>
+    /// 本机不是目标版本时不能变更分级：照做就是不打补丁地整包重下，旧版本的 pak 也会留着。
+    /// 界面按缓存的版本信息放行，新版本刚上线时就会走到这里。
+    /// </summary>
+    [Fact]
+    public async Task Install_RefusesToChangeTiersWhenTheGameIsOutdated()
+    {
+        PublishLegacy("3.7.0");
+        PublishTiered("3.7.0");
+        await RunAsync(GameInstallOperation.Install);
+        PublishLegacy("3.7.1");
+        PublishTiered("3.7.1");
+        _cdn.Requests.Clear();
+
+        InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(() => RunAsync(GameInstallOperation.Install, "hd,sd"));
+
+        Assert.Contains("3.7.0", ex.Message, StringComparison.Ordinal);
+        Assert.Contains("3.7.1", ex.Message, StringComparison.Ordinal);
+        Assert.False(_cdn.WasRequested("zip/"));
+        Assert.False(TierFolderExists(SdPak));
+        Assert.Equal("3.7.0", LocalVersion());
+    }
+
+
+    /// <summary>
+    /// 分级配置落后于旧版配置时，只装 HD 的已照旧版配置更新上去，这时加装一档会把共用文件盖回旧版本
+    /// </summary>
+    [Fact]
+    public async Task Install_RefusesToAddATierFromAnOlderTieredIndex()
+    {
+        PublishLegacy("3.7.1");
+        PublishTiered("3.7.0");
+        await RunAsync(GameInstallOperation.Install);
+        Assert.Equal("3.7.1", LocalVersion());
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => RunAsync(GameInstallOperation.Install, "hd,sd"));
+
+        Assert.Equal("common 3.7.1", Read(CommonPak));
+        Assert.Equal("3.7.1", LocalVersion());
+    }
+
+
+    /// <summary>
     /// 要的分级只有分级配置给得了，而它读不到时要说清楚，不能照旧版配置装一份 HD 了事
     /// </summary>
     [Fact]
