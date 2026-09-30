@@ -93,7 +93,8 @@ internal class KuroDirDiffPatcher
             {
                 using var diffStream = new FileSliceStream(diffPath, header.HDiffDataOffset, header.HDiffDataSize);
                 using MultiFileStream newStream = MultiFileStream.Create(newRefFiles.Select(x => ToFullPath(workDir, x.Path)).ToList(), newRefFiles.Select(x => x.Size).ToList());
-                return HPatch.PatchZstandard(oldStream, diffStream, newStream);
+                // 不用 Snap.HPatch 自带的外壳：压缩段超过 2 GiB 时它会读不出数据（见 HPatchLarge）
+                return HPatchLarge.PatchZstandard(oldStream, diffStream, newStream);
             }
             finally
             {
