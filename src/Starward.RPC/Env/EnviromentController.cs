@@ -72,6 +72,7 @@ internal class EnviromentController : Env.EnvBase
             CultureInfo culture = string.IsNullOrWhiteSpace(language) ? CultureInfo.InstalledUICulture : new CultureInfo(language);
             CultureInfo.DefaultThreadCurrentUICulture = culture;
             CoreLang.Culture = culture;
+            _logger.LogInformation("Language: {language}", culture.Name);
         }
         catch (CultureNotFoundException ex)
         {
