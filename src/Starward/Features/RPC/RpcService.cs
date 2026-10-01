@@ -5,6 +5,7 @@ using Starward.RPC.Env;
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Globalization;
 using System.Threading.Tasks;
 
 namespace Starward.Features.RPC;
@@ -92,6 +93,7 @@ internal class RpcService
             ParentProcessId = Environment.ProcessId,
             KeepRunningOnExited = AppConfig.KeepRpcServerRunningInBackground,
             DownloadRateLimit = Math.Clamp(AppConfig.SpeedLimitKBPerSecond * 1024, 0, int.MaxValue),
+            Language = CultureInfo.CurrentUICulture.Name,
         }, deadline: DateTime.UtcNow.AddSeconds(3));
     }
 
@@ -109,6 +111,7 @@ internal class RpcService
                     ParentProcessId = Environment.ProcessId,
                     KeepRunningOnExited = AppConfig.KeepRpcServerRunningInBackground,
                     DownloadRateLimit = Math.Clamp(AppConfig.SpeedLimitKBPerSecond * 1024, 0, int.MaxValue),
+                    Language = CultureInfo.CurrentUICulture.Name,
                 }, deadline: DateTime.UtcNow.AddSeconds(3));
             }
         }
