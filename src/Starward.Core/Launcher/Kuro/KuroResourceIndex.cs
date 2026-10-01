@@ -118,6 +118,20 @@ public class KuroPredownloadMarker
     [JsonPropertyName("targetVersion")]
     public string TargetVersion { get; set; } = "";
 
+    /// <summary>
+    /// 照哪一份配置预下载的（<see cref="KuroDownloadSource"/> 的名称）。
+    /// 旧的标记没有这一项，视为不必比对。
+    /// </summary>
+    [JsonPropertyName("source")]
+    public string? Source { get; set; }
+
+    /// <summary>
+    /// 预下载时本机的分级，逗号分隔（<see cref="Games.Kuro.KuroResourceTier.Format"/>）。
+    /// 之后又加装了一档的话，更新会走另一份配置或多一个资源包，暂存的东西就不够了。
+    /// </summary>
+    [JsonPropertyName("tiers")]
+    public string? Tiers { get; set; }
+
 }
 
 

@@ -67,6 +67,37 @@ public class KuroResourceTierTests : IDisposable
     }
 
 
+    /// <summary>
+    /// 加装到一半的一档已经有下完的 pak，但还有未完成标记，不能当成装好了
+    /// </summary>
+    [Fact]
+    public void GetInstalledTiers_IgnoresTiersStillBeingAdded()
+    {
+        AddTier(KuroResourceTier.HD);
+        AddTier(KuroResourceTier.UHD);
+        File.WriteAllText(Path.Combine(GameDir, "Client", "Content", "UHD", KuroResourceTier.IncompleteMarkerFileName), "");
+
+        Assert.Equal([KuroResourceTier.HD], KuroResourceTier.GetInstalledTiers(GameDir));
+        Assert.Equal([KuroResourceTier.UHD], KuroResourceTier.GetIncompleteTiers(GameDir));
+    }
+
+
+    /// <summary>
+    /// 删到一半的分级目录已经改了名，不在分级目录里
+    /// </summary>
+    [Fact]
+    public void GetInstalledTiers_IgnoresFoldersBeingRemoved()
+    {
+        AddTier(KuroResourceTier.HD);
+        string sd = Path.Combine(GameDir, "Client", "Content", "SD" + KuroResourceTier.RemovingFolderSuffix);
+        Directory.CreateDirectory(sd);
+        File.WriteAllText(Path.Combine(sd, "pakchunk1-SD-WindowsNoEditor.pak"), "");
+
+        Assert.Equal([KuroResourceTier.HD], KuroResourceTier.GetInstalledTiers(GameDir));
+        Assert.Empty(KuroResourceTier.GetIncompleteTiers(GameDir));
+    }
+
+
     [Fact]
     public void GetInstalledTiers_ReturnsEmptyForMissingOrUnknownFolders()
     {

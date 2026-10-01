@@ -104,13 +104,17 @@ internal class KuroGameInstaller : IGameInstallVendor
         switch (context.Operation)
         {
             case GameInstallOperation.Install:
+                MarkTiersIncomplete(plan.AddedTiers, gameDir, true);
                 await DownloadFullAsync(context, plan, plan.Packs, gameDir, cancellationToken);
+                MarkTiersIncomplete(plan.AddedTiers, gameDir, false);
                 // 新的分级都装好了才删不要的：中途失败的话，至少还有原来那档能玩
                 DeleteRemovedTiers(plan, gameDir);
                 WriteLocalVersion(gameDir, plan.TargetVersion);
                 break;
             case GameInstallOperation.Repair:
                 await DownloadFullAsync(context, plan, plan.Packs, gameDir, cancellationToken);
+                // 全新安装中断后改按修复补完时，那一档还带着未完成标记；修完了就是装好了
+                MarkTiersIncomplete(plan.Tiers, gameDir, false);
                 DeleteRedundantFiles(plan, gameDir);
                 WriteLocalVersion(gameDir, plan.TargetVersion);
                 break;
@@ -120,12 +124,7 @@ internal class KuroGameInstaller : IGameInstallVendor
                 DeleteStaging(plan);
                 break;
             case GameInstallOperation.Predownload:
-                if (plan.Packs.All(x => x.Patch is null))
-                {
-                    // 界面只在有补丁时才开放预下载，走到这里说明补丁在两次查询之间没了
-                    throw new NotSupportedException("No patch is available for predownloading from the local version.");
-                }
-                await DownloadPatchAsync(context, plan, cancellationToken);
+                await DownloadPatchAsync(context, plan, gameDir, true, cancellationToken);
                 await WritePredownloadMarkerAsync(plan, cancellationToken);
                 break;
             default:
@@ -180,9 +179,16 @@ internal class KuroGameInstaller : IGameInstallVendor
         public required IReadOnlyList<string> Tiers { get; init; }
 
         /// <summary>
-        /// 安装（变更分级）时本机有、但不再要的分级，全部下载完之后删掉
+        /// 安装（变更分级）时本机有、但不再要的分级，全部下载完之后删掉。
+        /// 包括以前加装到一半、这次没有再选的。
         /// </summary>
         public IReadOnlyList<string> RemovedTiers { get; init; } = [];
+
+        /// <summary>
+        /// 安装时本机还没装好的分级（全新安装时就是全部）。下载前在目录里放未完成标记，装完才删；
+        /// 它们的文件就算大小对也要校验，可能是以前加装到一半、或更早版本留下来的
+        /// </summary>
+        public IReadOnlyList<string> AddedTiers { get; init; } = [];
 
         /// <summary>
         /// 在已是最新版本的游戏上变更分级：原有的文件大小对就算数，不再逐个算 MD5。
@@ -356,7 +362,10 @@ internal class KuroGameInstaller : IGameInstallVendor
             IntegrityChecks = integrityChecks,
             StagingRoot = stagingRoot,
             Tiers = tiers,
-            RemovedTiers = context.Operation is GameInstallOperation.Install ? installed.Except(tiers).ToList().AsReadOnly() : [],
+            RemovedTiers = context.Operation is GameInstallOperation.Install
+                         ? installed.Concat(KuroResourceTier.GetIncompleteTiers(gameDir)).Distinct().Except(tiers).ToList().AsReadOnly()
+                         : [],
+            AddedTiers = context.Operation is GameInstallOperation.Install ? tiers.Except(installed).ToList().AsReadOnly() : [],
             TrustExistingFiles = context.Operation is GameInstallOperation.Install
                                  && installed.Count > 0
                                  && string.Equals(localVersion, targetVersion, StringComparison.OrdinalIgnoreCase),
@@ -508,7 +517,9 @@ internal class KuroGameInstaller : IGameInstallVendor
         await Parallel.ForEachAsync(files, cancellationToken, async (item, token) =>
         {
             string path = KuroDirDiffPatcher.ToFullPath(gameDir, item.File.Dest);
-            if (plan.TrustExistingFiles && IsSameSize(path, item.File.Size))
+            if (plan.TrustExistingFiles
+                && !(KuroResourceTier.GetTierOfPath(item.File.Dest) is string tier && plan.AddedTiers.Contains(tier))
+                && IsSameSize(path, item.File.Size))
             {
                 Interlocked.Add(ref context._progress_DownloadFinishBytes, item.File.Size);
                 context.VerifiedFiles[path] = item.File.Size;
@@ -566,14 +577,31 @@ internal class KuroGameInstaller : IGameInstallVendor
     /// <summary>
     /// 下载每个资源包补丁清单里的东西到各自的暂存目录：差分包放 diff，普通文件放 files。
     /// 已经打完的差分包不再下载。
+    /// <para/>
+    /// 预下载时没有补丁的资源包也先下载一部分：本机没有、或大小不对的文件放进 files，
+    /// 正式更新按完整清单比对时会先收回它们（<see cref="UpdateByFullIndexAsync"/>）。
+    /// 大小相同的要算 MD5 才知道变了没有，那等于把整个游戏读一遍，留给正式更新。
+    /// 否则像 3.6.1 → 3.7.0 的 HD 包那样没有补丁时，预下载只拿到共用包的补丁，
+    /// 界面说预下载完成，正式更新时还要整包下载 45 GB。
     /// </summary>
-    private async Task DownloadPatchAsync(GameInstallContext context, KuroInstallPlan plan, CancellationToken cancellationToken)
+    private async Task DownloadPatchAsync(GameInstallContext context, KuroInstallPlan plan, string gameDir, bool predownload, CancellationToken cancellationToken)
     {
         var downloads = new List<(string Path, string Folder, KuroResourceFile File)>();
         foreach (KuroPackPlan pack in plan.Packs)
         {
             if (pack.Patch is not KuroPatchPlan patch)
             {
+                if (predownload)
+                {
+                    string stagedDir = Path.Combine(pack.StagingDir, FilesFolderName);
+                    foreach (KuroResourceFile file in pack.FullIndex.Resource)
+                    {
+                        if (!IsSameSize(KuroDirDiffPatcher.ToFullPath(gameDir, file.Dest), file.Size))
+                        {
+                            downloads.Add((KuroDirDiffPatcher.ToFullPath(stagedDir, file.Dest), pack.Config.BaseUrl!, file));
+                        }
+                    }
+                }
                 continue;
             }
             HashSet<string> applied = LoadJournal(pack);
@@ -592,6 +620,11 @@ internal class KuroGameInstaller : IGameInstallVendor
             }
         }
 
+        if (predownload && downloads.Count == 0 && plan.Packs.All(x => x.Patch is null))
+        {
+            // 界面只在有东西可下载时才开放预下载，走到这里说明补丁在两次查询之间没了
+            throw new NotSupportedException("Nothing is available for predownloading from the local version.");
+        }
         context.Progress_DownloadTotalBytes = downloads.Sum(x => x.File.Size);
         context.Progress_DownloadFinishBytes = 0;
         context.State = GameInstallState.Downloading;
@@ -623,7 +656,7 @@ internal class KuroGameInstaller : IGameInstallVendor
         List<KuroPackPlan> unpatched = plan.Packs.Where(x => x.Patch is null).ToList();
         if (patched.Count > 0)
         {
-            await DownloadPatchAsync(context, plan, cancellationToken);
+            await DownloadPatchAsync(context, plan, gameDir, false, cancellationToken);
             context.State = GameInstallState.Merging;
             context.Progress_Percent = 0;
             double totalBytes = Math.Max(1, patched.Sum(x => x.Patch!.Diffs.Sum(y => y.Group.DstFiles.Sum(z => z.Size))));
@@ -806,7 +839,13 @@ internal class KuroGameInstaller : IGameInstallVendor
     private async Task WritePredownloadMarkerAsync(KuroInstallPlan plan, CancellationToken cancellationToken)
     {
         Directory.CreateDirectory(plan.StagingRoot);
-        var marker = new KuroPredownloadMarker { LocalVersion = plan.LocalVersion ?? "", TargetVersion = plan.TargetVersion };
+        var marker = new KuroPredownloadMarker
+        {
+            LocalVersion = plan.LocalVersion ?? "",
+            TargetVersion = plan.TargetVersion,
+            Source = plan.Source.ToString(),
+            Tiers = KuroResourceTier.Format(plan.Tiers),
+        };
         await File.WriteAllTextAsync(Path.Combine(plan.StagingRoot, KuroDownloadPlanner.PredownloadMarkerFileName), JsonSerializer.Serialize(marker), cancellationToken);
         _logger.LogInformation("Wuthering Waves: predownload {local} -> {target} finished.", plan.LocalVersion, plan.TargetVersion);
     }
@@ -891,11 +930,41 @@ internal class KuroGameInstaller : IGameInstallVendor
 
 
     /// <summary>
+    /// 放上或拿掉这几档的未完成标记（<see cref="KuroResourceTier.IncompleteMarkerFileName"/>）。
+    /// 放上时目录不存在就先建：标记要在第一个 pak 下载完之前就在
+    /// </summary>
+    private void MarkTiersIncomplete(IReadOnlyList<string> tiers, string gameDir, bool incomplete)
+    {
+        foreach (string tier in tiers)
+        {
+            string dir = KuroDirDiffPatcher.ToFullPath(gameDir, KuroResourceTier.GetContentFolder(tier));
+            string marker = Path.Combine(dir, KuroResourceTier.IncompleteMarkerFileName);
+            if (incomplete)
+            {
+                Directory.CreateDirectory(dir);
+                File.WriteAllText(marker, "");
+            }
+            else if (File.Exists(marker))
+            {
+                File.Delete(marker);
+                _logger.LogInformation("Wuthering Waves: resource tier {tier} is complete.", tier);
+            }
+        }
+    }
+
+
+
+    /// <summary>
     /// 变更分级时删掉不要的那几档，整个 Client\Content\{分级} 目录。
     /// 只删认得的分级目录，而且一定不是这次要留下的。
+    /// <para/>
+    /// 先改名再删：直接删的话，删到一半遇到被占用的文件（防毒软件、开着的官方启动器）会留下
+    /// 一个还有几个 pak 的分级目录，看起来仍然装着，带着它的参数启动就会出错。
+    /// 改名失败时什么都没动，那一档仍是完整的；删到一半失败时剩下的不在分级目录里，下次再清。
     /// </summary>
     private void DeleteRemovedTiers(KuroInstallPlan plan, string gameDir)
     {
+        DeleteRemovingFolders(gameDir);
         foreach (string tier in plan.RemovedTiers)
         {
             if (plan.Tiers.Contains(tier) || KuroResourceTier.Normalize(tier) is not string normalized)
@@ -907,13 +976,47 @@ internal class KuroGameInstaller : IGameInstallVendor
             {
                 continue;
             }
-            foreach (string file in Directory.EnumerateFiles(dir, "*", SearchOption.AllDirectories))
-            {
-                File.SetAttributes(file, FileAttributes.Normal);
-            }
-            Directory.Delete(dir, true);
+            string removing = dir + KuroResourceTier.RemovingFolderSuffix;
+            Directory.Move(dir, removing);
+            DeleteDirectory(removing);
             _logger.LogInformation("Wuthering Waves: removed resource tier {tier} ({dir})", normalized, dir);
         }
+    }
+
+
+    /// <summary>
+    /// 清掉以前删到一半的分级目录（带 <see cref="KuroResourceTier.RemovingFolderSuffix"/> 的）
+    /// </summary>
+    private void DeleteRemovingFolders(string gameDir)
+    {
+        string content = Path.Combine(gameDir, "Client", "Content");
+        if (!Directory.Exists(content))
+        {
+            return;
+        }
+        foreach (string dir in Directory.EnumerateDirectories(content, "*" + KuroResourceTier.RemovingFolderSuffix).ToList())
+        {
+            try
+            {
+                DeleteDirectory(dir);
+                _logger.LogInformation("Wuthering Waves: deleted the leftover of a removed resource tier {dir}", dir);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                // 还删不掉就留到下次，不影响这次的分级
+                _logger.LogWarning(ex, "Delete the leftover of a removed resource tier {dir}", dir);
+            }
+        }
+    }
+
+
+    private static void DeleteDirectory(string dir)
+    {
+        foreach (string file in Directory.EnumerateFiles(dir, "*", SearchOption.AllDirectories))
+        {
+            File.SetAttributes(file, FileAttributes.Normal);
+        }
+        Directory.Delete(dir, true);
     }
 
 

@@ -1,3 +1,4 @@
+using Starward.Core.Games.Kuro;
 using System.Text.Json;
 
 namespace Starward.Core.Launcher.Kuro;
@@ -32,9 +33,11 @@ public static class KuroDownloadPlanner
 
     /// <summary>
     /// 预下载是否已经完成：标记存在，且记下的本机版本仍是现在的本机版本
-    /// （预下载之后又用官方启动器更新过的话，暂存的补丁就对不上了）
+    /// （预下载之后又用官方启动器更新过的话，暂存的补丁就对不上了）。
+    /// 给了 <paramref name="source"/> 与 <paramref name="tiers"/> 时也要与标记相同：
+    /// 预下载之后变更过分级，正式更新会走另一份配置或多出资源包，暂存的东西用不上或不够。
     /// </summary>
-    public static bool IsPredownloadFinished(string installPath, string localVersion, string targetVersion)
+    public static bool IsPredownloadFinished(string installPath, string localVersion, string targetVersion, KuroDownloadSource? source = null, IEnumerable<string>? tiers = null)
     {
         string path = Path.Combine(GetStagingDirectory(installPath, targetVersion), PredownloadMarkerFileName);
         if (!File.Exists(path))
@@ -46,7 +49,9 @@ public static class KuroDownloadPlanner
             KuroPredownloadMarker? marker = JsonSerializer.Deserialize(File.ReadAllText(path), KuroLauncherJsonContext.Default.KuroPredownloadMarker);
             return marker is not null
                 && string.Equals(marker.LocalVersion, localVersion, StringComparison.OrdinalIgnoreCase)
-                && string.Equals(marker.TargetVersion, targetVersion, StringComparison.OrdinalIgnoreCase);
+                && string.Equals(marker.TargetVersion, targetVersion, StringComparison.OrdinalIgnoreCase)
+                && (source is null || marker.Source is null || string.Equals(marker.Source, source.ToString(), StringComparison.OrdinalIgnoreCase))
+                && (tiers is null || marker.Tiers is null || string.Equals(KuroResourceTier.Format([marker.Tiers]), KuroResourceTier.Format(tiers), StringComparison.Ordinal));
         }
         catch (Exception ex) when (ex is JsonException or IOException)
         {

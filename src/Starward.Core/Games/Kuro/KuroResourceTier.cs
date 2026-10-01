@@ -39,6 +39,21 @@ public static class KuroResourceTier
 
 
     /// <summary>
+    /// Starward 加装一档时先在那一档的目录里放这个文件，全部下载完才删掉。
+    /// 有它的目录不算装好：中途暂停、失败或程序被关掉时，已经下完的 pak 会让目录看起来像装好了，
+    /// 带着那一档的参数启动，游戏会因为资源不全而出错。
+    /// </summary>
+    public const string IncompleteMarkerFileName = "starward_incomplete";
+
+
+    /// <summary>
+    /// 删除一档时先把目录改成这个后缀再删。改名是一步完成的，删到一半失败（文件被占用）时，
+    /// 剩下的东西也不在分级目录里，不会被当成还装着；下次再处理分级时顺手清掉。
+    /// </summary>
+    public const string RemovingFolderSuffix = ".starward_removing";
+
+
+    /// <summary>
     /// 启动参数里的分级，前面必须是开头或空白，免得把别的参数的一部分当成它
     /// </summary>
     private static readonly Regex LaunchArgumentRegex = new(@"(?:^|\s)-krqlv=(\S*)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
@@ -103,6 +118,7 @@ public static class KuroResourceTier
     /// <para/>
     /// 目录里至少要有一个 pak 才算：官方启动器切换或删除分级之后可能留下空目录，
     /// 这时带着那一档的参数启动，游戏会因为挂载不到任何资源而出错。
+    /// Starward 还没加装完的一档（目录里有 <see cref="IncompleteMarkerFileName"/>）也不算。
     /// </summary>
     /// <param name="gameDir">游戏目录，即官方启动器安装根目录下的 Wuthering Waves Game</param>
     public static IReadOnlyList<string> GetInstalledTiers(string? gameDir)
@@ -117,7 +133,9 @@ public static class KuroResourceTier
             try
             {
                 string dir = Path.Combine(gameDir, GetContentFolder(tier));
-                if (Directory.Exists(dir) && Directory.EnumerateFiles(dir, "*.pak").Any())
+                if (Directory.Exists(dir)
+                    && Directory.EnumerateFiles(dir, "*.pak").Any()
+                    && !File.Exists(Path.Combine(dir, IncompleteMarkerFileName)))
                 {
                     tiers.Add(tier);
                 }
@@ -125,6 +143,33 @@ public static class KuroResourceTier
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
                 // 读不到就当没装，最坏是退回默认的 HD，与分级功能上线前一样
+            }
+        }
+        return tiers.AsReadOnly();
+    }
+
+
+    /// <summary>
+    /// Starward 开始加装、还没装完的分级（目录里有 <see cref="IncompleteMarkerFileName"/>），画质从高到低
+    /// </summary>
+    public static IReadOnlyList<string> GetIncompleteTiers(string? gameDir)
+    {
+        if (string.IsNullOrWhiteSpace(gameDir))
+        {
+            return [];
+        }
+        var tiers = new List<string>(All.Count);
+        foreach (string tier in All)
+        {
+            try
+            {
+                if (File.Exists(Path.Combine(gameDir, GetContentFolder(tier), IncompleteMarkerFileName)))
+                {
+                    tiers.Add(tier);
+                }
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
             }
         }
         return tiers.AsReadOnly();

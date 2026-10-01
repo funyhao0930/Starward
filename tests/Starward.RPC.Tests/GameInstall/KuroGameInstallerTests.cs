@@ -170,12 +170,23 @@ public sealed class KuroGameInstallerTests : IDisposable
     /// <summary>
     /// 新启动器的分级配置
     /// </summary>
-    private void PublishTiered(string version, Dictionary<string, PlainPatch>? patches = null)
+    private void PublishTiered(string version, Dictionary<string, PlainPatch>? patches = null, string? predownloadVersion = null, Dictionary<string, PlainPatch>? predownloadPatches = null)
     {
         var resourcePacks = new JsonObject();
         foreach ((string name, (string Dest, string Content)[] files) in Packs(version))
         {
             resourcePacks[name] = PackConfig("tiered", version, name, files, patches?.GetValueOrDefault(name));
+        }
+        JsonObject? predownload = null;
+        if (predownloadVersion is not null)
+        {
+            // 线上还没见过分级配置的预下载，照安装器的假设：与顶层同形，没有 bundles 与 cdnList 时沿用顶层的
+            var predownloadPacks = new JsonObject();
+            foreach ((string name, (string Dest, string Content)[] files) in Packs(predownloadVersion))
+            {
+                predownloadPacks[name] = PackConfig("tiered", predownloadVersion, name, files, predownloadPatches?.GetValueOrDefault(name));
+            }
+            predownload = new JsonObject { ["resourcePacks"] = predownloadPacks };
         }
         AddJson(TieredIndexUrl, new JsonObject
         {
@@ -188,7 +199,7 @@ public sealed class KuroGameInstallerTests : IDisposable
                 ["UHD"] = new JsonObject { ["resourcePacks"] = Strings(["common", "uhd"]) },
             },
             ["config"] = new JsonObject { ["predownloadSwitch"] = 1, ["experiment"] = Experiment() },
-            ["predownload"] = null,
+            ["predownload"] = predownload,
         });
     }
 
@@ -385,6 +396,118 @@ public sealed class KuroGameInstallerTests : IDisposable
 
         Assert.Equal("hd 3.7.0", Read(HdPak));
         Assert.Contains(KuroResourceTier.HD, KuroResourceTier.GetInstalledTiers(GameDir));
+    }
+
+
+    /// <summary>
+    /// 加装中断时已经下完的 pak 留在目录里，但那一档不能算装好：
+    /// 否则启动页会列出它、带着它的参数启动，设置里也没法再加装一次
+    /// </summary>
+    [Fact]
+    public async Task Install_AnInterruptedTierDoesNotCountAsInstalled()
+    {
+        PublishLegacy("3.7.0");
+        PublishTiered("3.7.0");
+        await RunAsync(GameInstallOperation.Install);
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        _cdn.OnRequest = url =>
+        {
+            if (url.EndsWith(SdPak, StringComparison.Ordinal))
+            {
+                cts.Cancel();
+            }
+        };
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => RunAsync(GameInstallOperation.Install, "hd,sd", cts.Token));
+        // 当成这一档有个文件已经下完了，内容与大小相同的正确文件不一样
+        File.WriteAllText(PathOf(SdPak), "sd 3.7.X");
+
+        Assert.Equal([KuroResourceTier.HD], KuroResourceTier.GetInstalledTiers(GameDir));
+        Assert.Equal([KuroResourceTier.SD], KuroResourceTier.GetIncompleteTiers(GameDir));
+
+        // 再加装一次：这一档的文件不能只看大小就算数
+        _cdn.OnRequest = null;
+        await RunAsync(GameInstallOperation.Install, "hd,sd");
+
+        Assert.Equal("sd 3.7.0", Read(SdPak));
+        Assert.Equal([KuroResourceTier.HD, KuroResourceTier.SD], KuroResourceTier.GetInstalledTiers(GameDir));
+        Assert.Empty(KuroResourceTier.GetIncompleteTiers(GameDir));
+    }
+
+
+    /// <summary>
+    /// 全新安装中断后改按修复补完，那一档要算装好了，不能一直带着未完成标记
+    /// </summary>
+    [Fact]
+    public async Task Repair_FinishesAnInterruptedFreshInstall()
+    {
+        PublishLegacy("3.7.0");
+        PublishTiered("3.7.0");
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        _cdn.OnRequest = url =>
+        {
+            if (url.EndsWith(HdPak, StringComparison.Ordinal))
+            {
+                cts.Cancel();
+            }
+        };
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => RunAsync(GameInstallOperation.Install, null, cts.Token));
+        _cdn.OnRequest = null;
+        Assert.Equal([KuroResourceTier.HD], KuroResourceTier.GetIncompleteTiers(GameDir));
+
+        await RunAsync(GameInstallOperation.Repair);
+
+        Assert.Equal("hd 3.7.0", Read(HdPak));
+        Assert.Equal([KuroResourceTier.HD], KuroResourceTier.GetInstalledTiers(GameDir));
+        Assert.Empty(KuroResourceTier.GetIncompleteTiers(GameDir));
+    }
+
+
+    /// <summary>
+    /// 加装到一半、后来没有再选的那一档，变更分级时一起清掉，不留着占空间
+    /// </summary>
+    [Fact]
+    public async Task Install_RemovesAnAbandonedTier()
+    {
+        PublishLegacy("3.7.0");
+        PublishTiered("3.7.0");
+        await RunAsync(GameInstallOperation.Install);
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        _cdn.OnRequest = url =>
+        {
+            if (url.EndsWith(SdPak, StringComparison.Ordinal))
+            {
+                cts.Cancel();
+            }
+        };
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => RunAsync(GameInstallOperation.Install, "hd,sd", cts.Token));
+        _cdn.OnRequest = null;
+
+        await RunAsync(GameInstallOperation.Install, "hd");
+
+        Assert.False(TierFolderExists(SdPak));
+        Assert.Equal("hd 3.7.0", Read(HdPak));
+    }
+
+
+    /// <summary>
+    /// 删除分级是先改名再删；以前删到一半留下的目录，下次处理分级时清掉
+    /// </summary>
+    [Fact]
+    public async Task Install_RemovesTiersByRenamingFirstAndCleansUpLeftovers()
+    {
+        PublishLegacy("3.7.0");
+        PublishTiered("3.7.0");
+        await RunAsync(GameInstallOperation.Install, "hd,sd");
+        string leftover = Path.Combine(GameDir, "Client", "Content", "UHD" + KuroResourceTier.RemovingFolderSuffix);
+        Directory.CreateDirectory(leftover);
+        File.WriteAllText(Path.Combine(leftover, "pakchunk1-UHD-WindowsNoEditor.pak"), "");
+
+        await RunAsync(GameInstallOperation.Install, "hd");
+
+        Assert.False(TierFolderExists(SdPak));
+        Assert.False(Directory.Exists(Path.GetDirectoryName(PathOf(SdPak)) + KuroResourceTier.RemovingFolderSuffix));
+        Assert.False(Directory.Exists(leftover));
+        Assert.Equal([KuroResourceTier.HD], KuroResourceTier.GetInstalledTiers(GameDir));
     }
 
 
@@ -628,6 +751,60 @@ public sealed class KuroGameInstallerTests : IDisposable
         Assert.Equal("exe 3.8.0", Read(Exe));
         Assert.Equal(downloads, _cdn.CountRequests("legacy/3.8.0/zip/" + HdPak));
         Assert.Equal("3.8.0", LocalVersion());
+    }
+
+
+    /// <summary>
+    /// 没有补丁的资源包，预下载先把大小变了的文件放进暂存目录，正式更新时收回来，不再下载。
+    /// 否则预下载只拿到有补丁的那几个包，界面说完成了，正式更新还要整包下载。
+    /// 版本号多一位，新旧文件的大小才不一样。
+    /// </summary>
+    [Fact]
+    public async Task Predownload_StagesChangedFilesOfPacksWithoutAPatch()
+    {
+        PublishLegacy("3.7.0");
+        PublishTiered("3.7.0");
+        await RunAsync(GameInstallOperation.Install, "sd");
+        var commonPatch = new Dictionary<string, PlainPatch>
+        {
+            ["common"] = new PlainPatch("3.7.0", [(Exe, "exe 3.10.0"), (CommonPak, "common 3.10.0")], []),
+        };
+        PublishTiered("3.7.0", predownloadVersion: "3.10.0", predownloadPatches: commonPatch);
+
+        await RunAsync(GameInstallOperation.Predownload);
+
+        Assert.True(_cdn.WasRequested("tiered/3.10.0/zip/" + SdPak));
+        Assert.Equal("sd 3.7.0", Read(SdPak));
+        Assert.True(KuroDownloadPlanner.IsPredownloadFinished(_root, "3.7.0", "3.10.0", KuroDownloadSource.Tiered, [KuroResourceTier.SD]));
+
+        PublishTiered("3.10.0", patches: commonPatch);
+        int downloads = _cdn.CountRequests("tiered/3.10.0/zip/" + SdPak);
+        await RunAsync(GameInstallOperation.Update);
+
+        Assert.Equal("sd 3.10.0", Read(SdPak));
+        Assert.Equal("common 3.10.0", Read(CommonPak));
+        Assert.Equal(downloads, _cdn.CountRequests("tiered/3.10.0/zip/" + SdPak));
+        Assert.Equal("3.10.0", LocalVersion());
+    }
+
+
+    /// <summary>
+    /// 预下载之后变更了分级，正式更新会走另一份配置或多一个资源包，暂存的东西不够，不能再说预下载完成了
+    /// </summary>
+    [Fact]
+    public async Task Predownload_IsNoLongerFinishedAfterTheTiersChange()
+    {
+        PublishLegacy("3.7.0");
+        PublishTiered("3.7.0");
+        await RunAsync(GameInstallOperation.Install);
+        var patch = new PlainPatch("3.7.0", [(Exe, "exe 3.8.0"), (CommonPak, "common 3.8.0"), (HdPak, "hd 3.8.0")], []);
+        PublishLegacy("3.7.0", predownloadVersion: "3.8.0", predownloadPatch: patch);
+
+        await RunAsync(GameInstallOperation.Predownload);
+
+        Assert.True(KuroDownloadPlanner.IsPredownloadFinished(_root, "3.7.0", "3.8.0", KuroDownloadSource.Legacy, [KuroResourceTier.HD]));
+        Assert.False(KuroDownloadPlanner.IsPredownloadFinished(_root, "3.7.0", "3.8.0", KuroDownloadSource.Tiered, [KuroResourceTier.HD, KuroResourceTier.SD]));
+        Assert.False(KuroDownloadPlanner.IsPredownloadFinished(_root, "3.7.0", "3.8.0", KuroDownloadSource.Legacy, [KuroResourceTier.HD, KuroResourceTier.SD]));
     }
 
 
