@@ -154,14 +154,39 @@ public sealed partial class GameBannerAndPost : UserControl
 
 
 
+    // 与 xaml 里 Grid_BannerAndPost 的两行和行距一致
+    private const double BannerRowHeight = 176;
+
+    private const double PostRowHeight = 124;
+
+    private const double RowSpacing = 4;
+
+
     public bool ShowBannerAndPost
     {
         get => this.Opacity == 1;
         set
         {
-            if (value && Banners?.Count > 0 && PostGroups?.Count > 0)
+            bool hasBanners = Banners?.Count > 0;
+            bool hasPosts = PostGroups?.Count > 0;
+            if (value && (hasBanners || hasPosts))
             {
-                _bannerTimer.Start();
+                // 只有一样时收起另一列：横幅全都下架、或资讯读不到时，剩下的那一样照样显示。
+                // 控件靠下对齐，收起来是往下缩，不会留一块空白
+                Grid_BannerContainer.Visibility = hasBanners ? Visibility.Visible : Visibility.Collapsed;
+                Border_Post.Visibility = hasPosts ? Visibility.Visible : Visibility.Collapsed;
+                Grid_BannerAndPost.RowDefinitions[0].Height = new GridLength(hasBanners ? BannerRowHeight : 0);
+                Grid_BannerAndPost.RowDefinitions[1].Height = new GridLength(hasPosts ? PostRowHeight : 0);
+                Grid_BannerAndPost.RowSpacing = hasBanners && hasPosts ? RowSpacing : 0;
+                Grid_BannerAndPost.Height = (hasBanners ? BannerRowHeight : 0) + (hasPosts ? PostRowHeight : 0) + Grid_BannerAndPost.RowSpacing;
+                if (hasBanners)
+                {
+                    _bannerTimer.Start();
+                }
+                else
+                {
+                    _bannerTimer.Stop();
+                }
                 this.Opacity = 1;
                 this.IsHitTestVisible = true;
             }

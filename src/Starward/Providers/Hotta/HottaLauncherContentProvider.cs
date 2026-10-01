@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
 using Starward.Core.Games;
 using Starward.Core.Games.Hotta;
 using Starward.Core.HoYoPlay;
@@ -22,13 +23,16 @@ namespace Starward.Providers.Hotta;
 internal class HottaLauncherContentProvider : IGameLauncherContentProvider
 {
 
+    private readonly ILogger<HottaLauncherContentProvider> _logger;
+
     private readonly HottaLauncherClient _client;
 
     private readonly IMemoryCache _memoryCache;
 
 
-    public HottaLauncherContentProvider(HottaLauncherClient client, IMemoryCache memoryCache)
+    public HottaLauncherContentProvider(ILogger<HottaLauncherContentProvider> logger, HottaLauncherClient client, IMemoryCache memoryCache)
     {
+        _logger = logger;
         _client = client;
         _memoryCache = memoryCache;
     }
@@ -54,18 +58,45 @@ internal class HottaLauncherContentProvider : IGameLauncherContentProvider
         if (!_memoryCache.TryGetValue(cacheKey, out GameContent? content))
         {
             string website = HottaLauncherClient.TAIWAN_WEBSITE;
-            // 四个片段互不相干，一起抓
-            Task<List<HottaBanner>> bannerTask = _client.GetBannersAsync(website, cancellationToken);
-            Task<(string, List<HottaNewsItem>)[]> newsTask = Task.WhenAll(HottaContentMapper.NewsLists.Select(async x =>
-                (x.PostType, await _client.GetNewsAsync(website, x.Path, cancellationToken))));
+            // 四个片段互不相干，一起抓。各自失败各自略过：官网改版时某个分页 404，
+            // 不该连带横幅与其他分页一起不显示
+            Task<List<HottaBanner>?> bannerTask = TryGetAsync(() => _client.GetBannersAsync(website, cancellationToken), "banners", cancellationToken);
+            Task<(string PostType, List<HottaNewsItem>? Items)[]> newsTask = Task.WhenAll(HottaContentMapper.NewsLists.Select(async x =>
+                (x.PostType, await TryGetAsync(() => _client.GetNewsAsync(website, x.Path, cancellationToken), x.Path, cancellationToken))));
             await Task.WhenAll(bannerTask, newsTask);
-            content = HottaContentMapper.ToGameContent(bannerTask.Result, newsTask.Result, DateTimeOffset.Now);
+            List<HottaBanner>? banners = bannerTask.Result;
+            List<(string, List<HottaNewsItem>)> news = newsTask.Result.Where(x => x.Items is not null).Select(x => (x.PostType, x.Items!)).ToList();
+            if (banners is null && news.Count == 0)
+            {
+                // 全部失败多半是断网，不缓存，下次切回来再试
+                return null;
+            }
+            content = HottaContentMapper.ToGameContent(banners, news, DateTimeOffset.Now);
+            // 有片段失败时缓存短一些，免得一时的错误要等满一分钟才恢复
+            bool partial = banners is null || news.Count < HottaContentMapper.NewsLists.Count;
             if (content is not null)
             {
-                _memoryCache.Set(cacheKey, content, TimeSpan.FromMinutes(1));
+                _memoryCache.Set(cacheKey, content, partial ? TimeSpan.FromSeconds(10) : TimeSpan.FromMinutes(1));
             }
         }
         return content;
+    }
+
+
+    /// <summary>
+    /// 抓一个片段，失败时记下来并返回 null
+    /// </summary>
+    private async Task<T?> TryGetAsync<T>(Func<Task<T>> get, string name, CancellationToken cancellationToken) where T : class
+    {
+        try
+        {
+            return await get();
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
+        {
+            _logger.LogWarning(ex, "Get Neverness to Everness launcher content: {name}", name);
+            return null;
+        }
     }
 
 }

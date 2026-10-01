@@ -67,7 +67,7 @@
         </Grid>
 
         <!--  Post  -->
-        <Border Grid.Row="1">
+        <Border Name="Border_Post" Grid.Row="1">
             <Pivot ItemsSource="{x:Bind PostGroups}">
                 <Pivot.Resources>
                     <Thickness x:Key="PivotItemMargin">0,0,0,0</Thickness>
