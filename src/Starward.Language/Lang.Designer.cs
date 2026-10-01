@@ -3422,6 +3422,15 @@ namespace Starward.Language {
         }
         
         /// <summary>
+        ///   查找类似 Base resources 的本地化字符串。
+        /// </summary>
+        public static string GameResourcePage_BaseResources {
+            get {
+                return ResourceManager.GetString("GameResourcePage_BaseResources", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Diff Packages 的本地化字符串。
         /// </summary>
         public static string GameResourcePage_DiffPackages {
@@ -3445,6 +3454,15 @@ namespace Starward.Language {
         public static string GameResourcePage_LatestVersion {
             get {
                 return ResourceManager.GetString("GameResourcePage_LatestVersion", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Shared resources 的本地化字符串。
+        /// </summary>
+        public static string GameResourcePage_SharedResources {
+            get {
+                return ResourceManager.GetString("GameResourcePage_SharedResources", resourceCulture);
             }
         }
         

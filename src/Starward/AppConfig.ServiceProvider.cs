@@ -182,8 +182,15 @@ public static partial class AppConfig
             // 非米哈游游戏由 Starward 自己的下载器安装：这里只提供界面要的安装包信息，
             // 真正的下载在 RPC 进程里由各家的 IGameInstallVendor 完成
             sc.AddSingleton<GamePackageInfoProviderRegistry>();
-            sc.AddSingleton<IGamePackageInfoProvider, KuroPackageInfoProvider>();
-            sc.AddSingleton<IGamePackageInfoProvider, GryphlinePackageInfoProvider>();
+            // 游戏设置的「游戏资源包」页与安装共用同一个实例，线上配置只缓存一份
+            sc.AddSingleton<KuroPackageInfoProvider>();
+            sc.AddSingleton<IGamePackageInfoProvider>(sp => sp.GetRequiredService<KuroPackageInfoProvider>());
+            sc.AddSingleton<IGamePackageListProvider>(sp => sp.GetRequiredService<KuroPackageInfoProvider>());
+            sc.AddSingleton<GryphlinePackageInfoProvider>();
+            sc.AddSingleton<IGamePackageInfoProvider>(sp => sp.GetRequiredService<GryphlinePackageInfoProvider>());
+            sc.AddSingleton<IGamePackageListProvider>(sp => sp.GetRequiredService<GryphlinePackageInfoProvider>());
+            // 异环不由 Starward 安装，只列得出线上的版本
+            sc.AddSingleton<IGamePackageListProvider, HottaPackageListProvider>();
 
             sc.AddSingleton<GameAuthLoginService>();
             sc.AddSingleton<GameAccountService>();

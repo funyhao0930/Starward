@@ -24,7 +24,7 @@ namespace Starward.Providers.Kuro;
 /// 但也不能像 <see cref="KuroDiscoveryProvider"/> 那样整个工作阶段只问一次：
 /// 预下载与更新都是在 Starward 开着的时候上线的。
 /// </summary>
-internal class KuroPackageInfoProvider : IGamePackageInfoProvider
+internal class KuroPackageInfoProvider : IGamePackageInfoProvider, IGamePackageListProvider
 {
 
     private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(5);
@@ -143,6 +143,109 @@ internal class KuroPackageInfoProvider : IGamePackageInfoProvider
             PredownloadBytes = predownloadBytes,
             PredownloadFinished = predownloadFinished,
         };
+    }
+
+
+
+    /// <summary>
+    /// 分级配置的各个资源包，分级配置读不到或比旧版配置落后时改列旧版配置的整包（只有高画质）。
+    /// <para/>
+    /// 鸣潮是逐个文件下载的，没有整包文件：一个资源包就是一份文件清单（indexFile.json），
+    /// 复制的是清单的地址，MD5 也是清单的。差分包只列比整包省得多的补丁，
+    /// 更旧版本的补丁要下载的几乎就是整包，见 <see cref="KuroDownloadPlanner.SavesDownload"/>，
+    /// 全列出来是四十几组将近整包大小的重复。
+    /// </summary>
+    public async Task<GamePackageList?> GetPackageListAsync(GameKey key, string? installPath, CancellationToken cancellationToken = default)
+    {
+        (KuroLauncherGameIndex? index, KuroOfficialGameIndex? tiered) = await GetIndexesAsync(cancellationToken);
+        string? tieredVersion = KuroResourcePackPlanner.GetVersion(tiered?.ResourcePacks);
+        string? legacyVersion = index?.Default?.Config?.Version ?? index?.Default?.Version;
+        if (tiered?.ResourcePacks is { Count: > 0 } packs && tieredVersion is not null
+            && (legacyVersion is null || KuroResourcePackPlanner.CompareVersion(tieredVersion, legacyVersion) >= 0))
+        {
+            var list = new GamePackageList
+            {
+                LatestVersion = tieredVersion,
+                Latest = GetPackageGroups(packs, KuroDownloadPlanner.GetCdnBases(tiered.CdnList)),
+            };
+            if (tiered.Config?.PredownloadSwitch == 1
+                && KuroResourcePackPlanner.GetPredownload(tiered) is KuroOfficialPredownload predownload
+                && KuroResourcePackPlanner.GetVersion(predownload.ResourcePacks) is string predownloadVersion)
+            {
+                list = list with
+                {
+                    PredownloadVersion = predownloadVersion,
+                    Predownload = GetPackageGroups(predownload.ResourcePacks!, KuroDownloadPlanner.GetCdnBases(predownload.CdnList)),
+                };
+            }
+            return list;
+        }
+        if (index?.Default is KuroLauncherGameResource resource && resource.Config is KuroLauncherGameConfig config && legacyVersion is not null)
+        {
+            var list = new GamePackageList
+            {
+                LatestVersion = legacyVersion,
+                Latest = GetPackageGroups(new Dictionary<string, KuroLauncherGameConfig> { [KuroResourceTier.Default] = config },
+                                          KuroDownloadPlanner.GetCdnBases(index, resource)),
+            };
+            if (index.PredownloadSwitch == 1
+                && index.Predownload is KuroLauncherGameResource predownload
+                && predownload.Config is KuroLauncherGameConfig predownloadConfig
+                && (predownloadConfig.Version ?? predownload.Version) is string predownloadVersion)
+            {
+                list = list with
+                {
+                    PredownloadVersion = predownloadVersion,
+                    Predownload = GetPackageGroups(new Dictionary<string, KuroLauncherGameConfig> { [KuroResourceTier.Default] = predownloadConfig },
+                                                   KuroDownloadPlanner.GetCdnBases(index, predownload)),
+                };
+            }
+            return list;
+        }
+        return null;
+    }
+
+
+
+    /// <summary>
+    /// 完整包一组（每个资源包一项），差分包按旧版本各一组，新的在前
+    /// </summary>
+    private static List<GamePackageGroup> GetPackageGroups(IReadOnlyDictionary<string, KuroLauncherGameConfig> packs, IReadOnlyList<string> cdnBases)
+    {
+        string? cdn = cdnBases.FirstOrDefault();
+        // 共用包在前，分级照画质从高到低，与安装对话框的顺序一致
+        List<(string Name, KuroLauncherGameConfig Config)> ordered = packs.Select(x => (Name: x.Key, Config: x.Value))
+                                                                           .OrderBy(x => KuroResourceTier.Normalize(x.Name) is string tier ? 1 + KuroResourceTier.All.TakeWhile(t => t != tier).Count() : 0)
+                                                                           .ToList();
+        var groups = new List<GamePackageGroup>
+        {
+            new(ordered.Select(x => new GamePackageEntry(GetPackName(x.Name), x.Config.Size, x.Config.IndexFileMd5, GetUrl(cdn, x.Config.IndexFile))).ToList()),
+        };
+        IEnumerable<IGrouping<string, (string Name, KuroLauncherPatchConfig Patch)>> patches = ordered
+            .SelectMany(x => (x.Config.PatchConfig ?? []).Where(p => p.Version is not null && KuroDownloadPlanner.SavesDownload(x.Config, p))
+                                                         .Select(p => (x.Name, Patch: p)))
+            .GroupBy(x => x.Patch.Version!, StringComparer.OrdinalIgnoreCase)
+            .OrderByDescending(x => x.Key, Comparer<string>.Create(KuroResourcePackPlanner.CompareVersion));
+        foreach (IGrouping<string, (string Name, KuroLauncherPatchConfig Patch)> patch in patches)
+        {
+            groups.Add(new GamePackageGroup(patch.Select(x => new GamePackageEntry(GetPackName(x.Name), x.Patch.Size, x.Patch.IndexFileMd5, GetUrl(cdn, x.Patch.IndexFile))).ToList(),
+                                            patch.Key));
+        }
+        return groups;
+    }
+
+
+    private static string GetPackName(string name)
+    {
+        return KuroResourceTier.Normalize(name) is string tier ? GameResourceTierNames.Get(tier)
+             : string.Equals(name, "common", StringComparison.OrdinalIgnoreCase) ? Lang.GameResourcePage_SharedResources
+             : name;
+    }
+
+
+    private static string? GetUrl(string? cdn, string? path)
+    {
+        return cdn is null || string.IsNullOrWhiteSpace(path) ? null : KuroDownloadPlanner.Combine(cdn, path);
     }
 
 

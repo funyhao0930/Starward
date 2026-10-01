@@ -71,6 +71,40 @@ public class HottaLauncherClient
 
 
     /// <summary>
+    /// 游戏本体资源的线上版本，取自 PatcherSDK 的版本配置。主站不通就换备援，都取不到返回 null。
+    /// </summary>
+    /// <param name="versionConfigUrls">版本配置的地址，主站在前，见 <see cref="HottaPatcherConfig.GetVersionConfigUrls"/></param>
+    public async Task<HottaResourceVersion?> GetResourceVersionAsync(IReadOnlyList<string> versionConfigUrls, CancellationToken cancellationToken = default)
+    {
+        foreach (string url in versionConfigUrls)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            try
+            {
+                string xml = await _httpClient.GetStringAsync(url, cancellationToken);
+                if (HottaPatcherConfig.ParseVersionConfig(xml) is HottaResourceVersion version)
+                {
+                    return version;
+                }
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (HttpRequestException)
+            {
+                // 主站不通就换备援
+            }
+            catch (OperationCanceledException)
+            {
+                // HttpClient 自己超时抛的也是这个类型，同样换备援
+            }
+        }
+        return null;
+    }
+
+
+    /// <summary>
     /// 文件清单，取不到返回 null。
     /// <para/>
     /// 整份清单有上千个文件、三万多字节，因此在解析时就按 <paramref name="pathFilter"/> 筛。

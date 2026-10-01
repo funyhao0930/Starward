@@ -23,7 +23,7 @@ namespace Starward.Providers.Gryphline;
 /// <para/>
 /// 预下载不支持：pre_patch 还没有实际见过，不猜它的格式。
 /// </summary>
-internal class GryphlinePackageInfoProvider : IGamePackageInfoProvider
+internal class GryphlinePackageInfoProvider : IGamePackageInfoProvider, IGamePackageListProvider
 {
 
     private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(5);
@@ -111,6 +111,35 @@ internal class GryphlinePackageInfoProvider : IGamePackageInfoProvider
             // game_files 是最后才写的，缺了说明上次没装完，同样当作要更新（按文件比对会把缺的补齐）
             UpdateAvailable = !string.Equals(localMd5, remoteMd5, StringComparison.OrdinalIgnoreCase),
         };
+    }
+
+
+
+    /// <summary>
+    /// 整包的分卷，与官方启动器下载的是同一批文件。
+    /// 差分包要带本机版本号去问，而本机版本号是加密的，读不出来；预下载也还没见过，所以只有完整包。
+    /// </summary>
+    public async Task<GamePackageList?> GetPackageListAsync(GameKey key, string? installPath, CancellationToken cancellationToken = default)
+    {
+        GryphlineLatestGame? latest = await GetLatestGameAsync(cancellationToken);
+        if (latest?.Version is not string version || latest.Package?.Packs is not { Count: > 0 } packs)
+        {
+            return null;
+        }
+        List<GamePackageEntry> files = packs.Where(x => !string.IsNullOrWhiteSpace(x.Url))
+                                           .Select(x => new GamePackageEntry(GetFileName(x.Url!), x.Size, x.Md5, x.Url))
+                                           .ToList();
+        return new GamePackageList
+        {
+            LatestVersion = version,
+            Latest = [new GamePackageGroup(files)],
+        };
+    }
+
+
+    private static string GetFileName(string url)
+    {
+        return Uri.TryCreate(url, UriKind.Absolute, out Uri? uri) ? Path.GetFileName(uri.AbsolutePath) : Path.GetFileName(url);
     }
 
 

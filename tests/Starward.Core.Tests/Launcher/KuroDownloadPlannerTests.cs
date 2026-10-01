@@ -125,6 +125,31 @@ public class KuroDownloadPlannerTests
 
 
     /// <summary>
+    /// 游戏资源包页只把省得多的补丁当差分包：3.5.2 的差分与 3.6.0 的小热更新算，
+    /// 1.0.0 那份「哪些文件变了」的清单几乎是整包，不算——它的 baseUrl 指向 3.6.0 的完整文件目录，
+    /// 与本版完整包不同，所以不能拿 baseUrl 分辨；热更新反而与完整包同一个目录
+    /// </summary>
+    [Fact]
+    public void SavesDownload_ListsDiffsAndHotfixesButNotNearFullLists()
+    {
+        KuroLauncherGameConfig config = Index.Default!.Config!;
+        List<string?> listed = config.PatchConfig!.Where(x => KuroDownloadPlanner.SavesDownload(config, x)).Select(x => x.Version).ToList();
+
+        Assert.Equal(["3.5.2", "3.6.0"], listed);
+    }
+
+
+    [Fact]
+    public void SavesDownload_RejectsAPatchWithoutAnIndex()
+    {
+        KuroLauncherGameConfig config = Index.Default!.Config!;
+
+        Assert.False(KuroDownloadPlanner.SavesDownload(config, new KuroLauncherPatchConfig { Version = "3.6.0", BaseUrl = "zip/", Size = 100 }));
+        Assert.False(KuroDownloadPlanner.SavesDownload(config, new KuroLauncherPatchConfig { Version = "3.6.0", IndexFile = "a.json", BaseUrl = "zip/" }));
+    }
+
+
+    /// <summary>
     /// 差分包归差分，其余是普通文件；普通文件没写 fromFolder 时用补丁配置的 baseUrl
     /// </summary>
     [Fact]

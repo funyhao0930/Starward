@@ -1230,6 +1230,7 @@ public sealed partial class GameLauncherSettingDialog : ContentDialog
         {
             if (!IsHoYoPlayGame)
             {
+                await InitializeVendorGamePackagesAsync();
                 return;
             }
             var gamePackage = await _hoyoPlayService.GetGamePackageAsync(RequiredGameId);
@@ -1263,6 +1264,43 @@ public sealed partial class GameLauncherSettingDialog : ContentDialog
         {
             _logger.LogError(ex, "Get game resource failed, gameBiz: {gameBiz}", CurrentGameBiz);
         }
+    }
+
+
+
+    /// <summary>
+    /// 米哈游以外的游戏，资源包由各家的 <see cref="IGamePackageListProvider"/> 列出
+    /// </summary>
+    private async Task InitializeVendorGamePackagesAsync()
+    {
+        if (_packageInfoRegistry.GetListProvider(CurrentGameKey) is not IGamePackageListProvider provider
+            || await provider.GetPackageListAsync(CurrentGameKey, InstallPath) is not GamePackageList packages)
+        {
+            return;
+        }
+        LatestVersion = packages.LatestVersion;
+        LatestPackageGroups = GetVendorPackageGroups(packages.Latest);
+        if (!string.IsNullOrWhiteSpace(packages.PredownloadVersion))
+        {
+            PreInstallVersion = packages.PredownloadVersion;
+            PreInstallPackageGroups = GetVendorPackageGroups(packages.Predownload);
+        }
+    }
+
+
+    private static List<PackageGroup> GetVendorPackageGroups(IEnumerable<GamePackageGroup> groups)
+    {
+        return groups.Select(group => new PackageGroup
+        {
+            Name = group.FromVersion is null ? Lang.GameResourcePage_FullPackages : $"{Lang.GameResourcePage_DiffPackages}  {group.FromVersion}",
+            Items = group.Files.Select(file => new PackageItem
+            {
+                FileName = file.Name,
+                Url = string.IsNullOrWhiteSpace(file.Url) ? null : file.Url,
+                Md5 = string.IsNullOrWhiteSpace(file.Md5) ? null : file.Md5,
+                PackageSize = file.Size,
+            }).ToList(),
+        }).ToList();
     }
 
 
@@ -1410,6 +1448,11 @@ public sealed partial class GameLauncherSettingDialog : ContentDialog
         public string Name { get; set; }
 
         public List<PackageItem> Items { get; set; }
+
+        /// <summary>
+        /// 一个下载地址都没有时（异环只有版本与大小）不显示复制整组的按钮
+        /// </summary>
+        public Visibility CopyButtonVisibility => Items?.Any(x => !string.IsNullOrEmpty(x.Url)) is true ? Visibility.Visible : Visibility.Collapsed;
     }
 
 
@@ -1418,9 +1461,9 @@ public sealed partial class GameLauncherSettingDialog : ContentDialog
     {
         public string FileName { get; set; }
 
-        public string Url { get; set; }
+        public string? Url { get; set; }
 
-        public string Md5 { get; set; }
+        public string? Md5 { get; set; }
 
         public long PackageSize { get; set; }
 

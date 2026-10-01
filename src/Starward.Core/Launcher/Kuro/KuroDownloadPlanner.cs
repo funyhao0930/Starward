@@ -131,6 +131,24 @@ public static class KuroDownloadPlanner
 
 
     /// <summary>
+    /// 这个补丁比重新下载整包省得多，值得当成差分包列出来。
+    /// <para/>
+    /// patchConfig 收着从每个旧版本更新上来的补丁（3.7.0 时有 48 个），只有离得近的几个版本有差分或小的热更新；
+    /// 更旧的只是一份「哪些文件变了」的清单，要下载的就是完整包里的文件，
+    /// 3.7.0 时都在整包的 98% 以上。不能看 baseUrl 分辨：这种清单有时指回别的版本的完整文件目录，
+    /// 小的热更新反而与完整包同一个目录。
+    /// </summary>
+    public static bool SavesDownload(KuroLauncherGameConfig config, KuroLauncherPatchConfig patch)
+    {
+        if (string.IsNullOrWhiteSpace(patch.IndexFile) || string.IsNullOrWhiteSpace(patch.BaseUrl) || patch.Size <= 0)
+        {
+            return false;
+        }
+        return config.Size <= 0 || patch.Size < config.Size * 0.95;
+    }
+
+
+    /// <summary>
     /// 修复时要清理的目录。官方把它写成 JSON 字符串塞在实验开关里，解析失败就当没有。
     /// </summary>
     public static IReadOnlyList<KuroDirectoryIntegrityCheck> ParseDirectoryIntegrityChecks(string? json)
