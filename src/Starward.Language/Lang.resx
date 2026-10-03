@@ -1411,10 +1411,13 @@ Do you accept the risk and continue to use it?</value>
     <value>Diff Packages</value>
   </data>
   <data name="GameResourcePage_SharedResources" xml:space="preserve">
-    <value>Shared resources</value>
+    <value>Shared Resources</value>
   </data>
   <data name="GameResourcePage_BaseResources" xml:space="preserve">
-    <value>Base resources</value>
+    <value>Base Resources</value>
+  </data>
+  <data name="GameResourcePage_AdditionalResources" xml:space="preserve">
+    <value>Additional Resources</value>
   </data>
   <data name="SwitchClientPage_TheTowFoldersExistAtTheSameTime" xml:space="preserve">
     <value>The folders YuanShen_Data and GenshinImpact_Data cannot exist at the same time.</value>

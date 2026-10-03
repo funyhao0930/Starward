@@ -77,6 +77,18 @@ public class HottaPatcherConfigTests
 
 
     /// <summary>
+    /// 只认 [Patcher] 段里的 configPath：别的段落同名的键不算，键名不分大小写，路径可以有空格
+    /// </summary>
+    [Fact]
+    public void ParseConfigPath_IgnoresOtherSections()
+    {
+        Assert.Equal("/Res Files/PatcherConfig/",
+                     HottaPatcherConfig.ParseConfigPath("[Other]\r\nconfigPath=/Wrong/\r\n\r\n[Patcher]\r\nConfigPath = /Res Files/PatcherConfig/ \r\ndataPath=/UserData\r\n"));
+        Assert.Null(HottaPatcherConfig.ParseConfigPath("[Other]\nconfigPath=/Wrong/\n[Patcher]\ndataPath=/UserData\n[Next]\nconfigPath=/Wrong/"));
+    }
+
+
+    /// <summary>
     /// 地址整理成不带结尾斜杠，版本配置在 {资源地址}/{分支}/Version/Windows/config.xml，主站在前
     /// </summary>
     [Fact]
@@ -121,6 +133,28 @@ public class HottaPatcherConfigTests
         Assert.All(version.Tags.Skip(1), x => Assert.False(x.IsBase));
         Assert.Equal("0.101.3", version.Tags[1].Version);
         Assert.Equal(1755119671, version.Tags[1].Size);
+    }
+
+
+    /// <summary>
+    /// 附加资源照编号排，不是照字符串：pakchunk99 在 pakchunk100 前面
+    /// </summary>
+    [Fact]
+    public void ParseVersionConfig_SortsTagsByNumber()
+    {
+        HottaResourceVersion version = HottaPatcherConfig.ParseVersionConfig("""
+            <config>
+                <ResVersion>1.4.3</ResVersion>
+                <BaseVerson>
+                    <Res version="0.1000.1" Tag="pakchunk1000" ResSize="1"/>
+                    <Res version="0.100.1" Tag="pakchunk100" ResSize="1"/>
+                    <Res version="0.99.1" Tag="pakchunk99" ResSize="1"/>
+                    <Res version="0.101.1" Tag="pakchunk101" ResSize="1"/>
+                </BaseVerson>
+            </config>
+            """)!;
+
+        Assert.Equal(["pakchunk99", "pakchunk100", "pakchunk101", "pakchunk1000"], version.Tags.Select(x => x.Tag));
     }
 
 

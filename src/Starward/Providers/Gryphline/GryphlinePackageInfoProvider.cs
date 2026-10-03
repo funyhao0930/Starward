@@ -126,9 +126,11 @@ internal class GryphlinePackageInfoProvider : IGamePackageInfoProvider, IGamePac
         {
             return null;
         }
-        List<GamePackageEntry> files = packs.Where(x => !string.IsNullOrWhiteSpace(x.Url))
-                                           .Select(x => new GamePackageEntry(GetFileName(x.Url!), x.Size, x.Md5, x.Url))
-                                           .ToList();
+        // 分卷是同一个 zip 切开的，少一卷就组不回去：没有地址的那卷也照位置列出来（不能复制），不悄悄略过
+        List<GamePackageEntry> files = packs.Select((x, i) => string.IsNullOrWhiteSpace(x.Url)
+                                                ? new GamePackageEntry($"#{i + 1}", x.Size, x.Md5)
+                                                : new GamePackageEntry(GetFileName(x.Url), x.Size, x.Md5, x.Url))
+                                            .ToList();
         return new GamePackageList
         {
             LatestVersion = version,

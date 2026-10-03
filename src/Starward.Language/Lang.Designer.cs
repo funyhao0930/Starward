@@ -3422,7 +3422,16 @@ namespace Starward.Language {
         }
         
         /// <summary>
-        ///   查找类似 Base resources 的本地化字符串。
+        ///   查找类似 Additional Resources 的本地化字符串。
+        /// </summary>
+        public static string GameResourcePage_AdditionalResources {
+            get {
+                return ResourceManager.GetString("GameResourcePage_AdditionalResources", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 Base Resources 的本地化字符串。
         /// </summary>
         public static string GameResourcePage_BaseResources {
             get {
@@ -3458,7 +3467,7 @@ namespace Starward.Language {
         }
         
         /// <summary>
-        ///   查找类似 Shared resources 的本地化字符串。
+        ///   查找类似 Shared Resources 的本地化字符串。
         /// </summary>
         public static string GameResourcePage_SharedResources {
             get {

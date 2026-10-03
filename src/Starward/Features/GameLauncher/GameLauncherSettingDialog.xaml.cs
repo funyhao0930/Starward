@@ -23,6 +23,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Storage;
@@ -176,6 +177,7 @@ public sealed partial class GameLauncherSettingDialog : ContentDialog
 
     private void GameLauncherSettingDialog_Unloaded(object sender, RoutedEventArgs e)
     {
+        _unloadedCts.Cancel();
         LatestPackageGroups = null!;
         PreInstallPackageGroups = null!;
         FlipView_Settings.Items.Clear();
@@ -442,6 +444,8 @@ public sealed partial class GameLauncherSettingDialog : ContentDialog
                     {
                         await TryStopGameInstallTaskAsync();
                     }
+                    // 异环的资源地址读自安装目录里的配置，定位之后才查得到
+                    await InitializeGamePackagesAsync();
                 }
             }
         }
@@ -1222,6 +1226,12 @@ public sealed partial class GameLauncherSettingDialog : ContentDialog
     public List<PackageGroup> PreInstallPackageGroups { get; set => SetProperty(ref field, value); }
 
 
+    /// <summary>
+    /// 对话框关闭时取消还没回来的资源包查询，免得结果写回 Unloaded 已经清空的属性
+    /// </summary>
+    private readonly CancellationTokenSource _unloadedCts = new();
+
+
 
 
     private async Task InitializeGamePackagesAsync()
@@ -1260,6 +1270,10 @@ public sealed partial class GameLauncherSettingDialog : ContentDialog
                 PreInstallPackageGroups = GetGameResourcePackageGroups(gamePackage.PreDownload);
             }
         }
+        catch (OperationCanceledException) when (_unloadedCts.IsCancellationRequested)
+        {
+            // 对话框已经关了
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Get game resource failed, gameBiz: {gameBiz}", CurrentGameBiz);
@@ -1273,8 +1287,10 @@ public sealed partial class GameLauncherSettingDialog : ContentDialog
     /// </summary>
     private async Task InitializeVendorGamePackagesAsync()
     {
+        CancellationToken cancellationToken = _unloadedCts.Token;
         if (_packageInfoRegistry.GetListProvider(CurrentGameKey) is not IGamePackageListProvider provider
-            || await provider.GetPackageListAsync(CurrentGameKey, InstallPath) is not GamePackageList packages)
+            || await provider.GetPackageListAsync(CurrentGameKey, InstallPath, cancellationToken) is not GamePackageList packages
+            || cancellationToken.IsCancellationRequested)
         {
             return;
         }
@@ -1292,7 +1308,7 @@ public sealed partial class GameLauncherSettingDialog : ContentDialog
     {
         return groups.Select(group => new PackageGroup
         {
-            Name = group.FromVersion is null ? Lang.GameResourcePage_FullPackages : $"{Lang.GameResourcePage_DiffPackages}  {group.FromVersion}",
+            Name = group.Name ?? (group.FromVersion is null ? Lang.GameResourcePage_FullPackages : $"{Lang.GameResourcePage_DiffPackages}  {group.FromVersion}"),
             Items = group.Files.Select(file => new PackageItem
             {
                 FileName = file.Name,
@@ -1450,9 +1466,9 @@ public sealed partial class GameLauncherSettingDialog : ContentDialog
         public List<PackageItem> Items { get; set; }
 
         /// <summary>
-        /// 一个下载地址都没有时（异环只有版本与大小）不显示复制整组的按钮
+        /// 有项目没有下载地址时不显示复制整组的按钮：异环只有版本与大小，终末地缺一卷时复制出来的分卷也组不回去
         /// </summary>
-        public Visibility CopyButtonVisibility => Items?.Any(x => !string.IsNullOrEmpty(x.Url)) is true ? Visibility.Visible : Visibility.Collapsed;
+        public Visibility CopyButtonVisibility => Items is { Count: > 0 } && Items.All(x => !string.IsNullOrEmpty(x.Url)) ? Visibility.Visible : Visibility.Collapsed;
     }
 
 

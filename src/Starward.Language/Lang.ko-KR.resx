@@ -1410,6 +1410,15 @@
   <data name="GameResourcePage_DiffPackages" xml:space="preserve">
     <value>분할 패키지</value>
   </data>
+  <data name="GameResourcePage_SharedResources" xml:space="preserve">
+    <value>공용 리소스</value>
+  </data>
+  <data name="GameResourcePage_BaseResources" xml:space="preserve">
+    <value>기본 리소스</value>
+  </data>
+  <data name="GameResourcePage_AdditionalResources" xml:space="preserve">
+    <value>추가 리소스</value>
+  </data>
   <data name="SwitchClientPage_TheTowFoldersExistAtTheSameTime" xml:space="preserve">
     <value>YuanShen_Data 폴더와 GenshinImpact_Data 폴더는 동시에 존재할 수 없습니다.</value>
   </data>

@@ -56,7 +56,8 @@ public sealed record GamePackageList
 /// 一组资源包
 /// </summary>
 /// <param name="FromVersion">差分包是从哪个版本更新上来的，完整包为 null</param>
-public sealed record GamePackageGroup(IReadOnlyList<GamePackageEntry> Files, string? FromVersion = null);
+/// <param name="Name">组名，既不是完整包也不是差分包时给（例如异环按需下载的附加资源）；为 null 时按 <paramref name="FromVersion"/> 显示</param>
+public sealed record GamePackageGroup(IReadOnlyList<GamePackageEntry> Files, string? FromVersion = null, string? Name = null);
 
 
 /// <summary>

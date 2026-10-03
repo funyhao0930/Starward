@@ -139,12 +139,16 @@ public class KuroDownloadPlannerTests
     }
 
 
+    /// <summary>
+    /// 清单、baseUrl、大小缺一个都不算：安装器也不会用这种补丁
+    /// </summary>
     [Fact]
-    public void SavesDownload_RejectsAPatchWithoutAnIndex()
+    public void SavesDownload_RejectsAPatchWithoutIndexBaseUrlOrSize()
     {
         KuroLauncherGameConfig config = Index.Default!.Config!;
 
         Assert.False(KuroDownloadPlanner.SavesDownload(config, new KuroLauncherPatchConfig { Version = "3.6.0", BaseUrl = "zip/", Size = 100 }));
+        Assert.False(KuroDownloadPlanner.SavesDownload(config, new KuroLauncherPatchConfig { Version = "3.6.0", IndexFile = "a.json", Size = 100 }));
         Assert.False(KuroDownloadPlanner.SavesDownload(config, new KuroLauncherPatchConfig { Version = "3.6.0", IndexFile = "a.json", BaseUrl = "zip/" }));
     }
 

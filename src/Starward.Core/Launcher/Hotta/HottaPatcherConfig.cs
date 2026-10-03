@@ -20,9 +20,18 @@ public static class HottaPatcherConfig
 {
 
     /// <summary>
-    /// 外壳 Config.ini 里 PatcherSDK 的配置目录：<c>[Patcher] configPath=/ResFilesM/2000013/PatcherConfig/</c>，相对于外壳目录
+    /// 外壳 Config.ini 的 [Patcher] 段，到下一个段落为止。段名与键名都不分大小写，与 GetPrivateProfileString 一样
     /// </summary>
-    private static readonly Regex ConfigPathRegex = new(@"(?m)^[ \t]*configPath[ \t]*=[ \t]*(\S+)[ \t\r]*$", RegexOptions.Compiled);
+    private static readonly Regex PatcherSectionRegex = new(@"^[ \t]*\[Patcher\][ \t]*\r?$(.*?)(?=^[ \t]*\[|\z)",
+                                                            RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Multiline | RegexOptions.Singleline);
+
+    /// <summary>
+    /// [Patcher] 段里 PatcherSDK 的配置目录：<c>configPath=/ResFilesM/2000013/PatcherConfig/</c>，相对于外壳目录。路径里可以有空格
+    /// </summary>
+    private static readonly Regex ConfigPathRegex = new(@"^[ \t]*configPath[ \t]*=[ \t]*(.*?)[ \t\r]*$", RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Multiline);
+
+
+    private static readonly char[] Digits = "0123456789".ToCharArray();
 
 
     public const string SettingsFileName = "PatcherConfig.json";
@@ -35,7 +44,8 @@ public static class HottaPatcherConfig
 
 
     /// <summary>
-    /// 从外壳的 Config.ini 读出 PatcherSDK 配置目录（相对于外壳目录，以 / 开头），读不到返回 null
+    /// 从外壳的 Config.ini 读出 PatcherSDK 配置目录（相对于外壳目录，以 / 开头），读不到返回 null。
+    /// 只认 [Patcher] 段里的，别的段落同名的键不算
     /// </summary>
     public static string? ParseConfigPath(string? configIniText)
     {
@@ -43,8 +53,9 @@ public static class HottaPatcherConfig
         {
             return null;
         }
-        Match match = ConfigPathRegex.Match(configIniText);
-        return match.Success ? match.Groups[1].Value.Trim() : null;
+        Match section = PatcherSectionRegex.Match(configIniText);
+        Match match = section.Success ? ConfigPathRegex.Match(section.Groups[1].Value) : Match.Empty;
+        return match.Success && match.Groups[1].Value.Trim() is { Length: > 0 } value ? value : null;
     }
 
 
@@ -160,8 +171,13 @@ public static class HottaPatcherConfig
         {
             Version = version,
             Size = ParseLong(root.Element("ResSize")?.Value),
-            // 本体在前，其余照标签名排：官方是倒着列的（pakchunk104 在最前）
-            Tags = tags.OrderByDescending(x => x.IsBase).ThenBy(x => x.Tag, StringComparer.OrdinalIgnoreCase).ToList().AsReadOnly(),
+            // 本体在前，其余照标签名排：官方是倒着列的（pakchunk104 在最前）。
+            // 前缀相同时位数少的在前，pakchunk99 才不会排到 pakchunk100 后面
+            Tags = tags.OrderByDescending(x => x.IsBase)
+                       .ThenBy(x => x.Tag.TrimEnd(Digits), StringComparer.OrdinalIgnoreCase)
+                       .ThenBy(x => x.Tag.Length)
+                       .ThenBy(x => x.Tag, StringComparer.OrdinalIgnoreCase)
+                       .ToList().AsReadOnly(),
         };
     }
 

@@ -1409,6 +1409,15 @@
   <data name="GameResourcePage_DiffPackages" xml:space="preserve">
     <value>แพ็คเกจที่แตกต่าง</value>
   </data>
+  <data name="GameResourcePage_SharedResources" xml:space="preserve">
+    <value>ทรัพยากรที่ใช้ร่วมกัน</value>
+  </data>
+  <data name="GameResourcePage_BaseResources" xml:space="preserve">
+    <value>ทรัพยากรพื้นฐาน</value>
+  </data>
+  <data name="GameResourcePage_AdditionalResources" xml:space="preserve">
+    <value>ทรัพยากรเพิ่มเติม</value>
+  </data>
   <data name="SwitchClientPage_TheTowFoldersExistAtTheSameTime" xml:space="preserve">
     <value>โฟลเดอร์ YuanShen_Data และ GenshinImpact_Data ไม่สามารถมีอยู่พร้อมกันได้</value>
   </data>

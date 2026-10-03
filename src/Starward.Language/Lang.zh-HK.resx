@@ -1415,6 +1415,9 @@
   <data name="GameResourcePage_BaseResources" xml:space="preserve">
     <value>基礎資源</value>
   </data>
+  <data name="GameResourcePage_AdditionalResources" xml:space="preserve">
+    <value>附加資源</value>
+  </data>
   <data name="SwitchClientPage_TheTowFoldersExistAtTheSameTime" xml:space="preserve">
     <value>YuanShen_Data 與 GenshinImpact_Data 資料夾唔可以同時存在</value>
   </data>

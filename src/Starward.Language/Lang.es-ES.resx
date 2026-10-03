@@ -1410,6 +1410,15 @@ cerrar el programa durante la descompresión causará corrupciones en los archiv
   <data name="GameResourcePage_DiffPackages" xml:space="preserve">
     <value>Paquetes diferenciales</value>
   </data>
+  <data name="GameResourcePage_SharedResources" xml:space="preserve">
+    <value>Recursos compartidos</value>
+  </data>
+  <data name="GameResourcePage_BaseResources" xml:space="preserve">
+    <value>Recursos base</value>
+  </data>
+  <data name="GameResourcePage_AdditionalResources" xml:space="preserve">
+    <value>Recursos adicionales</value>
+  </data>
   <data name="SwitchClientPage_TheTowFoldersExistAtTheSameTime" xml:space="preserve">
     <value>Las carpetas YuanShen_Data y GenshinImpact_Data no pueden existir al mismo tiempo.</value>
   </data>

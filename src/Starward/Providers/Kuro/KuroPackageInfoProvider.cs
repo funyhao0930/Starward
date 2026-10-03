@@ -148,7 +148,9 @@ internal class KuroPackageInfoProvider : IGamePackageInfoProvider, IGamePackageL
 
 
     /// <summary>
-    /// 分级配置的各个资源包，分级配置读不到或比旧版配置落后时改列旧版配置的整包（只有高画质）。
+    /// 走哪一份配置与安装器相同（<see cref="KuroResourcePackPlanner.ChooseSource"/>，照本机装了的分级，没装按 HD）：
+    /// 只装 HD 时列旧版配置的整包（只有高画质）与它的补丁，也就是 Starward 实际会下载的；
+    /// 旧版配置读不到或落后、或牵涉极致与流畅时列分级配置的各个资源包。预下载另外照同一套规则选，与启动页一致。
     /// <para/>
     /// 鸣潮是逐个文件下载的，没有整包文件：一个资源包就是一份文件清单（indexFile.json），
     /// 复制的是清单的地址，MD5 也是清单的。差分包只列比整包省得多的补丁，
@@ -158,49 +160,27 @@ internal class KuroPackageInfoProvider : IGamePackageInfoProvider, IGamePackageL
     public async Task<GamePackageList?> GetPackageListAsync(GameKey key, string? installPath, CancellationToken cancellationToken = default)
     {
         (KuroLauncherGameIndex? index, KuroOfficialGameIndex? tiered) = await GetIndexesAsync(cancellationToken);
+        IReadOnlyList<string> installed = KuroResourceTier.GetInstalledTiers(installPath is null ? null : Path.Combine(installPath, KuroGameMapping.GameFolderName));
+        IReadOnlyList<string> tiers = installed.Count > 0 ? installed : [KuroResourceTier.Default];
         string? tieredVersion = KuroResourcePackPlanner.GetVersion(tiered?.ResourcePacks);
         string? legacyVersion = index?.Default?.Config?.Version ?? index?.Default?.Version;
         if (tiered?.ResourcePacks is { Count: > 0 } packs && tieredVersion is not null
-            && (legacyVersion is null || KuroResourcePackPlanner.CompareVersion(tieredVersion, legacyVersion) >= 0))
+            && (index?.Default?.Config is null || legacyVersion is null || KuroResourcePackPlanner.ChooseSource(tiers, legacyVersion, tieredVersion) is not KuroDownloadSource.Legacy))
         {
-            var list = new GamePackageList
+            return WithPredownload(new GamePackageList
             {
                 LatestVersion = tieredVersion,
                 Latest = GetPackageGroups(packs, KuroDownloadPlanner.GetCdnBases(tiered.CdnList)),
-            };
-            if (tiered.Config?.PredownloadSwitch == 1
-                && KuroResourcePackPlanner.GetPredownload(tiered) is KuroOfficialPredownload predownload
-                && KuroResourcePackPlanner.GetVersion(predownload.ResourcePacks) is string predownloadVersion)
-            {
-                list = list with
-                {
-                    PredownloadVersion = predownloadVersion,
-                    Predownload = GetPackageGroups(predownload.ResourcePacks!, KuroDownloadPlanner.GetCdnBases(predownload.CdnList)),
-                };
-            }
-            return list;
+            }, index, tiered, tiers);
         }
         if (index?.Default is KuroLauncherGameResource resource && resource.Config is KuroLauncherGameConfig config && legacyVersion is not null)
         {
-            var list = new GamePackageList
+            return WithPredownload(new GamePackageList
             {
                 LatestVersion = legacyVersion,
                 Latest = GetPackageGroups(new Dictionary<string, KuroLauncherGameConfig> { [KuroResourceTier.Default] = config },
                                           KuroDownloadPlanner.GetCdnBases(index, resource)),
-            };
-            if (index.PredownloadSwitch == 1
-                && index.Predownload is KuroLauncherGameResource predownload
-                && predownload.Config is KuroLauncherGameConfig predownloadConfig
-                && (predownloadConfig.Version ?? predownload.Version) is string predownloadVersion)
-            {
-                list = list with
-                {
-                    PredownloadVersion = predownloadVersion,
-                    Predownload = GetPackageGroups(new Dictionary<string, KuroLauncherGameConfig> { [KuroResourceTier.Default] = predownloadConfig },
-                                                   KuroDownloadPlanner.GetCdnBases(index, predownload)),
-                };
-            }
-            return list;
+            }, index, tiered, tiers);
         }
         return null;
     }
@@ -208,7 +188,34 @@ internal class KuroPackageInfoProvider : IGamePackageInfoProvider, IGamePackageL
 
 
     /// <summary>
-    /// 完整包一组（每个资源包一项），差分包按旧版本各一组，新的在前
+    /// 加上预下载。与最新版本分开选：两份配置的预下载各自上线，走哪一份照安装器的规则
+    /// </summary>
+    private static GamePackageList WithPredownload(GamePackageList list, KuroLauncherGameIndex? index, KuroOfficialGameIndex? tiered, IReadOnlyList<string> tiers)
+    {
+        return ChoosePredownload(index, tiered, tiers) switch
+        {
+            (KuroDownloadSource.Legacy, string version, KuroLauncherGameConfig config, _, _) => list with
+            {
+                PredownloadVersion = version,
+                Predownload = GetPackageGroups(new Dictionary<string, KuroLauncherGameConfig> { [KuroResourceTier.Default] = config },
+                                               KuroDownloadPlanner.GetCdnBases(index!, index!.Predownload!)),
+            },
+            // 预下载的 cdnList 是空数组时与安装器一样退回顶层的
+            (KuroDownloadSource.Tiered, string version, _, KuroOfficialPredownload predownload, _) => list with
+            {
+                PredownloadVersion = version,
+                Predownload = GetPackageGroups(predownload.ResourcePacks!,
+                                               KuroDownloadPlanner.GetCdnBases(predownload.CdnList is { Count: > 0 } ? predownload.CdnList : tiered!.CdnList)),
+            },
+            _ => list,
+        };
+    }
+
+
+
+    /// <summary>
+    /// 完整包一组（每个资源包一项），差分包按旧版本各一组，新的在前。
+    /// 差分组里没有省得多的补丁的资源包只能整包下载，也列进去并注明，一组就是从那个版本更新要下载的全部
     /// </summary>
     private static List<GamePackageGroup> GetPackageGroups(IReadOnlyDictionary<string, KuroLauncherGameConfig> packs, IReadOnlyList<string> cdnBases)
     {
@@ -221,15 +228,18 @@ internal class KuroPackageInfoProvider : IGamePackageInfoProvider, IGamePackageL
         {
             new(ordered.Select(x => new GamePackageEntry(GetPackName(x.Name), x.Config.Size, x.Config.IndexFileMd5, GetUrl(cdn, x.Config.IndexFile))).ToList()),
         };
-        IEnumerable<IGrouping<string, (string Name, KuroLauncherPatchConfig Patch)>> patches = ordered
-            .SelectMany(x => (x.Config.PatchConfig ?? []).Where(p => p.Version is not null && KuroDownloadPlanner.SavesDownload(x.Config, p))
-                                                         .Select(p => (x.Name, Patch: p)))
-            .GroupBy(x => x.Patch.Version!, StringComparer.OrdinalIgnoreCase)
-            .OrderByDescending(x => x.Key, Comparer<string>.Create(KuroResourcePackPlanner.CompareVersion));
-        foreach (IGrouping<string, (string Name, KuroLauncherPatchConfig Patch)> patch in patches)
+        IEnumerable<string> versions = ordered.SelectMany(x => (x.Config.PatchConfig ?? []).Where(p => p.Version is not null && KuroDownloadPlanner.SavesDownload(x.Config, p)))
+                                              .Select(p => p.Version!)
+                                              .Distinct(StringComparer.OrdinalIgnoreCase)
+                                              .OrderByDescending(x => x, Comparer<string>.Create(KuroResourcePackPlanner.CompareVersion));
+        foreach (string version in versions)
         {
-            groups.Add(new GamePackageGroup(patch.Select(x => new GamePackageEntry(GetPackName(x.Name), x.Patch.Size, x.Patch.IndexFileMd5, GetUrl(cdn, x.Patch.IndexFile))).ToList(),
-                                            patch.Key));
+            groups.Add(new GamePackageGroup(ordered.Select(x => (x.Config.PatchConfig ?? []).FirstOrDefault(p => string.Equals(p.Version, version, StringComparison.OrdinalIgnoreCase)
+                                                                                                             && KuroDownloadPlanner.SavesDownload(x.Config, p)) is KuroLauncherPatchConfig patch
+                                                       ? new GamePackageEntry(GetPackName(x.Name), patch.Size, patch.IndexFileMd5, GetUrl(cdn, patch.IndexFile))
+                                                       : new GamePackageEntry($"{GetPackName(x.Name)}  {Lang.GameResourcePage_FullPackages}", x.Config.Size, x.Config.IndexFileMd5, GetUrl(cdn, x.Config.IndexFile)))
+                                                   .ToList(),
+                                            version));
         }
         return groups;
     }
@@ -260,6 +270,32 @@ internal class KuroPackageInfoProvider : IGamePackageInfoProvider, IGamePackageL
     private static (string Version, long Bytes, KuroDownloadSource Source)? GetPredownload(KuroLauncherGameIndex? index, KuroOfficialGameIndex? tiered,
                                                                                          IReadOnlyList<string> tiers, IReadOnlyList<string> installed, string local)
     {
+        if (ChoosePredownload(index, tiered, tiers) is not (KuroDownloadSource source, string version, var legacyConfig, _, var packs))
+        {
+            return null;
+        }
+        long bytes = source switch
+        {
+            KuroDownloadSource.Legacy => KuroDownloadPlanner.FindPatch(legacyConfig!, local)?.Size ?? 0,
+            _ => packs!.Sum(x => KuroDownloadPlanner.FindPatch(x.Config, local)?.Size
+                                 ?? (KuroResourceTier.Normalize(x.Name) is string tier && !installed.Contains(tier) ? x.Config.Size : 0)),
+        };
+        if (bytes > 0 && KuroResourcePackPlanner.CompareVersion(version, local) > 0)
+        {
+            return (version, bytes, source);
+        }
+        return null;
+    }
+
+
+
+    /// <summary>
+    /// 两份配置里的预下载，照安装器的规则（<see cref="KuroResourcePackPlanner.ChooseSource"/>）选走哪一份，都没有返回 null。
+    /// 启动页的预下载按钮与游戏资源包页都照它，两边才不会一边有一边没有。
+    /// </summary>
+    private static (KuroDownloadSource Source, string Version, KuroLauncherGameConfig? Legacy, KuroOfficialPredownload? Tiered, IReadOnlyList<KuroResourcePack>? TieredPacks)?
+        ChoosePredownload(KuroLauncherGameIndex? index, KuroOfficialGameIndex? tiered, IReadOnlyList<string> tiers)
+    {
         KuroLauncherGameConfig? legacyConfig = index?.PredownloadSwitch == 1 && index.Predownload?.Config is { IndexFile.Length: > 0, BaseUrl.Length: > 0 } c ? c : null;
         string? legacyVersion = legacyConfig is null ? null : legacyConfig.Version ?? index!.Predownload!.Version;
 
@@ -267,19 +303,12 @@ internal class KuroPackageInfoProvider : IGamePackageInfoProvider, IGamePackageL
         IReadOnlyList<KuroResourcePack>? packs = predownload is null ? null : KuroResourcePackPlanner.GetPacks(predownload.ResourcePacks, predownload.Bundles, tiers);
         string? tieredVersion = packs is null ? null : KuroResourcePackPlanner.GetVersion(predownload!.ResourcePacks);
 
-        KuroDownloadSource? source = KuroResourcePackPlanner.ChooseSource(tiers, legacyVersion, tieredVersion);
-        (string? version, long bytes) = source switch
+        return KuroResourcePackPlanner.ChooseSource(tiers, legacyVersion, tieredVersion) switch
         {
-            KuroDownloadSource.Legacy => (legacyVersion, KuroDownloadPlanner.FindPatch(legacyConfig!, local)?.Size ?? 0),
-            KuroDownloadSource.Tiered => (tieredVersion, packs!.Sum(x => KuroDownloadPlanner.FindPatch(x.Config, local)?.Size
-                                                                        ?? (KuroResourceTier.Normalize(x.Name) is string tier && !installed.Contains(tier) ? x.Config.Size : 0))),
-            _ => (null, 0),
+            KuroDownloadSource.Legacy => (KuroDownloadSource.Legacy, legacyVersion!, legacyConfig, null, null),
+            KuroDownloadSource.Tiered => (KuroDownloadSource.Tiered, tieredVersion!, null, predownload, packs),
+            _ => null,
         };
-        if (source is KuroDownloadSource s && version is not null && bytes > 0 && KuroResourcePackPlanner.CompareVersion(version, local) > 0)
-        {
-            return (version, bytes, s);
-        }
-        return null;
     }
 
 

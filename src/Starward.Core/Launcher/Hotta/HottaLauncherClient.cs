@@ -71,36 +71,14 @@ public class HottaLauncherClient
 
 
     /// <summary>
-    /// 游戏本体资源的线上版本，取自 PatcherSDK 的版本配置。主站不通就换备援，都取不到返回 null。
+    /// 游戏本体资源的线上版本，取自 PatcherSDK 的版本配置。解析不出版本返回 null，请求失败照常抛出。
+    /// <para/>
+    /// 只问一个地址：主站与备援由调用方逐个尝试，每个地址各自计时、各自记下失败的原因。
     /// </summary>
-    /// <param name="versionConfigUrls">版本配置的地址，主站在前，见 <see cref="HottaPatcherConfig.GetVersionConfigUrls"/></param>
-    public async Task<HottaResourceVersion?> GetResourceVersionAsync(IReadOnlyList<string> versionConfigUrls, CancellationToken cancellationToken = default)
+    /// <param name="versionConfigUrl">版本配置的地址，见 <see cref="HottaPatcherConfig.GetVersionConfigUrls"/></param>
+    public async Task<HottaResourceVersion?> GetResourceVersionAsync(string versionConfigUrl, CancellationToken cancellationToken = default)
     {
-        foreach (string url in versionConfigUrls)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            try
-            {
-                string xml = await _httpClient.GetStringAsync(url, cancellationToken);
-                if (HottaPatcherConfig.ParseVersionConfig(xml) is HottaResourceVersion version)
-                {
-                    return version;
-                }
-            }
-            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-            {
-                throw;
-            }
-            catch (HttpRequestException)
-            {
-                // 主站不通就换备援
-            }
-            catch (OperationCanceledException)
-            {
-                // HttpClient 自己超时抛的也是这个类型，同样换备援
-            }
-        }
-        return null;
+        return HottaPatcherConfig.ParseVersionConfig(await _httpClient.GetStringAsync(versionConfigUrl, cancellationToken));
     }
 
 

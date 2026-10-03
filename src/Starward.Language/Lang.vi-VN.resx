@@ -1410,6 +1410,15 @@ Bạn có chấp nhận rủi ro và tiếp tục?</value>
   <data name="GameResourcePage_DiffPackages" xml:space="preserve">
     <value>Gói khác</value>
   </data>
+  <data name="GameResourcePage_SharedResources" xml:space="preserve">
+    <value>Tài nguyên dùng chung</value>
+  </data>
+  <data name="GameResourcePage_BaseResources" xml:space="preserve">
+    <value>Tài nguyên cơ bản</value>
+  </data>
+  <data name="GameResourcePage_AdditionalResources" xml:space="preserve">
+    <value>Tài nguyên bổ sung</value>
+  </data>
   <data name="SwitchClientPage_TheTowFoldersExistAtTheSameTime" xml:space="preserve">
     <value>Thư mục YuanShen_Data và GenshinImpact_Data cùng tồn tại.</value>
   </data>
