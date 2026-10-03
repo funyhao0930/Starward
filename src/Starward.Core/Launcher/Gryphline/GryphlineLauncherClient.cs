@@ -28,6 +28,30 @@ public class GryphlineLauncherClient
 
 
     /// <summary>
+    /// 游戏内公告的接口，与启动器不在同一个域名上
+    /// </summary>
+    private const string API_BULLETIN = "https://game-hub.gryphline.com/bulletin/v2/aggregate";
+
+
+    /// <summary>
+    /// 国际服游戏内公告的标识。国服是另一个（<c>endfield_5SD9TN</c>，域名也不同）。
+    /// </summary>
+    private const string ENDFIELD_BULLETIN_CODE = "endfield_U35PW8";
+
+
+    /// <summary>
+    /// 国际服亚洲服的公告分组。两组的活动时间按各自的时区写（UTC+8 与 UTC-5），
+    /// 版本说明也是两篇，不能混用。
+    /// </summary>
+    public const string BULLETIN_SERVER_ASIA = "2";
+
+    /// <summary>
+    /// 国际服美洲 / 欧洲服的公告分组
+    /// </summary>
+    public const string BULLETIN_SERVER_AMERICAS_EUROPE = "3";
+
+
+    /// <summary>
     /// 国际服 GRYPHLINK 启动器自己的标识。
     /// 启动器的构建路径里就写着它（<c>publish-launcher-184\TiaytKBUIEdoEwRT\1.6.0.1607</c>）。
     /// </summary>
@@ -188,6 +212,73 @@ public class GryphlineLauncherClient
         };
         GryphlineBatchProxyResponse? result = await PostAsync(request, cancellationToken);
         return (Find(result, KIND_BANNER)?.BannerResponse, Find(result, KIND_ANNOUNCEMENT)?.AnnouncementResponse);
+    }
+
+
+    /// <summary>
+    /// 游戏内公告，连正文一起。接口回报失败时抛出。
+    /// <para/>
+    /// 与启动器首页的公告（<see cref="KIND_ANNOUNCEMENT"/>）不是同一份：那边只有标题和外链，
+    /// 这边是游戏里那块公告窗口的内容。渠道留默认（<c>#DEFAULT</c>）就是官方渠道的公告。
+    /// </summary>
+    /// <param name="language">完整地区语言代码，见 <see cref="GetLanguageCode"/></param>
+    /// <param name="server">公告分组，见 <see cref="BULLETIN_SERVER_ASIA"/> 与 <see cref="GetBulletinServer"/></param>
+    public async Task<GryphlineBulletinData?> GetBulletinAsync(string language, string server, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(language))
+        {
+            language = DEFAULT_LANGUAGE;
+        }
+        string url = $"{API_BULLETIN}?lang={Uri.EscapeDataString(language)}&platform=Windows&channel={GLOBAL_OFFICIAL_CHANNEL}&type=0"
+                   + $"&code={ENDFIELD_BULLETIN_CODE}&hideDetail=0&server={Uri.EscapeDataString(server)}";
+        var response = await _httpClient.GetFromJsonAsync(url, typeof(GryphlineBulletinResponse), GryphlineLauncherJsonContext.Default, cancellationToken) as GryphlineBulletinResponse;
+        if (response is null)
+        {
+            return null;
+        }
+        if (response.Code is not 0)
+        {
+            throw new HttpRequestException($"Endfield bulletin returned {response.Code}: {response.Message}");
+        }
+        return response.Data;
+    }
+
+
+    /// <summary>
+    /// 游戏内公告窗口打开的官方网页，与游戏里显示的完全相同。
+    /// <para/>
+    /// 地址取自游戏内建浏览器的磁盘缓存（<c>%LOCALAPPDATA%\PlatformProcess\Cache</c>），
+    /// 游戏还会带上登录用的 <c>u8_token</c>，但公告不需要登录，不带也能完整显示。
+    /// 登录前的那一版是 <c>gate_bulletin</c>。
+    /// </summary>
+    /// <param name="language">完整地区语言代码，见 <see cref="GetLanguageCode"/></param>
+    /// <param name="server">公告分组，见 <see cref="GetBulletinServer"/></param>
+    public static string GetBulletinPageUrl(string language, string server)
+    {
+        if (string.IsNullOrWhiteSpace(language))
+        {
+            language = DEFAULT_LANGUAGE;
+        }
+        return $"{BULLETIN_PAGE}?platform=Windows&channel={GLOBAL_OFFICIAL_CHANNEL}&subChannel={GLOBAL_OFFICIAL_CHANNEL}"
+             + $"&lang={Uri.EscapeDataString(language)}&server={Uri.EscapeDataString(server)}";
+    }
+
+
+    /// <summary>
+    /// 游戏内公告网页
+    /// </summary>
+    public const string BULLETIN_PAGE = "https://ef-webview.gryphline.com/page/game_bulletin";
+
+
+    /// <summary>
+    /// 按本机时区猜玩家在哪一服。
+    /// <para/>
+    /// 玩的是哪一服只有登录后的角色才知道，而公告不需要登录；亚洲服写的是 UTC+8，
+    /// 美洲 / 欧洲服写的是 UTC-5，以 UTC+4 为界分开，与玩家按地区选服的习惯一致。
+    /// </summary>
+    public static string GetBulletinServer(TimeSpan utcOffset)
+    {
+        return utcOffset >= TimeSpan.FromHours(4) ? BULLETIN_SERVER_ASIA : BULLETIN_SERVER_AMERICAS_EUROPE;
     }
 
 

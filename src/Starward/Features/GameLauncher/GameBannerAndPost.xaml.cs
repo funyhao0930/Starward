@@ -37,6 +37,9 @@ public sealed partial class GameBannerAndPost : UserControl
     private readonly GameNoticeService _gameNoticeService = AppConfig.GetService<GameNoticeService>();
 
 
+    private readonly GameNoticeProviderRegistry _gameNoticeRegistry = AppConfig.GetService<GameNoticeProviderRegistry>();
+
+
     /// <summary>
     /// 横幅与资讯由供应商提供，本控件不认识具体是哪款游戏
     /// </summary>
@@ -236,7 +239,8 @@ public sealed partial class GameBannerAndPost : UserControl
     {
         try
         {
-            if (GameFeatureConfig.FromGameKey(CurrentGameKey).InGameNoticesWindow)
+            bool hoyoNotices = IsHoYoGameNotices();
+            if (hoyoNotices || _gameNoticeRegistry.Supports(CurrentGameKey))
             {
                 Button_InGameNotices.Visibility = Visibility.Visible;
             }
@@ -249,9 +253,13 @@ public sealed partial class GameBannerAndPost : UserControl
             {
                 IsGameNoticesAlert = false;
             }
-            else
+            else if (hoyoNotices)
             {
                 IsGameNoticesAlert = await _gameNoticeService.IsNoticeAlertAsync(CurrentGameId!.GameBiz);
+            }
+            else
+            {
+                IsGameNoticesAlert = await _gameNoticeRegistry.HasUnreadAsync(CurrentGameKey);
             }
         }
         catch (Exception ex)
@@ -349,18 +357,53 @@ public sealed partial class GameBannerAndPost : UserControl
     {
         try
         {
-            // 按钮只在有游戏内通知能力时显示，这里再挡一次以防被其他方式触发
-            if (CurrentGameId is null)
+            nint parentWindowHandle = (nint)this.XamlRoot.ContentIslandEnvironment.AppWindowId.Value;
+            // 按钮只在有游戏内通知时显示，这里再挡一次以防被其他方式触发
+            if (IsHoYoGameNotices())
             {
-                return;
+                new GameNoticeWindow
+                {
+                    CurrentGameBiz = CurrentGameId!.GameBiz,
+                    ParentWindowHandle = parentWindowHandle,
+                }.Activate();
             }
-            new GameNoticeWindow
+            else if (GryphlineBulletinWindow.Supports(CurrentGameKey))
             {
-                CurrentGameBiz = CurrentGameId.GameBiz,
-                ParentWindowHandle = (nint)this.XamlRoot.ContentIslandEnvironment.AppWindowId.Value
-            }.Activate();
+                // 终末地的游戏内公告本身是网页，直接嵌入；官方网页打不开时退回自己画的公告板
+                GameKey key = CurrentGameKey;
+                new GryphlineBulletinWindow
+                {
+                    CurrentGameKey = key,
+                    ParentWindowHandle = parentWindowHandle,
+                    Fallback = () => new VendorNoticeWindow
+                    {
+                        CurrentGameKey = key,
+                        ParentWindowHandle = parentWindowHandle,
+                    }.Activate(),
+                }.Activate();
+            }
+            else if (_gameNoticeRegistry.Supports(CurrentGameKey))
+            {
+                new VendorNoticeWindow
+                {
+                    CurrentGameKey = CurrentGameKey,
+                    ParentWindowHandle = parentWindowHandle,
+                }.Activate();
+            }
         }
-        catch { }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Open game notice window ({key})", CurrentGameKey);
+        }
+    }
+
+
+    /// <summary>
+    /// 米哈游的游戏内公告是官方网页，要用 HoYoPlay 的游戏标识；其他游戏走 <see cref="GameNoticeProviderRegistry"/>
+    /// </summary>
+    private bool IsHoYoGameNotices()
+    {
+        return CurrentGameId is not null && GameFeatureConfig.FromGameKey(CurrentGameKey).InGameNoticesWindow;
     }
 
 

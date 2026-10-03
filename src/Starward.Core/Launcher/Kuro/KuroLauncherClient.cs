@@ -68,6 +68,24 @@ public class KuroLauncherClient
     private static readonly string[] Hosts = [CDN_PRIMARY, CDN_BACKUP];
 
 
+    /// <summary>
+    /// 游戏内公告的 CDN，主站在前。游戏 SDK 初始化公告时给的是第一个，
+    /// 后两个取自清单里每则公告的 <c>contentPrefix</c>，同一份清单三处都有。
+    /// </summary>
+    private static readonly string[] NoticeHosts =
+    [
+        "https://aki-gm-resources-back.aki-game.net",
+        "https://aki-gm-resources-back-aws.aki-game.net",
+        "https://aki-gm-res-back-akamai.aki-game.net",
+    ];
+
+
+    /// <summary>
+    /// 国际服游戏内公告的服务器标识，取自游戏 SDK 初始化公告网页时的 <c>serverId</c>
+    /// </summary>
+    private const string NOTICE_SERVER_ID = "6eb2a235b30d05efd77bedb5cf60999e";
+
+
     private readonly HttpClient _httpClient;
 
 
@@ -236,6 +254,39 @@ public class KuroLauncherClient
     public async Task<KuroResourceIndex?> GetResourceIndexAsync(IReadOnlyList<string> cdnBases, string relativePath, CancellationToken cancellationToken = default)
     {
         return await GetFromCdnAsync<KuroResourceIndex>(cdnBases, host => KuroDownloadPlanner.Combine(host, relativePath), cancellationToken);
+    }
+
+
+    /// <summary>
+    /// 游戏内公告的清单。与启动器配置不在同一组 CDN 上。
+    /// </summary>
+    public async Task<KuroGameNoticeList?> GetGameNoticeListAsync(CancellationToken cancellationToken = default)
+    {
+        return await GetFromCdnAsync<KuroGameNoticeList>(NoticeHosts,
+            host => $"{host}/gamenotice/{GAME_ID}/{NOTICE_SERVER_ID}/notice.json",
+            cancellationToken);
+    }
+
+
+    /// <summary>
+    /// 一则游戏内公告的正文。这种语言没有时退回英文。
+    /// </summary>
+    /// <param name="contentPrefixes">取自 <see cref="KuroGameNotice.ContentPrefix"/>，主站在前</param>
+    /// <param name="language">官方启动器的语言代码，见 <see cref="GetLanguageCode"/></param>
+    public async Task<KuroGameNoticeContent?> GetGameNoticeContentAsync(IReadOnlyList<string> contentPrefixes, string language, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(language))
+        {
+            language = DEFAULT_LANGUAGE;
+        }
+        try
+        {
+            return await GetFromCdnAsync<KuroGameNoticeContent>(contentPrefixes, prefix => $"{prefix.TrimEnd('/')}/{language}.json", cancellationToken);
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode is HttpStatusCode.NotFound && language != DEFAULT_LANGUAGE)
+        {
+            return await GetFromCdnAsync<KuroGameNoticeContent>(contentPrefixes, prefix => $"{prefix.TrimEnd('/')}/{DEFAULT_LANGUAGE}.json", cancellationToken);
+        }
     }
 
 

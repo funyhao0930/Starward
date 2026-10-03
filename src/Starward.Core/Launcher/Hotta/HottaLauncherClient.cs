@@ -141,6 +141,17 @@ public class HottaLauncherClient
 
 
     /// <summary>
+    /// 官网一篇文章的正文 HTML，认不出正文时返回 null
+    /// </summary>
+    /// <param name="url">文章地址，取自 <see cref="HottaNewsItem.Link"/></param>
+    public async Task<string?> GetArticleContentAsync(string url, CancellationToken cancellationToken = default)
+    {
+        string html = await _httpClient.GetStringAsync(url, cancellationToken);
+        return HottaContentMapper.ParseArticleContent(html);
+    }
+
+
+    /// <summary>
     /// 下载并解析背景配置，取不到返回 null
     /// </summary>
     public async Task<HottaBackgroundConfig?> GetBackgroundConfigAsync(HottaFileManifest manifest, HottaManifestFile configFile,
