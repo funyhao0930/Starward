@@ -158,7 +158,9 @@ public static class HottaGameMapping
                 IconUri = "ms-appx:///Assets/Image/Transparent.png",
                 ChannelIconUri = "ms-appx:///Assets/Image/Transparent.png",
                 // 游戏选择器的卡片图，规格照米哈游的 416×234 缩略图加同尺寸透明 Logo。
-                // 这家没有提供卡片图的接口，取自官方启动器的背景图（bgimgs\bg_0.png）与台服平台页的 logo-tc.png，放在 Images\Hotta。
+                // 这家没有提供卡片图的接口，取自官网公测前的全角色主视觉（cover251223/page_video.jpg，裁掉底部白边）
+                // 与台服平台页的 logo-tc.png，放在 Images\Hotta。与其他游戏一样用最初的主视觉，不跟版本换：
+                // 启动器背景（bgimgs）每个版本都会换成当期的活动图。
                 ThumbnailUri = "ms-appx:///Images/Hotta/NTE_Thumbnail.jpg",
                 LogoUri = "ms-appx:///Images/Hotta/NTE_Logo.png",
                 // 只能启动官方外壳 NTETWGame.exe，不能像其他游戏那样直接拉起游戏本体。
