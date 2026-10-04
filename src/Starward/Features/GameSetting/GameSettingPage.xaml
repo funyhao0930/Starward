@@ -2,6 +2,7 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:kuro="using:Starward.Core.Games.Kuro"
              xmlns:lang="using:Starward.Language"
              xmlns:local="using:Starward.Features.GameSetting"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -21,6 +22,10 @@
                     <ColumnDefinition />
                     <ColumnDefinition />
                 </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
                 <Button Width="0"
                         Height="0"
                         IsHitTestVisible="False" />
@@ -88,8 +93,7 @@
                 </StackPanel>
 
 
-                <StackPanel Grid.Row="1"
-                            Grid.Column="1"
+                <StackPanel Grid.Column="1"
                             Spacing="12"
                             Visibility="{x:Bind IsGraphicsSettingEnable}">
                     <!--  图形设置  -->
@@ -139,6 +143,129 @@
                                  Visibility="{x:Bind HDRNotEnabled}" />
                     </StackPanel>
 
+                </StackPanel>
+
+
+                <!--  鸣潮 Engine.ini 调校  -->
+                <StackPanel Grid.Row="1"
+                            Grid.ColumnSpan="2"
+                            Margin="0,28,0,0"
+                            Spacing="12"
+                            Visibility="{x:Bind IsKuroTweakEnable}">
+                    <TextBlock FontSize="20"
+                               FontWeight="Bold"
+                               Text="{x:Bind kuro:KuroEngineTweakText.Ui_Title}" />
+                    <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               Text="{x:Bind kuro:KuroEngineTweakText.Ui_Description}"
+                               TextWrapping="Wrap" />
+                    <HyperlinkButton Margin="-12,-8,0,-4"
+                                     Content="{x:Bind kuro:KuroEngineTweakText.Ui_SourceLink}"
+                                     NavigateUri="https://alteriax.github.io/WuWa-Config-Info/" />
+
+                    <InfoBar IsClosable="False"
+                             IsOpen="True"
+                             Message="{x:Bind kuro:KuroEngineTweakText.Ui_UserEngineIniFound}"
+                             Severity="Warning"
+                             Visibility="{x:Bind UserEngineIniExists}">
+                        <InfoBar.ActionButton>
+                            <Button HorizontalAlignment="Left"
+                                    Command="{x:Bind DisableUserEngineIniCommand}"
+                                    Content="{x:Bind kuro:KuroEngineTweakText.Ui_DisableUserEngineIni}" />
+                        </InfoBar.ActionButton>
+                    </InfoBar>
+
+                    <!--  预设组合  -->
+                    <Grid ColumnSpacing="8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition MaxWidth="640" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <ComboBox HorizontalAlignment="Stretch"
+                                  ItemsSource="{x:Bind KuroPresetNames}"
+                                  PlaceholderText="{x:Bind kuro:KuroEngineTweakText.Ui_Preset}"
+                                  SelectedIndex="{x:Bind SelectedKuroPresetIndex, Mode=TwoWay}">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate x:DataType="x:String">
+                                    <TextBlock Text="{x:Bind}" TextWrapping="Wrap" />
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                        <Button Grid.Column="1"
+                                VerticalAlignment="Top"
+                                Command="{x:Bind LoadKuroPresetCommand}"
+                                Content="{x:Bind kuro:KuroEngineTweakText.Ui_LoadPreset}" />
+                    </Grid>
+                    <TextBlock FontSize="12"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               Text="{x:Bind kuro:KuroEngineTweakText.Ui_PresetNote}"
+                               TextWrapping="Wrap" />
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Command="{x:Bind ResetKuroTweaksCommand}" Content="{x:Bind kuro:KuroEngineTweakText.Ui_ResetAll}" />
+                        <Button Command="{x:Bind OpenKuroConfigFolderCommand}" Content="{x:Bind kuro:KuroEngineTweakText.Ui_OpenFolder}" />
+                    </StackPanel>
+
+                    <!--  各分类  -->
+                    <ItemsRepeater ItemsSource="{x:Bind KuroTweakCategories}">
+                        <ItemsRepeater.Layout>
+                            <StackLayout Spacing="8" />
+                        </ItemsRepeater.Layout>
+                        <ItemsRepeater.ItemTemplate>
+                            <DataTemplate x:DataType="local:KuroEngineTweakCategoryViewModel">
+                                <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                                    <Expander.Header>
+                                        <Grid>
+                                            <TextBlock FontWeight="SemiBold" Text="{x:Bind Title}" />
+                                            <TextBlock HorizontalAlignment="Right"
+                                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                       Text="{x:Bind Summary, Mode=OneWay}" />
+                                        </Grid>
+                                    </Expander.Header>
+                                    <ItemsRepeater ItemsSource="{x:Bind Items}">
+                                        <ItemsRepeater.Layout>
+                                            <StackLayout Spacing="16" />
+                                        </ItemsRepeater.Layout>
+                                        <ItemsRepeater.ItemTemplate>
+                                            <DataTemplate x:DataType="local:KuroEngineTweakItemViewModel">
+                                                <Grid ColumnSpacing="16">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition />
+                                                        <ColumnDefinition Width="Auto" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <StackPanel Spacing="2">
+                                                        <TextBlock FontWeight="{x:Bind TitleWeight, Mode=OneWay}" Text="{x:Bind Title}" />
+                                                        <TextBlock FontFamily="Consolas"
+                                                                   FontSize="12"
+                                                                   Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                                                   IsTextSelectionEnabled="True"
+                                                                   Text="{x:Bind Key}" />
+                                                        <TextBlock FontSize="12"
+                                                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                                   Text="{x:Bind Description}"
+                                                                   TextWrapping="Wrap" />
+                                                    </StackPanel>
+                                                    <ComboBox Grid.Column="1"
+                                                              Width="240"
+                                                              VerticalAlignment="Center"
+                                                              ItemsSource="{x:Bind Options}"
+                                                              SelectedItem="{x:Bind SelectedOption, Mode=TwoWay}"
+                                                              Visibility="{x:Bind ChoiceVisibility}" />
+                                                    <NumberBox Grid.Column="1"
+                                                               Width="240"
+                                                               VerticalAlignment="Center"
+                                                               LargeChange="{x:Bind Step}"
+                                                               PlaceholderText="{x:Bind kuro:KuroEngineTweakText.Ui_GameDefaultPlaceholder}"
+                                                               SmallChange="{x:Bind Step}"
+                                                               SpinButtonPlacementMode="Compact"
+                                                               Value="{x:Bind NumberValue, Mode=TwoWay}"
+                                                               Visibility="{x:Bind NumberVisibility}" />
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsRepeater.ItemTemplate>
+                                    </ItemsRepeater>
+                                </Expander>
+                            </DataTemplate>
+                        </ItemsRepeater.ItemTemplate>
+                    </ItemsRepeater>
                 </StackPanel>
 
 

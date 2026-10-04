@@ -9,6 +9,7 @@ using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.UI.Xaml.Navigation;
 using Starward.Core;
 using Starward.Core.Games;
+using Starward.Core.Games.Kuro;
 using Starward.Features.GameLauncher;
 using Starward.Features.GameSelector;
 using Starward.Frameworks;
@@ -16,6 +17,7 @@ using Starward.Helpers;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -236,6 +238,10 @@ public sealed partial class GameSettingPage : PageBase
                 StackPanel_StarRailFPS.Visibility = Visibility.Visible;
                 StarRailFpsIndex = GameSettingService.GetStarRailFPSIndex(CurrentGameBiz);
             }
+            if (CurrentGameKey.ProviderId == KuroGameMapping.ProviderId)
+            {
+                InitializeKuroTweaks();
+            }
             if (CurrentGameBiz.Game is GameBiz.hk4e)
             {
                 IsGraphicsSettingEnable = true;
@@ -438,6 +444,10 @@ public sealed partial class GameSettingPage : PageBase
                     GameSettingService.SetGenshinEnableHDR(CurrentGameBiz, EnableGenshinHDR);
                 }
             }
+            if (IsKuroTweakEnable)
+            {
+                ApplyKuroTweaks();
+            }
             // 游戏运行时应用的设置无法生效
             ErrorMessage = Lang.GameSettingPage_SettingNotEffect;
             IsApplyButtonEnable = false;
@@ -448,6 +458,180 @@ public sealed partial class GameSettingPage : PageBase
             _logger.LogError(ex, "Apply Setting");
         }
     }
+
+
+
+    #region 鸣潮 Engine.ini 调校
+
+
+    public bool IsKuroTweakEnable { get; set => SetProperty(ref field, value); }
+
+    public bool UserEngineIniExists { get; set => SetProperty(ref field, value); }
+
+    public List<KuroEngineTweakCategoryViewModel> KuroTweakCategories { get; set => SetProperty(ref field, value); } = [];
+
+    public List<string> KuroPresetNames { get; } = KuroEngineTweakCatalog.Presets.Select(KuroEngineTweakText.Preset).ToList();
+
+    public int SelectedKuroPresetIndex { get; set => SetProperty(ref field, value); } = -1;
+
+
+    /// <summary>
+    /// 读进来时的值，套用时只写有变动的键：没动过的键（包括读不懂的值）原样留在文件里
+    /// </summary>
+    private readonly Dictionary<KuroEngineTweak, string?> _kuroLoadedValues = new();
+
+    private IEnumerable<KuroEngineTweakItemViewModel> KuroTweakItems => KuroTweakCategories.SelectMany(x => x.Items);
+
+
+    private string? GetKuroInstallPath() => GameLauncherService.GetGameInstallPath(CurrentGameKey);
+
+    private string? GetKuroConfigDirectory() => GetKuroInstallPath() is string path ? Path.Join(path, KuroGameMapping.SavedConfigRelativePath) : null;
+
+    private string? GetUserEngineIniPath() => GetKuroInstallPath() is string path ? Path.Join(path, KuroGameMapping.UserEngineIniRelativePath) : null;
+
+
+    private void InitializeKuroTweaks()
+    {
+        try
+        {
+            string? configDirectory = GetKuroConfigDirectory();
+            if (configDirectory is null)
+            {
+                return;
+            }
+            Dictionary<KuroEngineTweak, string> values = KuroEngineIniStore.Read(configDirectory);
+            var categories = new List<KuroEngineTweakCategoryViewModel>();
+            _kuroLoadedValues.Clear();
+            foreach (string category in KuroEngineTweakCatalog.Categories)
+            {
+                var items = new List<KuroEngineTweakItemViewModel>();
+                foreach (KuroEngineTweak tweak in KuroEngineTweakCatalog.Tweaks.Where(x => x.Category == category))
+                {
+                    var item = new KuroEngineTweakItemViewModel(tweak);
+                    item.SetValue(values.GetValueOrDefault(tweak), raiseChanged: false);
+                    item.Changed += (_, _) => IsApplyButtonEnable = true;
+                    _kuroLoadedValues[tweak] = item.Value;
+                    items.Add(item);
+                }
+                categories.Add(new KuroEngineTweakCategoryViewModel(category, items));
+            }
+            KuroTweakCategories = categories;
+            UserEngineIniExists = File.Exists(GetUserEngineIniPath());
+            IsKuroTweakEnable = true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Initialize WuWa Engine.ini tweaks");
+        }
+    }
+
+
+    [RelayCommand]
+    private void LoadKuroPreset()
+    {
+        if (SelectedKuroPresetIndex < 0 || SelectedKuroPresetIndex >= KuroEngineTweakCatalog.Presets.Count)
+        {
+            return;
+        }
+        KuroEngineTweakPreset preset = KuroEngineTweakCatalog.Presets[SelectedKuroPresetIndex];
+        foreach (KuroEngineTweakItemViewModel item in KuroTweakItems)
+        {
+            // 任一份预设涉及的键都要重设，否则从 Config 1 换到 Config 5 会留下 Config 1 才有的键
+            if (KuroEngineTweakCatalog.PresetKeys.Contains(item.Key))
+            {
+                item.SetValue(preset.Values.GetValueOrDefault(item.Key), raiseChanged: false);
+            }
+        }
+        IsApplyButtonEnable = true;
+    }
+
+
+    [RelayCommand]
+    private void ResetKuroTweaks()
+    {
+        foreach (KuroEngineTweakItemViewModel item in KuroTweakItems)
+        {
+            item.SetValue(null, raiseChanged: false);
+        }
+        IsApplyButtonEnable = true;
+    }
+
+
+    [RelayCommand]
+    private async Task OpenKuroConfigFolderAsync()
+    {
+        try
+        {
+            // 游戏没开过时 Saved 还不存在，打开最近一层存在的目录
+            string? folder = GetKuroConfigDirectory();
+            while (folder is not null && !Directory.Exists(folder))
+            {
+                folder = Path.GetDirectoryName(folder);
+            }
+            if (folder is not null)
+            {
+                await Windows.System.Launcher.LaunchFolderPathAsync(folder);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Open WuWa config folder");
+        }
+    }
+
+
+    /// <summary>
+    /// 改名而不是删除，玩家想要回去时改回来就行
+    /// </summary>
+    [RelayCommand]
+    private void DisableUserEngineIni()
+    {
+        try
+        {
+            string? path = GetUserEngineIniPath();
+            if (File.Exists(path))
+            {
+                File.Move(path, path + KuroEngineIniStore.BackupSuffix, true);
+            }
+            UserEngineIniExists = File.Exists(path);
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = ex.Message;
+            _logger.LogError(ex, "Disable UserEngine.ini");
+        }
+    }
+
+
+    private void ApplyKuroTweaks()
+    {
+        string? configDirectory = GetKuroConfigDirectory();
+        if (configDirectory is null)
+        {
+            return;
+        }
+        var changed = new Dictionary<KuroEngineTweak, string?>();
+        foreach (KuroEngineTweakItemViewModel item in KuroTweakItems)
+        {
+            if (!KuroEngineTweakCatalog.ValueEquals(_kuroLoadedValues.GetValueOrDefault(item.Tweak), item.Value))
+            {
+                changed[item.Tweak] = item.Value;
+            }
+        }
+        if (changed.Count == 0)
+        {
+            return;
+        }
+        List<string> written = KuroEngineIniStore.Write(configDirectory, changed);
+        _logger.LogInformation("WuWa ini tweaks: {count} keys changed, wrote {files}", changed.Count, string.Join(", ", written));
+        foreach (var (tweak, value) in changed)
+        {
+            _kuroLoadedValues[tweak] = value;
+        }
+    }
+
+
+    #endregion
 
 
 

@@ -49,6 +49,19 @@ public static class KuroGameMapping
     public static readonly string GameUserSettingsRelativePath = Path.Combine(GameFolderName, @"Client\Saved\Config\WindowsNoEditor\GameUserSettings.ini");
 
 
+    /// <summary>
+    /// Engine.ini、Input.ini 所在的目录，相对于启动器安装根目录
+    /// </summary>
+    public static readonly string SavedConfigRelativePath = Path.Combine(GameFolderName, @"Client\Saved\Config\WindowsNoEditor");
+
+
+    /// <summary>
+    /// 旧版调校教程让人放的 UserEngine.ini。它在 Saved 里的 Engine.ini 之后载入，
+    /// 会盖掉那边的设置，所以存在时要提醒玩家停用。
+    /// </summary>
+    public static readonly string UserEngineIniRelativePath = Path.Combine(GameFolderName, @"Client\Config\UserEngine.ini");
+
+
     public static IReadOnlyList<GameKey> SupportedGameKeys { get; } = new[] { WutheringWavesGlobal }.AsReadOnly();
 
 

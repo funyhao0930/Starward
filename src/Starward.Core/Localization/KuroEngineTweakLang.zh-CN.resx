@@ -1,0 +1,737 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Ui_Title" xml:space="preserve">
+    <value>Engine.ini 进阶调校</value>
+  </data>
+  <data name="Ui_Description" xml:space="preserve">
+    <value>以 AlteriaX/WuWa-Configs 的设置为蓝本，每一项都能单独调整，或设为「游戏默认」（不写入这个键，交给游戏决定）。按下方「应用」才会写入；只会改这里列出的键，文件其他内容原样保留，写入前会先把旧文件备份成 *.starward.bak。游戏运行中修改不会生效。</value>
+  </data>
+  <data name="Ui_Preset" xml:space="preserve">
+    <value>预设组合</value>
+  </data>
+  <data name="Ui_LoadPreset" xml:space="preserve">
+    <value>加载预设组合</value>
+  </data>
+  <data name="Ui_PresetNote" xml:space="preserve">
+    <value>加载预设组合只会改动它涵盖的项目（Reflex、光追降噪等进阶项目保留你的选择），之后可再逐项微调，按「应用」才写入。显卡对照仅供参考，依目标 FPS 与画质任选即可。</value>
+  </data>
+  <data name="Ui_ResetAll" xml:space="preserve">
+    <value>全部改回游戏默认</value>
+  </data>
+  <data name="Ui_OpenFolder" xml:space="preserve">
+    <value>打开设置文件夹</value>
+  </data>
+  <data name="Ui_SourceLink" xml:space="preserve">
+    <value>参数说明与画面比较（AlteriaX）</value>
+  </data>
+  <data name="Ui_GameDefault" xml:space="preserve">
+    <value>游戏默认</value>
+  </data>
+  <data name="Ui_GameDefaultPlaceholder" xml:space="preserve">
+    <value>游戏默认（不写入）</value>
+  </data>
+  <data name="Ui_CurrentValue" xml:space="preserve">
+    <value>目前值：{0}</value>
+  </data>
+  <data name="Ui_OptionFormat" xml:space="preserve">
+    <value>{0}（{1}）</value>
+  </data>
+  <data name="Ui_ModifiedCount" xml:space="preserve">
+    <value>已设置 {0} / {1}</value>
+  </data>
+  <data name="Ui_UserEngineIniFound" xml:space="preserve">
+    <value>找到 UserEngine.ini。它在 Engine.ini 之后加载，会盖掉这里写入的设置，AlteriaX 的说明要求移除它。</value>
+  </data>
+  <data name="Ui_DisableUserEngineIni" xml:space="preserve">
+    <value>停用（改名为 UserEngine.ini.starward.bak）</value>
+  </data>
+  <data name="Preset_1" xml:space="preserve">
+    <value>Config 1：RTX 5090、5080、5070 Ti、4090、4080 · RX 9070 XT、7900 XTX — 加载光追设置，植被距离最远（FPS 比游戏默认低）</value>
+  </data>
+  <data name="Preset_2" xml:space="preserve">
+    <value>Config 2：RTX 5070、5060 (Ti)、4070、4060 Ti、3070–3090、2080 Ti · RX 9070、9060、7700 XT–7900、6800–6950 XT</value>
+  </data>
+  <data name="Preset_3" xml:space="preserve">
+    <value>Config 3：RTX 5050、4060、4050、3060、3050、2060–2080、GTX 1660、1070 Ti–1080 · RX 7600、6600–6700 XT、5600–5700 XT · Arc A580–B580</value>
+  </data>
+  <data name="Preset_4" xml:space="preserve">
+    <value>Config 4：RTX 3050 笔记本、2050、GTX 1660、1650、1060–1070 · RX 6500 XT、6400、5500 XT、570–590、890M · Arc 140V、A380</value>
+  </data>
+  <data name="Preset_5" xml:space="preserve">
+    <value>Config 5：GTX 1650 笔记本、1050、GT 1030、MX 系列 · RX 560、550、780M、680M、Vega 内显 · A310、Iris Xe、UHD — 移除所有草</value>
+  </data>
+  <data name="Category_PostProcess" xml:space="preserve">
+    <value>后处理</value>
+  </data>
+  <data name="Category_Shadow" xml:space="preserve">
+    <value>阴影</value>
+  </data>
+  <data name="Category_AmbientOcclusion" xml:space="preserve">
+    <value>环境光遮蔽</value>
+  </data>
+  <data name="Category_ViewDistance" xml:space="preserve">
+    <value>视距与植被</value>
+  </data>
+  <data name="Category_Streaming" xml:space="preserve">
+    <value>串流、细节层级与材质</value>
+  </data>
+  <data name="Category_Lighting" xml:space="preserve">
+    <value>光照与体积光</value>
+  </data>
+  <data name="Category_Reflection" xml:space="preserve">
+    <value>反射</value>
+  </data>
+  <data name="Category_Fog" xml:space="preserve">
+    <value>雾</value>
+  </data>
+  <data name="Category_Effects" xml:space="preserve">
+    <value>特效、性能与其他</value>
+  </data>
+  <data name="Category_RayTracing" xml:space="preserve">
+    <value>光线追踪</value>
+  </data>
+  <data name="Category_Input" xml:space="preserve">
+    <value>鼠标（Input.ini）</value>
+  </data>
+  <data name="Option_Off" xml:space="preserve">
+    <value>关闭</value>
+  </data>
+  <data name="Option_On" xml:space="preserve">
+    <value>打开</value>
+  </data>
+  <data name="Option_Low" xml:space="preserve">
+    <value>低</value>
+  </data>
+  <data name="Option_Medium" xml:space="preserve">
+    <value>中</value>
+  </data>
+  <data name="Option_High" xml:space="preserve">
+    <value>高</value>
+  </data>
+  <data name="Option_VeryHigh" xml:space="preserve">
+    <value>很高</value>
+  </data>
+  <data name="Option_Extreme" xml:space="preserve">
+    <value>极高</value>
+  </data>
+  <data name="Option_Epic" xml:space="preserve">
+    <value>史诗</value>
+  </data>
+  <data name="Option_FullRes" xml:space="preserve">
+    <value>全分辨率</value>
+  </data>
+  <data name="Option_HalfRes" xml:space="preserve">
+    <value>半分辨率</value>
+  </data>
+  <data name="Option_QuarterRes" xml:space="preserve">
+    <value>四分之一分辨率</value>
+  </data>
+  <data name="Option_Tonemapper_FilmContrast" xml:space="preserve">
+    <value>仅胶片对比（无颗粒与暗角）</value>
+  </data>
+  <data name="Option_Tonemapper_Vignette" xml:space="preserve">
+    <value>暗角</value>
+  </data>
+  <data name="Option_Tonemapper_VignetteGrain" xml:space="preserve">
+    <value>暗角＋胶片颗粒</value>
+  </data>
+  <data name="Option_Tonemapping_Genshin" xml:space="preserve">
+    <value>原神风格</value>
+  </data>
+  <data name="Option_Tonemapping_DeathStranding" xml:space="preserve">
+    <value>死亡搁浅风格</value>
+  </data>
+  <data name="Option_Tonemapping_Kuro" xml:space="preserve">
+    <value>库洛</value>
+  </data>
+  <data name="Option_Streaming_Retention" xml:space="preserve">
+    <value>仅保留</value>
+  </data>
+  <data name="Option_Streaming_Load" xml:space="preserve">
+    <value>仅加载</value>
+  </data>
+  <data name="Option_Streaming_Both" xml:space="preserve">
+    <value>保留＋加载</value>
+  </data>
+  <data name="Option_GBuffer_Low" xml:space="preserve">
+    <value>低精度</value>
+  </data>
+  <data name="Option_GBuffer_HighNormals" xml:space="preserve">
+    <value>高精度法线</value>
+  </data>
+  <data name="Option_GBuffer_High" xml:space="preserve">
+    <value>高精度</value>
+  </data>
+  <data name="Option_Occlusion_Hardware" xml:space="preserve">
+    <value>硬件遮挡查找</value>
+  </data>
+  <data name="Option_Occlusion_HZB" xml:space="preserve">
+    <value>HZB 遮挡</value>
+  </data>
+  <data name="Option_PSO_Default" xml:space="preserve">
+    <value>默认</value>
+  </data>
+  <data name="Option_PSO_LRU" xml:space="preserve">
+    <value>LRU</value>
+  </data>
+  <data name="Option_Reflex_LowLatency" xml:space="preserve">
+    <value>低延迟</value>
+  </data>
+  <data name="Option_Reflex_Boost" xml:space="preserve">
+    <value>低延迟＋Boost</value>
+  </data>
+  <data name="Option_Denoiser_Builtin" xml:space="preserve">
+    <value>内置</value>
+  </data>
+  <data name="Option_Denoiser_Plugin" xml:space="preserve">
+    <value>默认／插件</value>
+  </data>
+  <data name="Option_DLSS_RayReconstruction" xml:space="preserve">
+    <value>光线重建</value>
+  </data>
+  <data name="Tweak_r_DepthOfFieldQuality_Title" xml:space="preserve">
+    <value>景深</value>
+  </data>
+  <data name="Tweak_r_DepthOfFieldQuality_Desc" xml:space="preserve">
+    <value>失焦区域的模糊，多见于过场动画。游戏默认为高（2）；预设组合不会关闭它，要关请设为「关闭」。</value>
+  </data>
+  <data name="Tweak_r_Tonemapper_Quality_Title" xml:space="preserve">
+    <value>胶片颗粒与暗角</value>
+  </data>
+  <data name="Tweak_r_Tonemapper_Quality_Desc" xml:space="preserve">
+    <value>设为「仅胶片对比」（1）会拿掉胶片颗粒与暗角，部分场景会因此变亮。</value>
+  </data>
+  <data name="Tweak_r_SceneColorFringeQuality_Title" xml:space="preserve">
+    <value>色差</value>
+  </data>
+  <data name="Tweak_r_SceneColorFringeQuality_Desc" xml:space="preserve">
+    <value>画面边缘的红蓝色差。游戏默认打开，所有预设组合都关闭。</value>
+  </data>
+  <data name="Tweak_r_Kuro_KuroEnableFFTBloom_Title" xml:space="preserve">
+    <value>FFT 泛光</value>
+  </data>
+  <data name="Tweak_r_Kuro_KuroEnableFFTBloom_Desc" xml:space="preserve">
+    <value>拉海洛版本加入的新泛光。平衡画质以上默认打开。</value>
+  </data>
+  <data name="Tweak_r_Kuro_KuroEnableToonFFTBloom_Title" xml:space="preserve">
+    <value>角色 FFT 泛光</value>
+  </data>
+  <data name="Tweak_r_Kuro_KuroEnableToonFFTBloom_Desc" xml:space="preserve">
+    <value>套用在卡通渲染角色上的 FFT 泛光。平衡画质以上默认打开。</value>
+  </data>
+  <data name="Tweak_r_Kuro_KuroBloomStreak_Title" xml:space="preserve">
+    <value>泛光拉丝</value>
+  </data>
+  <data name="Tweak_r_Kuro_KuroBloomStreak_Desc" xml:space="preserve">
+    <value>关闭后泛光略暗、没有拉丝光条。游戏默认打开。</value>
+  </data>
+  <data name="Tweak_r_EnableLensflareSceneSample_Title" xml:space="preserve">
+    <value>镜头光晕</value>
+  </data>
+  <data name="Tweak_r_EnableLensflareSceneSample_Desc" xml:space="preserve">
+    <value>强光源造成的镜头光晕。游戏默认打开。</value>
+  </data>
+  <data name="Tweak_r_Kuro_NiagaraBlur_Enable_Title" xml:space="preserve">
+    <value>Niagara 特效模糊</value>
+  </data>
+  <data name="Tweak_r_Kuro_NiagaraBlur_Enable_Desc" xml:space="preserve">
+    <value>部分粒子（Niagara）特效使用的模糊。预设组合不会关闭，只列为可选的关闭项目。</value>
+  </data>
+  <data name="Tweak_r_KuroTonemapping_Title" xml:space="preserve">
+    <value>色调映射曲线</value>
+  </data>
+  <data name="Tweak_r_KuroTonemapping_Desc" xml:space="preserve">
+    <value>整体的色彩反应曲线。游戏默认为库洛（3）。</value>
+  </data>
+  <data name="Tweak_r_Shadow_RadiusThreshold_Title" xml:space="preserve">
+    <value>阴影半径门槛</value>
+  </data>
+  <data name="Tweak_r_Shadow_RadiusThreshold_Desc" xml:space="preserve">
+    <value>在画面上占比小于此值的对象不投射阴影；越低阴影越多、也越吃性能。预设组合：0.01（Config 1–3）、0.02（4）、0.06（5）。</value>
+  </data>
+  <data name="Tweak_r_Shadow_PerObjectShadowMapResolution_Title" xml:space="preserve">
+    <value>单一对象阴影贴图分辨率</value>
+  </data>
+  <data name="Tweak_r_Shadow_PerObjectShadowMapResolution_Desc" xml:space="preserve">
+    <value>角色（单一对象）阴影的基础分辨率。Config 4／5 会与下面的上下限一起设成 512／256。</value>
+  </data>
+  <data name="Tweak_r_Shadow_PerObjectResolutionMax_Title" xml:space="preserve">
+    <value>角色阴影分辨率上限</value>
+  </data>
+  <data name="Tweak_r_Shadow_PerObjectResolutionMax_Desc" xml:space="preserve">
+    <value>游戏默认偏低，角色阴影因此粗糙；设到 512 或 1024 就明显改善。越高越吃性能。</value>
+  </data>
+  <data name="Tweak_r_Shadow_PerObjectResolutionMin_Title" xml:space="preserve">
+    <value>角色阴影分辨率下限</value>
+  </data>
+  <data name="Tweak_r_Shadow_PerObjectResolutionMin_Desc" xml:space="preserve">
+    <value>与上限设成相同，阴影就不会随距离降分辨率。</value>
+  </data>
+  <data name="Tweak_r_DistanceFieldShadowing_Title" xml:space="preserve">
+    <value>距离场阴影</value>
+  </data>
+  <data name="Tweak_r_DistanceFieldShadowing_Desc" xml:space="preserve">
+    <value>远处对象的柔和阴影。游戏的高画质与极致画质默认打开。</value>
+  </data>
+  <data name="Tweak_r_DFShadowQuality_Title" xml:space="preserve">
+    <value>距离场阴影品质</value>
+  </data>
+  <data name="Tweak_r_DFShadowQuality_Desc" xml:space="preserve">
+    <value>只在距离场阴影打开时有作用。Config 1 使用高（3）。</value>
+  </data>
+  <data name="Tweak_r_Shadow_CacheDirectLightShadow_Title" xml:space="preserve">
+    <value>缓存平行光阴影</value>
+  </data>
+  <data name="Tweak_r_Shadow_CacheDirectLightShadow_Desc" xml:space="preserve">
+    <value>不在预设组合中。关闭可修正拉海洛及更新区域阴影更新频率低（卡顿感）的问题，但会掉 10–20 FPS 以上，部分阴影也会更新得太快。</value>
+  </data>
+  <data name="Tweak_r_AODownsampleFactor_Title" xml:space="preserve">
+    <value>距离场 AO 分辨率</value>
+  </data>
+  <data name="Tweak_r_AODownsampleFactor_Desc" xml:space="preserve">
+    <value>距离场环境光遮蔽的分辨率。游戏默认为半分辨率（2），Config 1 用全分辨率。</value>
+  </data>
+  <data name="Tweak_r_AmbientOcclusion_Intensity_Title" xml:space="preserve">
+    <value>AO 强度</value>
+  </data>
+  <data name="Tweak_r_AmbientOcclusion_Intensity_Desc" xml:space="preserve">
+    <value>越高遮蔽阴影越重。默认 -1，即 0.9。</value>
+  </data>
+  <data name="Tweak_r_AmbientOcclusionMaxQuality_Title" xml:space="preserve">
+    <value>屏幕空间 AO 品质上限</value>
+  </data>
+  <data name="Tweak_r_AmbientOcclusionMaxQuality_Desc" xml:space="preserve">
+    <value>限制屏幕空间环境光遮蔽的品质：100 不限制，0 等于关闭（Config 5）。</value>
+  </data>
+  <data name="Tweak_foliage_LODDistanceScale_Title" xml:space="preserve">
+    <value>植被细节距离倍率</value>
+  </data>
+  <data name="Tweak_foliage_LODDistanceScale_Desc" xml:space="preserve">
+    <value>植被维持高细节模型的距离。游戏默认 1.0，超过 5 差异不大。Config 1／2 用 3.0／2.0。</value>
+  </data>
+  <data name="Tweak_r_Kuro_Foliage_NearCullDistanceMax_Title" xml:space="preserve">
+    <value>植被剔除距离（近）</value>
+  </data>
+  <data name="Tweak_r_Kuro_Foliage_NearCullDistanceMax_Desc" xml:space="preserve">
+    <value>近景植被被剔除前的最大距离。越大远处植被越多，FPS 越低。</value>
+  </data>
+  <data name="Tweak_r_Kuro_Foliage_MiddleCullDistanceMax_Title" xml:space="preserve">
+    <value>植被剔除距离（中）</value>
+  </data>
+  <data name="Tweak_r_Kuro_Foliage_MiddleCullDistanceMax_Desc" xml:space="preserve">
+    <value>同上，作用于中景植被。</value>
+  </data>
+  <data name="Tweak_r_Kuro_Foliage_FarCullDistanceMax_Title" xml:space="preserve">
+    <value>植被剔除距离（远）</value>
+  </data>
+  <data name="Tweak_r_Kuro_Foliage_FarCullDistanceMax_Desc" xml:space="preserve">
+    <value>同上，作用于远景植被。</value>
+  </data>
+  <data name="Tweak_r_Kuro_Foliage_GrassCullDistanceMax_Title" xml:space="preserve">
+    <value>草地剔除距离</value>
+  </data>
+  <data name="Tweak_r_Kuro_Foliage_GrassCullDistanceMax_Desc" xml:space="preserve">
+    <value>草被剔除前的距离。</value>
+  </data>
+  <data name="Tweak_r_Kuro_Foliage_Grass3_0CullDistanceMax_Title" xml:space="preserve">
+    <value>草地剔除距离（3.0 新区域）</value>
+  </data>
+  <data name="Tweak_r_Kuro_Foliage_Grass3_0CullDistanceMax_Desc" xml:space="preserve">
+    <value>3.0 版之后新区域使用的草地剔除距离。</value>
+  </data>
+  <data name="Tweak_wp_Runtime_SoraGridBlackListHeight_Title" xml:space="preserve">
+    <value>飞行时远景保留高度</value>
+  </data>
+  <data name="Tweak_wp_Runtime_SoraGridBlackListHeight_Desc" xml:space="preserve">
+    <value>飞行时超过这个高度，灯光会关闭、对象会消失。</value>
+  </data>
+  <data name="Tweak_foliage_CullAll_Title" xml:space="preserve">
+    <value>移除所有草</value>
+  </data>
+  <data name="Tweak_foliage_CullAll_Desc" xml:space="preserve">
+    <value>Config 5 为了性能设为打开，整片草地都不画。</value>
+  </data>
+  <data name="Tweak_r_Kuro_NpcDisappearDistance_Title" xml:space="preserve">
+    <value>NPC 消失距离</value>
+  </data>
+  <data name="Tweak_r_Kuro_NpcDisappearDistance_Desc" xml:space="preserve">
+    <value>不在预设组合中。NPC 消失的距离（默认 6000）。部分 NPC 有自己固定的距离，不受影响。</value>
+  </data>
+  <data name="Tweak_r_Streaming_UsingKuroStreamingPriority_Title" xml:space="preserve">
+    <value>库洛串流优先权</value>
+  </data>
+  <data name="Tweak_r_Streaming_UsingKuroStreamingPriority_Desc" xml:space="preserve">
+    <value>默认为保留＋加载（3）。关闭可修正 Aemeath Res Lib 的 Exostrider 装甲不加载，但 Smartprint Cube Reboot 的材质会载得慢。</value>
+  </data>
+  <data name="Tweak_r_StaticMeshLODDistanceScale_Title" xml:space="preserve">
+    <value>静态模型细节距离倍率</value>
+  </data>
+  <data name="Tweak_r_StaticMeshLODDistanceScale_Desc" xml:space="preserve">
+    <value>越低远处对象越精细。低于 0.5 可能让地面材质闪烁。</value>
+  </data>
+  <data name="Tweak_wp_Runtime_PlannedLoadingRangeScale_Title" xml:space="preserve">
+    <value>世界加载范围</value>
+  </data>
+  <data name="Tweak_wp_Runtime_PlannedLoadingRangeScale_Desc" xml:space="preserve">
+    <value>越高远处画出的对象越多、材质越好。上限看来是 1.0。</value>
+  </data>
+  <data name="Tweak_r_Kuro_SkeletalMesh_DistanceLODBaseFOV_Title" xml:space="preserve">
+    <value>骨架模型细节基准视角</value>
+  </data>
+  <data name="Tweak_r_Kuro_SkeletalMesh_DistanceLODBaseFOV_Desc" xml:space="preserve">
+    <value>依距离挑选角色、生物细节层级时的基准视角；所有预设组合都用 150。</value>
+  </data>
+  <data name="Tweak_r_Kuro_MaterialDesktopQualityShoulderRender_Title" xml:space="preserve">
+    <value>桌面画质材质额外渲染</value>
+  </data>
+  <data name="Tweak_r_Kuro_MaterialDesktopQualityShoulderRender_Desc" xml:space="preserve">
+    <value>Config 5 为了性能关闭这项；预设组合作者没有说明它具体影响什么。</value>
+  </data>
+  <data name="Tweak_r_MeshBlend_Quality_Title" xml:space="preserve">
+    <value>模型接缝融合品质</value>
+  </data>
+  <data name="Tweak_r_MeshBlend_Quality_Desc" xml:space="preserve">
+    <value>模型与地形接缝处的融合品质。Config 1 用高（3）。</value>
+  </data>
+  <data name="Tweak_r_MaxAnisotropy_Title" xml:space="preserve">
+    <value>异向性过滤</value>
+  </data>
+  <data name="Tweak_r_MaxAnisotropy_Desc" xml:space="preserve">
+    <value>斜看时材质的清晰度。3.3 版起游戏内也能设置。</value>
+  </data>
+  <data name="Tweak_r_ParallelFrustumCull_Title" xml:space="preserve">
+    <value>平行视锥剔除</value>
+  </data>
+  <data name="Tweak_r_ParallelFrustumCull_Desc" xml:space="preserve">
+    <value>用多个 CPU 线程做视锥剔除。所有预设组合都打开。</value>
+  </data>
+  <data name="Tweak_r_TyndallScatteringQuality_Title" xml:space="preserve">
+    <value>丁达尔散射品质</value>
+  </data>
+  <data name="Tweak_r_TyndallScatteringQuality_Desc" xml:space="preserve">
+    <value>光束穿过雾与枝叶的散射品质。Config 1–2 用高。</value>
+  </data>
+  <data name="Tweak_r_LightShaftDownSampleFactor_Title" xml:space="preserve">
+    <value>光柱分辨率</value>
+  </data>
+  <data name="Tweak_r_LightShaftDownSampleFactor_Desc" xml:space="preserve">
+    <value>1 到 8，越大分辨率越低。游戏默认 2。</value>
+  </data>
+  <data name="Tweak_r_Kuro_KuroTyndallScatteringsDownSampleFactor_Title" xml:space="preserve">
+    <value>丁达尔散射分辨率</value>
+  </data>
+  <data name="Tweak_r_Kuro_KuroTyndallScatteringsDownSampleFactor_Desc" xml:space="preserve">
+    <value>数字越大分辨率越低。</value>
+  </data>
+  <data name="Tweak_r_KuroVolumetricLight_ColorMaskDownSampleFactor_Title" xml:space="preserve">
+    <value>体积光色彩遮罩分辨率</value>
+  </data>
+  <data name="Tweak_r_KuroVolumetricLight_ColorMaskDownSampleFactor_Desc" xml:space="preserve">
+    <value>数字越大品质越低。游戏默认 4。</value>
+  </data>
+  <data name="Tweak_r_KuroVolumetricLight_DownSampleFactor_Title" xml:space="preserve">
+    <value>体积光分辨率</value>
+  </data>
+  <data name="Tweak_r_KuroVolumetricLight_DownSampleFactor_Desc" xml:space="preserve">
+    <value>数字越大品质越低。游戏默认 4。</value>
+  </data>
+  <data name="Tweak_r_SSR_Quality_Title" xml:space="preserve">
+    <value>屏幕空间反射品质</value>
+  </data>
+  <data name="Tweak_r_SSR_Quality_Desc" xml:space="preserve">
+    <value>调整品质似乎没有差别，只有「关闭」有效；Config 5 用它关闭 SSR。</value>
+  </data>
+  <data name="Tweak_r_SSR_MaxRoughness_Title" xml:space="preserve">
+    <value>SSR 最大粗糙度</value>
+  </data>
+  <data name="Tweak_r_SSR_MaxRoughness_Desc" xml:space="preserve">
+    <value>0.0–1.0，表面粗糙到多少时 SSR 开始淡出。游戏默认 0.6，预设组合用 1.0。</value>
+  </data>
+  <data name="Tweak_r_SSR_HalfResSceneColor_Title" xml:space="preserve">
+    <value>SSR 场景色彩分辨率</value>
+  </data>
+  <data name="Tweak_r_SSR_HalfResSceneColor_Desc" xml:space="preserve">
+    <value>反射取用全分辨率或半分辨率的场景色彩。</value>
+  </data>
+  <data name="Tweak_r_GBufferFormat_Title" xml:space="preserve">
+    <value>GBuffer 格式</value>
+  </data>
+  <data name="Tweak_r_GBufferFormat_Desc" xml:space="preserve">
+    <value>不在预设组合中。高精度法线（3）能改善 SSR 品质；高精度（5）比默认好，但略逊于 3。</value>
+  </data>
+  <data name="Tweak_r_SSFS_Title" xml:space="preserve">
+    <value>屏幕空间雾散射</value>
+  </data>
+  <data name="Tweak_r_SSFS_Desc" xml:space="preserve">
+    <value>游戏内的「体积雾」选项无法完全去除雾，关闭这项可以去掉剩下的部分。游戏默认打开。</value>
+  </data>
+  <data name="Tweak_r_SSFS_DownSampleFator_Title" xml:space="preserve">
+    <value>雾散射分辨率</value>
+  </data>
+  <data name="Tweak_r_SSFS_DownSampleFator_Desc" xml:space="preserve">
+    <value>屏幕空间雾散射的分辨率。（拼字错误是游戏本身的变量名称。）</value>
+  </data>
+  <data name="Tweak_a_URO_Enable_Title" xml:space="preserve">
+    <value>动画更新率优化</value>
+  </data>
+  <data name="Tweak_a_URO_Enable_Desc" xml:space="preserve">
+    <value>关闭可修正今州、黎那汐塔部分对象动画低帧率的问题，但对新区域无效。游戏默认打开。</value>
+  </data>
+  <data name="Tweak_a_URO_EnableScreenRatio_Title" xml:space="preserve">
+    <value>依画面占比的动画优化</value>
+  </data>
+  <data name="Tweak_a_URO_EnableScreenRatio_Desc" xml:space="preserve">
+    <value>3.5 版加入。对象在画面上越小，动画更新率越低。游戏默认打开。</value>
+  </data>
+  <data name="Tweak_r_Upscale_Quality_Title" xml:space="preserve">
+    <value>缩放品质</value>
+  </data>
+  <data name="Tweak_r_Upscale_Quality_Desc" xml:space="preserve">
+    <value>原生分辨率下也会影响 UI 清晰度。3 最好，部分显卡默认较低；高于 3 会让 UI 局部出错。</value>
+  </data>
+  <data name="Tweak_r_DetailMode_Title" xml:space="preserve">
+    <value>细节模式</value>
+  </data>
+  <data name="Tweak_r_DetailMode_Desc" xml:space="preserve">
+    <value>不在预设组合中。影响对象细节、灯光与粒子特效。</value>
+  </data>
+  <data name="Tweak_r_VRS_Enable_Title" xml:space="preserve">
+    <value>可变速率着色</value>
+  </data>
+  <data name="Tweak_r_VRS_Enable_Desc" xml:space="preserve">
+    <value>画面部分区域以较低速率着色以换取性能。游戏默认打开，所有预设组合都关闭。</value>
+  </data>
+  <data name="Tweak_r_Kuro_KuroFFTDynamicQuality_Title" xml:space="preserve">
+    <value>FFT 动态品质</value>
+  </data>
+  <data name="Tweak_r_Kuro_KuroFFTDynamicQuality_Desc" xml:space="preserve">
+    <value>让游戏依负载自动降低 FFT 效果品质。所有预设组合都关闭。</value>
+  </data>
+  <data name="Tweak_r_Kuro_KuroFFTHighQuality_Title" xml:space="preserve">
+    <value>FFT 品质等级</value>
+  </data>
+  <data name="Tweak_r_Kuro_KuroFFTHighQuality_Desc" xml:space="preserve">
+    <value>数字越小越精细：预设组合依序用 1（Config 1）、2（Config 2–3）、3（Config 4）、4（Config 5）。</value>
+  </data>
+  <data name="Tweak_r_KuroDownsampleTranslucencyFullRes_Title" xml:space="preserve">
+    <value>半透明全分辨率</value>
+  </data>
+  <data name="Tweak_r_KuroDownsampleTranslucencyFullRes_Desc" xml:space="preserve">
+    <value>以全分辨率绘制半透明特效。只有 Config 1 打开。</value>
+  </data>
+  <data name="Tweak_foliage_DensityScaleLOD_DrawCallOptimize_Title" xml:space="preserve">
+    <value>植被绘制调用优化</value>
+  </data>
+  <data name="Tweak_foliage_DensityScaleLOD_DrawCallOptimize_Desc" xml:space="preserve">
+    <value>优化植被密度细节层级的绘制调用。游戏默认关闭，所有预设组合都打开。</value>
+  </data>
+  <data name="Tweak_r_Kuro_InteractionEffect_EnableBushInteractionEffect_Title" xml:space="preserve">
+    <value>树丛交互效果</value>
+  </data>
+  <data name="Tweak_r_Kuro_InteractionEffect_EnableBushInteractionEffect_Desc" xml:space="preserve">
+    <value>树丛对角色的交互反应。Config 5 关闭。</value>
+  </data>
+  <data name="Tweak_r_Kuro_InteractionEffect_EnableFoliageEffect_Title" xml:space="preserve">
+    <value>植被交互效果</value>
+  </data>
+  <data name="Tweak_r_Kuro_InteractionEffect_EnableFoliageEffect_Desc" xml:space="preserve">
+    <value>植被对角色的交互反应。Config 5 关闭。</value>
+  </data>
+  <data name="Tweak_r_Kuro_InteractionEffect_UseCppWaterEffect_Title" xml:space="preserve">
+    <value>水面涟漪</value>
+  </data>
+  <data name="Tweak_r_Kuro_InteractionEffect_UseCppWaterEffect_Desc" xml:space="preserve">
+    <value>贴近水面飞行或施放技能时的涟漪。游戏默认打开，Config 5 关闭。</value>
+  </data>
+  <data name="Tweak_r_HZBOcclusion_Title" xml:space="preserve">
+    <value>遮挡剔除方式</value>
+  </data>
+  <data name="Tweak_r_HZBOcclusion_Desc" xml:space="preserve">
+    <value>不在预设组合中。HZB 能减少转动镜头时的白点（Vault Underground、Minos Sewers 等），但部分区域 FPS 会降低。</value>
+  </data>
+  <data name="Tweak_r_PSO_CacheEvictScheme_Title" xml:space="preserve">
+    <value>PSO 缓存淘汰方式</value>
+  </data>
+  <data name="Tweak_r_PSO_CacheEvictScheme_Desc" xml:space="preserve">
+    <value>不在预设组合中。3.5 版以前默认为 LRU。</value>
+  </data>
+  <data name="Tweak_r_PSO_LRUCapacity_Title" xml:space="preserve">
+    <value>PSO LRU 缓存大小</value>
+  </data>
+  <data name="Tweak_r_PSO_LRUCapacity_Desc" xml:space="preserve">
+    <value>不在预设组合中。默认 2000；低于 1000 会让对象与 UI 显示不正常并闪烁。</value>
+  </data>
+  <data name="Tweak_Kuro_Blueprint_EnableGameBudget_Title" xml:space="preserve">
+    <value>蓝图更新时间预算</value>
+  </data>
+  <data name="Tweak_Kuro_Blueprint_EnableGameBudget_Desc" xml:space="preserve">
+    <value>不在预设组合中。关闭可修正七丘、拉海洛部分动画低帧率，但会让某些任务的交互对象失效（Honami 的伞、拉海洛的球）。</value>
+  </data>
+  <data name="Tweak_t_Streamline_Reflex_Enable_Title" xml:space="preserve">
+    <value>NVIDIA Reflex</value>
+  </data>
+  <data name="Tweak_t_Streamline_Reflex_Enable_Desc" xml:space="preserve">
+    <value>不在预设组合中。RTX 40／50 开着帧生成时无效。</value>
+  </data>
+  <data name="Tweak_t_Streamline_Reflex_Mode_Title" xml:space="preserve">
+    <value>NVIDIA Reflex 模式</value>
+  </data>
+  <data name="Tweak_t_Streamline_Reflex_Mode_Desc" xml:space="preserve">
+    <value>低延迟，或低延迟加上 Boost。</value>
+  </data>
+  <data name="Tweak_t_Streamline_Reflex_HandleMaxTickRate_Title" xml:space="preserve">
+    <value>由 Reflex 控制帧率上限</value>
+  </data>
+  <data name="Tweak_t_Streamline_Reflex_HandleMaxTickRate_Desc" xml:space="preserve">
+    <value>与 Reflex 搭配使用。</value>
+  </data>
+  <data name="Tweak_r_RayTracing_LoadConfig_Title" xml:space="preserve">
+    <value>加载光追设置</value>
+  </data>
+  <data name="Tweak_r_RayTracing_LoadConfig_Desc" xml:space="preserve">
+    <value>必须在启动游戏前设置。Config 1 打开；不用光追就关闭。</value>
+  </data>
+  <data name="Tweak_r_Lumen_ScreenProbeGather_Temporal_DistanceThreshold_Title" xml:space="preserve">
+    <value>光追 GI 时间累积距离门槛</value>
+  </data>
+  <data name="Tweak_r_Lumen_ScreenProbeGather_Temporal_DistanceThreshold_Desc" xml:space="preserve">
+    <value>越低越能减少角色靠近墙壁、植被时的残影，但闪烁会变多。默认 0.05（低／中）、0.03（高）。</value>
+  </data>
+  <data name="Tweak_r_Lumen_Reflections_AsyncCompute_Title" xml:space="preserve">
+    <value>反射使用异步运算</value>
+  </data>
+  <data name="Tweak_r_Lumen_Reflections_AsyncCompute_Desc" xml:space="preserve">
+    <value>部分显卡可能提升性能。游戏默认关闭。</value>
+  </data>
+  <data name="Tweak_r_Lumen_Reflections_ScreenTraces_Title" xml:space="preserve">
+    <value>反射屏幕追踪</value>
+  </data>
+  <data name="Tweak_r_Lumen_Reflections_ScreenTraces_Desc" xml:space="preserve">
+    <value>关闭可修正类似 SSR 的问题（例如角色、对象上的块状阴影），但有些对象不会再被反射。</value>
+  </data>
+  <data name="Tweak_r_Lumen_Reflections_SmoothBias_Title" xml:space="preserve">
+    <value>反射平滑偏移</value>
+  </data>
+  <data name="Tweak_r_Lumen_Reflections_SmoothBias_Desc" xml:space="preserve">
+    <value>0–1，默认 0.5。Lumen 反射的整体粗糙度偏移，1 为完全镜面。</value>
+  </data>
+  <data name="Tweak_r_Lumen_Reflections_DownsampleFactor_Title" xml:space="preserve">
+    <value>光追反射分辨率</value>
+  </data>
+  <data name="Tweak_r_Lumen_Reflections_DownsampleFactor_Desc" xml:space="preserve">
+    <value>设为全分辨率，可在 GI 与阴影用光追低／中的同时保有光追高的反射。</value>
+  </data>
+  <data name="Tweak_r_Lumen_Reflections_WaterDownsampleFactor_Title" xml:space="preserve">
+    <value>光追水面反射分辨率</value>
+  </data>
+  <data name="Tweak_r_Lumen_Reflections_WaterDownsampleFactor_Desc" xml:space="preserve">
+    <value>同上，作用于水面。</value>
+  </data>
+  <data name="Tweak_r_Lumen_TranslucencyReflections_FrontLayer_Allow_Title" xml:space="preserve">
+    <value>半透明前层反射</value>
+  </data>
+  <data name="Tweak_r_Lumen_TranslucencyReflections_FrontLayer_Allow_Desc" xml:space="preserve">
+    <value>同上：保有光追高反射的设置之一。</value>
+  </data>
+  <data name="Tweak_r_Lumen_TranslucencyReflections_FrontLayer_DownsampleFactor_Title" xml:space="preserve">
+    <value>半透明前层反射分辨率</value>
+  </data>
+  <data name="Tweak_r_Lumen_TranslucencyReflections_FrontLayer_DownsampleFactor_Desc" xml:space="preserve">
+    <value>同上。</value>
+  </data>
+  <data name="Tweak_r_Water_SingleLayer_Reflection_DownsampleCheckerboard_Title" xml:space="preserve">
+    <value>水面反射棋盘格降采样</value>
+  </data>
+  <data name="Tweak_r_Water_SingleLayer_Reflection_DownsampleCheckerboard_Desc" xml:space="preserve">
+    <value>保有光追高反射时设为关闭。</value>
+  </data>
+  <data name="Tweak_r_Reflections_Denoiser_Title" xml:space="preserve">
+    <value>反射降噪</value>
+  </data>
+  <data name="Tweak_r_Reflections_Denoiser_Desc" xml:space="preserve">
+    <value>搭配 DLSS Preset L／M 时与下面的 TAA、滤波项一起关闭。只在光追高时效果好。</value>
+  </data>
+  <data name="Tweak_r_Water_SingleLayer_SSRTAA_Title" xml:space="preserve">
+    <value>水面反射 TAA</value>
+  </data>
+  <data name="Tweak_r_Water_SingleLayer_SSRTAA_Desc" xml:space="preserve">
+    <value>与反射降噪一起关闭。</value>
+  </data>
+  <data name="Tweak_r_Lumen_Reflections_BilateralFilter_Title" xml:space="preserve">
+    <value>反射双边滤波</value>
+  </data>
+  <data name="Tweak_r_Lumen_Reflections_BilateralFilter_Desc" xml:space="preserve">
+    <value>与反射降噪一起关闭。</value>
+  </data>
+  <data name="Tweak_r_Lumen_Reflections_Temporal_Title" xml:space="preserve">
+    <value>反射时间滤波</value>
+  </data>
+  <data name="Tweak_r_Lumen_Reflections_Temporal_Desc" xml:space="preserve">
+    <value>与反射降噪一起关闭。</value>
+  </data>
+  <data name="Tweak_r_Lumen_Reflections_ScreenSpaceReconstruction_Title" xml:space="preserve">
+    <value>反射屏幕空间重建</value>
+  </data>
+  <data name="Tweak_r_Lumen_Reflections_ScreenSpaceReconstruction_Desc" xml:space="preserve">
+    <value>与反射降噪一起关闭。</value>
+  </data>
+  <data name="Tweak_r_NGX_DLSS_DenoiserMode_Title" xml:space="preserve">
+    <value>DLSS 光线重建</value>
+  </data>
+  <data name="Tweak_r_NGX_DLSS_DenoiserMode_Desc" xml:space="preserve">
+    <value>很吃性能。需搭配上面的降噪、TAA 项目一起关闭。</value>
+  </data>
+  <data name="Tweak_bEnableMouseSmoothing_Title" xml:space="preserve">
+    <value>鼠标平滑</value>
+  </data>
+  <data name="Tweak_bEnableMouseSmoothing_Desc" xml:space="preserve">
+    <value>关闭后鼠标移动不再平滑处理。</value>
+  </data>
+  <data name="Tweak_bEnableFOVScaling_Title" xml:space="preserve">
+    <value>依视角缩放鼠标</value>
+  </data>
+  <data name="Tweak_bEnableFOVScaling_Desc" xml:space="preserve">
+    <value>关闭后鼠标灵敏度不再随视角改变。</value>
+  </data>
+</root>

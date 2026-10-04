@@ -1,0 +1,737 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Ui_Title" xml:space="preserve">
+    <value>Engine.ini Tweaks</value>
+  </data>
+  <data name="Ui_Description" xml:space="preserve">
+    <value>Based on AlteriaX/WuWa-Configs. Every item can be tuned on its own, or left at "Game default" so the key is not written and the game decides. Nothing is written until you press Apply; only the keys listed here are touched, the rest of the file is kept as is, and the old file is backed up as *.starward.bak first. Changes made while the game is running do not take effect.</value>
+  </data>
+  <data name="Ui_Preset" xml:space="preserve">
+    <value>Preset</value>
+  </data>
+  <data name="Ui_LoadPreset" xml:space="preserve">
+    <value>Load preset</value>
+  </data>
+  <data name="Ui_PresetNote" xml:space="preserve">
+    <value>Loading a preset only changes the items it covers (advanced items such as Reflex or ray-tracing denoisers keep your choice). Fine-tune afterwards, then press Apply. The GPU list is only a guide: pick whichever reaches your target FPS and visuals.</value>
+  </data>
+  <data name="Ui_ResetAll" xml:space="preserve">
+    <value>Reset all to game default</value>
+  </data>
+  <data name="Ui_OpenFolder" xml:space="preserve">
+    <value>Open config folder</value>
+  </data>
+  <data name="Ui_SourceLink" xml:space="preserve">
+    <value>Explanations and image comparisons (AlteriaX)</value>
+  </data>
+  <data name="Ui_GameDefault" xml:space="preserve">
+    <value>Game default</value>
+  </data>
+  <data name="Ui_GameDefaultPlaceholder" xml:space="preserve">
+    <value>Game default (not written)</value>
+  </data>
+  <data name="Ui_CurrentValue" xml:space="preserve">
+    <value>Current value: {0}</value>
+  </data>
+  <data name="Ui_OptionFormat" xml:space="preserve">
+    <value>{0} ({1})</value>
+  </data>
+  <data name="Ui_ModifiedCount" xml:space="preserve">
+    <value>{0} / {1} set</value>
+  </data>
+  <data name="Ui_UserEngineIniFound" xml:space="preserve">
+    <value>UserEngine.ini found. It is loaded after Engine.ini and overrides the settings written here; AlteriaX's guide says to remove it.</value>
+  </data>
+  <data name="Ui_DisableUserEngineIni" xml:space="preserve">
+    <value>Disable (rename to UserEngine.ini.starward.bak)</value>
+  </data>
+  <data name="Preset_1" xml:space="preserve">
+    <value>Config 1: RTX 5090, 5080, 5070 Ti, 4090, 4080 · RX 9070 XT, 7900 XTX — ray-tracing config loaded, longest foliage distance (lower FPS than default)</value>
+  </data>
+  <data name="Preset_2" xml:space="preserve">
+    <value>Config 2: RTX 5070, 5060 (Ti), 4070, 4060 Ti, 3070–3090, 2080 Ti · RX 9070, 9060, 7700 XT–7900, 6800–6950 XT</value>
+  </data>
+  <data name="Preset_3" xml:space="preserve">
+    <value>Config 3: RTX 5050, 4060, 4050, 3060, 3050, 2060–2080, GTX 1660, 1070 Ti–1080 · RX 7600, 6600–6700 XT, 5600–5700 XT · Arc A580–B580</value>
+  </data>
+  <data name="Preset_4" xml:space="preserve">
+    <value>Config 4: RTX 3050 Laptop, 2050, GTX 1660, 1650, 1060–1070 · RX 6500 XT, 6400, 5500 XT, 570–590, 890M · Arc 140V, A380</value>
+  </data>
+  <data name="Preset_5" xml:space="preserve">
+    <value>Config 5: GTX 1650 Laptop, 1050, GT 1030, MX series · RX 560, 550, 780M, 680M, Vega iGPU · A310, Iris Xe, UHD — removes all grass</value>
+  </data>
+  <data name="Category_PostProcess" xml:space="preserve">
+    <value>Post-processing</value>
+  </data>
+  <data name="Category_Shadow" xml:space="preserve">
+    <value>Shadows</value>
+  </data>
+  <data name="Category_AmbientOcclusion" xml:space="preserve">
+    <value>Ambient occlusion</value>
+  </data>
+  <data name="Category_ViewDistance" xml:space="preserve">
+    <value>View distance &amp; foliage</value>
+  </data>
+  <data name="Category_Streaming" xml:space="preserve">
+    <value>Streaming, LOD &amp; textures</value>
+  </data>
+  <data name="Category_Lighting" xml:space="preserve">
+    <value>Lighting &amp; volumetrics</value>
+  </data>
+  <data name="Category_Reflection" xml:space="preserve">
+    <value>Reflections</value>
+  </data>
+  <data name="Category_Fog" xml:space="preserve">
+    <value>Fog</value>
+  </data>
+  <data name="Category_Effects" xml:space="preserve">
+    <value>Effects, performance &amp; others</value>
+  </data>
+  <data name="Category_RayTracing" xml:space="preserve">
+    <value>Ray tracing</value>
+  </data>
+  <data name="Category_Input" xml:space="preserve">
+    <value>Mouse (Input.ini)</value>
+  </data>
+  <data name="Option_Off" xml:space="preserve">
+    <value>Off</value>
+  </data>
+  <data name="Option_On" xml:space="preserve">
+    <value>On</value>
+  </data>
+  <data name="Option_Low" xml:space="preserve">
+    <value>Low</value>
+  </data>
+  <data name="Option_Medium" xml:space="preserve">
+    <value>Medium</value>
+  </data>
+  <data name="Option_High" xml:space="preserve">
+    <value>High</value>
+  </data>
+  <data name="Option_VeryHigh" xml:space="preserve">
+    <value>Very high</value>
+  </data>
+  <data name="Option_Extreme" xml:space="preserve">
+    <value>Extremely high</value>
+  </data>
+  <data name="Option_Epic" xml:space="preserve">
+    <value>Epic</value>
+  </data>
+  <data name="Option_FullRes" xml:space="preserve">
+    <value>Full res</value>
+  </data>
+  <data name="Option_HalfRes" xml:space="preserve">
+    <value>Half res</value>
+  </data>
+  <data name="Option_QuarterRes" xml:space="preserve">
+    <value>Quarter res</value>
+  </data>
+  <data name="Option_Tonemapper_FilmContrast" xml:space="preserve">
+    <value>Film contrast only (no grain/vignette)</value>
+  </data>
+  <data name="Option_Tonemapper_Vignette" xml:space="preserve">
+    <value>Vignette</value>
+  </data>
+  <data name="Option_Tonemapper_VignetteGrain" xml:space="preserve">
+    <value>Vignette + film grain</value>
+  </data>
+  <data name="Option_Tonemapping_Genshin" xml:space="preserve">
+    <value>Genshin style</value>
+  </data>
+  <data name="Option_Tonemapping_DeathStranding" xml:space="preserve">
+    <value>Death Stranding style</value>
+  </data>
+  <data name="Option_Tonemapping_Kuro" xml:space="preserve">
+    <value>Kuro</value>
+  </data>
+  <data name="Option_Streaming_Retention" xml:space="preserve">
+    <value>Retention only</value>
+  </data>
+  <data name="Option_Streaming_Load" xml:space="preserve">
+    <value>Load only</value>
+  </data>
+  <data name="Option_Streaming_Both" xml:space="preserve">
+    <value>Retention and load</value>
+  </data>
+  <data name="Option_GBuffer_Low" xml:space="preserve">
+    <value>Low precision</value>
+  </data>
+  <data name="Option_GBuffer_HighNormals" xml:space="preserve">
+    <value>High precision normals</value>
+  </data>
+  <data name="Option_GBuffer_High" xml:space="preserve">
+    <value>High precision</value>
+  </data>
+  <data name="Option_Occlusion_Hardware" xml:space="preserve">
+    <value>Hardware occlusion</value>
+  </data>
+  <data name="Option_Occlusion_HZB" xml:space="preserve">
+    <value>HZB occlusion</value>
+  </data>
+  <data name="Option_PSO_Default" xml:space="preserve">
+    <value>Default</value>
+  </data>
+  <data name="Option_PSO_LRU" xml:space="preserve">
+    <value>LRU</value>
+  </data>
+  <data name="Option_Reflex_LowLatency" xml:space="preserve">
+    <value>Low latency</value>
+  </data>
+  <data name="Option_Reflex_Boost" xml:space="preserve">
+    <value>Low latency + boost</value>
+  </data>
+  <data name="Option_Denoiser_Builtin" xml:space="preserve">
+    <value>Built-in</value>
+  </data>
+  <data name="Option_Denoiser_Plugin" xml:space="preserve">
+    <value>Default / plugin</value>
+  </data>
+  <data name="Option_DLSS_RayReconstruction" xml:space="preserve">
+    <value>Ray Reconstruction</value>
+  </data>
+  <data name="Tweak_r_DepthOfFieldQuality_Title" xml:space="preserve">
+    <value>Depth of field</value>
+  </data>
+  <data name="Tweak_r_DepthOfFieldQuality_Desc" xml:space="preserve">
+    <value>Blur of out-of-focus areas, mostly in cutscenes. Game default: High (2). The presets leave it on; set Off to disable.</value>
+  </data>
+  <data name="Tweak_r_Tonemapper_Quality_Title" xml:space="preserve">
+    <value>Film grain &amp; vignette</value>
+  </data>
+  <data name="Tweak_r_Tonemapper_Quality_Desc" xml:space="preserve">
+    <value>Film contrast only (1) removes film grain and vignette and can make some scenes brighter.</value>
+  </data>
+  <data name="Tweak_r_SceneColorFringeQuality_Title" xml:space="preserve">
+    <value>Chromatic aberration</value>
+  </data>
+  <data name="Tweak_r_SceneColorFringeQuality_Desc" xml:space="preserve">
+    <value>Colour fringing at the screen edges. Game default: On. All presets turn it off.</value>
+  </data>
+  <data name="Tweak_r_Kuro_KuroEnableFFTBloom_Title" xml:space="preserve">
+    <value>FFT bloom</value>
+  </data>
+  <data name="Tweak_r_Kuro_KuroEnableFFTBloom_Desc" xml:space="preserve">
+    <value>The newer bloom introduced with Lahai-Roi. Default On for Balanced and above.</value>
+  </data>
+  <data name="Tweak_r_Kuro_KuroEnableToonFFTBloom_Title" xml:space="preserve">
+    <value>Toon FFT bloom</value>
+  </data>
+  <data name="Tweak_r_Kuro_KuroEnableToonFFTBloom_Desc" xml:space="preserve">
+    <value>FFT bloom applied to toon-shaded characters. Default On for Balanced and above.</value>
+  </data>
+  <data name="Tweak_r_Kuro_KuroBloomStreak_Title" xml:space="preserve">
+    <value>Bloom streak</value>
+  </data>
+  <data name="Tweak_r_Kuro_KuroBloomStreak_Desc" xml:space="preserve">
+    <value>Off gives slightly lower bloom brightness without the streaks. Game default: On.</value>
+  </data>
+  <data name="Tweak_r_EnableLensflareSceneSample_Title" xml:space="preserve">
+    <value>Lens flare</value>
+  </data>
+  <data name="Tweak_r_EnableLensflareSceneSample_Desc" xml:space="preserve">
+    <value>Lens flare from bright light sources. Game default: On.</value>
+  </data>
+  <data name="Tweak_r_Kuro_NiagaraBlur_Enable_Title" xml:space="preserve">
+    <value>Niagara effect blur</value>
+  </data>
+  <data name="Tweak_r_Kuro_NiagaraBlur_Enable_Desc" xml:space="preserve">
+    <value>Blur used by some particle (Niagara) effects. The presets leave it on and only list it as optional to disable.</value>
+  </data>
+  <data name="Tweak_r_KuroTonemapping_Title" xml:space="preserve">
+    <value>Tonemapping curve</value>
+  </data>
+  <data name="Tweak_r_KuroTonemapping_Desc" xml:space="preserve">
+    <value>Overall colour response. Game default: Kuro (3).</value>
+  </data>
+  <data name="Tweak_r_Shadow_RadiusThreshold_Title" xml:space="preserve">
+    <value>Shadow radius threshold</value>
+  </data>
+  <data name="Tweak_r_Shadow_RadiusThreshold_Desc" xml:space="preserve">
+    <value>Objects smaller than this share of the screen cast no shadow; lower = more shadows, more cost. Presets: 0.01 (Config 1–3), 0.02 (4), 0.06 (5).</value>
+  </data>
+  <data name="Tweak_r_Shadow_PerObjectShadowMapResolution_Title" xml:space="preserve">
+    <value>Per-object shadow map resolution</value>
+  </data>
+  <data name="Tweak_r_Shadow_PerObjectShadowMapResolution_Desc" xml:space="preserve">
+    <value>Base resolution of character (per-object) shadows. Config 4/5 set 512/256 together with the min/max below.</value>
+  </data>
+  <data name="Tweak_r_Shadow_PerObjectResolutionMax_Title" xml:space="preserve">
+    <value>Character shadow resolution (max)</value>
+  </data>
+  <data name="Tweak_r_Shadow_PerObjectResolutionMax_Desc" xml:space="preserve">
+    <value>The game's default is low, which is why character shadows look rough; 512 or 1024 already looks much better. Higher costs more FPS.</value>
+  </data>
+  <data name="Tweak_r_Shadow_PerObjectResolutionMin_Title" xml:space="preserve">
+    <value>Character shadow resolution (min)</value>
+  </data>
+  <data name="Tweak_r_Shadow_PerObjectResolutionMin_Desc" xml:space="preserve">
+    <value>Keep it equal to the maximum so shadows do not drop in resolution with distance.</value>
+  </data>
+  <data name="Tweak_r_DistanceFieldShadowing_Title" xml:space="preserve">
+    <value>Distance field shadows</value>
+  </data>
+  <data name="Tweak_r_DistanceFieldShadowing_Desc" xml:space="preserve">
+    <value>Soft shadows from distant objects. Default On for the High and Ultra quality presets.</value>
+  </data>
+  <data name="Tweak_r_DFShadowQuality_Title" xml:space="preserve">
+    <value>Distance field shadow quality</value>
+  </data>
+  <data name="Tweak_r_DFShadowQuality_Desc" xml:space="preserve">
+    <value>Only matters when distance field shadows are on. Config 1 uses High (3).</value>
+  </data>
+  <data name="Tweak_r_Shadow_CacheDirectLightShadow_Title" xml:space="preserve">
+    <value>Cache directional light shadows</value>
+  </data>
+  <data name="Tweak_r_Shadow_CacheDirectLightShadow_Desc" xml:space="preserve">
+    <value>Not in the presets. Turning it off fixes the low-FPS (stuttery) shadows in Lahai-Roi and newer areas, but costs 10–20+ FPS and some shadows update too fast.</value>
+  </data>
+  <data name="Tweak_r_AODownsampleFactor_Title" xml:space="preserve">
+    <value>DFAO resolution</value>
+  </data>
+  <data name="Tweak_r_AODownsampleFactor_Desc" xml:space="preserve">
+    <value>Resolution of distance field ambient occlusion. Game default: half res (2). Config 1 uses full res.</value>
+  </data>
+  <data name="Tweak_r_AmbientOcclusion_Intensity_Title" xml:space="preserve">
+    <value>AO intensity</value>
+  </data>
+  <data name="Tweak_r_AmbientOcclusion_Intensity_Desc" xml:space="preserve">
+    <value>Higher = stronger ambient occlusion. Default -1, which means 0.9.</value>
+  </data>
+  <data name="Tweak_r_AmbientOcclusionMaxQuality_Title" xml:space="preserve">
+    <value>Screen-space AO max quality</value>
+  </data>
+  <data name="Tweak_r_AmbientOcclusionMaxQuality_Desc" xml:space="preserve">
+    <value>Caps the quality of screen-space ambient occlusion: 100 leaves it uncapped, 0 turns it off (Config 5).</value>
+  </data>
+  <data name="Tweak_foliage_LODDistanceScale_Title" xml:space="preserve">
+    <value>Foliage LOD distance scale</value>
+  </data>
+  <data name="Tweak_foliage_LODDistanceScale_Desc" xml:space="preserve">
+    <value>How far foliage keeps its detailed model. Game default 1.0; little difference above 5. Config 1 / 2 use 3.0 / 2.0.</value>
+  </data>
+  <data name="Tweak_r_Kuro_Foliage_NearCullDistanceMax_Title" xml:space="preserve">
+    <value>Foliage cull distance (near)</value>
+  </data>
+  <data name="Tweak_r_Kuro_Foliage_NearCullDistanceMax_Desc" xml:space="preserve">
+    <value>Maximum distance before near-layer foliage is culled. Higher = more foliage in the distance, lower FPS.</value>
+  </data>
+  <data name="Tweak_r_Kuro_Foliage_MiddleCullDistanceMax_Title" xml:space="preserve">
+    <value>Foliage cull distance (middle)</value>
+  </data>
+  <data name="Tweak_r_Kuro_Foliage_MiddleCullDistanceMax_Desc" xml:space="preserve">
+    <value>Same as above for the middle foliage layer.</value>
+  </data>
+  <data name="Tweak_r_Kuro_Foliage_FarCullDistanceMax_Title" xml:space="preserve">
+    <value>Foliage cull distance (far)</value>
+  </data>
+  <data name="Tweak_r_Kuro_Foliage_FarCullDistanceMax_Desc" xml:space="preserve">
+    <value>Same as above for the far foliage layer.</value>
+  </data>
+  <data name="Tweak_r_Kuro_Foliage_GrassCullDistanceMax_Title" xml:space="preserve">
+    <value>Grass cull distance</value>
+  </data>
+  <data name="Tweak_r_Kuro_Foliage_GrassCullDistanceMax_Desc" xml:space="preserve">
+    <value>Distance before grass is culled.</value>
+  </data>
+  <data name="Tweak_r_Kuro_Foliage_Grass3_0CullDistanceMax_Title" xml:space="preserve">
+    <value>Grass cull distance (3.0 areas)</value>
+  </data>
+  <data name="Tweak_r_Kuro_Foliage_Grass3_0CullDistanceMax_Desc" xml:space="preserve">
+    <value>Grass cull distance used by the areas added from version 3.0.</value>
+  </data>
+  <data name="Tweak_wp_Runtime_SoraGridBlackListHeight_Title" xml:space="preserve">
+    <value>Flight height limit for distant objects</value>
+  </data>
+  <data name="Tweak_wp_Runtime_SoraGridBlackListHeight_Desc" xml:space="preserve">
+    <value>Height above which lights turn off and objects despawn while flying.</value>
+  </data>
+  <data name="Tweak_foliage_CullAll_Title" xml:space="preserve">
+    <value>Remove all grass</value>
+  </data>
+  <data name="Tweak_foliage_CullAll_Desc" xml:space="preserve">
+    <value>Config 5 sets this to On to remove grass entirely for performance.</value>
+  </data>
+  <data name="Tweak_r_Kuro_NpcDisappearDistance_Title" xml:space="preserve">
+    <value>NPC disappear distance</value>
+  </data>
+  <data name="Tweak_r_Kuro_NpcDisappearDistance_Desc" xml:space="preserve">
+    <value>Not in the presets. Distance at which NPCs disappear (default 6000). Some NPCs have their own fixed distance.</value>
+  </data>
+  <data name="Tweak_r_Streaming_UsingKuroStreamingPriority_Title" xml:space="preserve">
+    <value>Kuro streaming priority</value>
+  </data>
+  <data name="Tweak_r_Streaming_UsingKuroStreamingPriority_Desc" xml:space="preserve">
+    <value>Default: retention and load (3). Off fixes Exostrider armour not loading in Aemeath Res Lib, but Smartprint Cube Reboot textures load slowly.</value>
+  </data>
+  <data name="Tweak_r_StaticMeshLODDistanceScale_Title" xml:space="preserve">
+    <value>Static mesh LOD distance scale</value>
+  </data>
+  <data name="Tweak_r_StaticMeshLODDistanceScale_Desc" xml:space="preserve">
+    <value>Lower = better detail on far objects. Values below 0.5 can make ground textures flicker.</value>
+  </data>
+  <data name="Tweak_wp_Runtime_PlannedLoadingRangeScale_Title" xml:space="preserve">
+    <value>World loading range</value>
+  </data>
+  <data name="Tweak_wp_Runtime_PlannedLoadingRangeScale_Desc" xml:space="preserve">
+    <value>Higher = more objects rendered and better textures in the distance. 1.0 appears to be the limit.</value>
+  </data>
+  <data name="Tweak_r_Kuro_SkeletalMesh_DistanceLODBaseFOV_Title" xml:space="preserve">
+    <value>Skeletal mesh LOD base FOV</value>
+  </data>
+  <data name="Tweak_r_Kuro_SkeletalMesh_DistanceLODBaseFOV_Desc" xml:space="preserve">
+    <value>Base field of view used to pick character/creature LODs by distance; every preset uses 150.</value>
+  </data>
+  <data name="Tweak_r_Kuro_MaterialDesktopQualityShoulderRender_Title" xml:space="preserve">
+    <value>Desktop-quality material extra pass</value>
+  </data>
+  <data name="Tweak_r_Kuro_MaterialDesktopQualityShoulderRender_Desc" xml:space="preserve">
+    <value>Config 5 turns this off to save performance. The preset author does not document what it changes.</value>
+  </data>
+  <data name="Tweak_r_MeshBlend_Quality_Title" xml:space="preserve">
+    <value>Mesh blend quality</value>
+  </data>
+  <data name="Tweak_r_MeshBlend_Quality_Desc" xml:space="preserve">
+    <value>Quality of blending where meshes meet the terrain. Config 1 uses High (3).</value>
+  </data>
+  <data name="Tweak_r_MaxAnisotropy_Title" xml:space="preserve">
+    <value>Anisotropic filtering</value>
+  </data>
+  <data name="Tweak_r_MaxAnisotropy_Desc" xml:space="preserve">
+    <value>Sharpness of textures at grazing angles. Available in the in-game settings since 3.3.</value>
+  </data>
+  <data name="Tweak_r_ParallelFrustumCull_Title" xml:space="preserve">
+    <value>Parallel frustum culling</value>
+  </data>
+  <data name="Tweak_r_ParallelFrustumCull_Desc" xml:space="preserve">
+    <value>Runs frustum culling on several CPU threads. Every preset turns it on.</value>
+  </data>
+  <data name="Tweak_r_TyndallScatteringQuality_Title" xml:space="preserve">
+    <value>Tyndall scattering quality</value>
+  </data>
+  <data name="Tweak_r_TyndallScatteringQuality_Desc" xml:space="preserve">
+    <value>Quality of light beams through fog and foliage. Config 1–2 use High.</value>
+  </data>
+  <data name="Tweak_r_LightShaftDownSampleFactor_Title" xml:space="preserve">
+    <value>Light shaft resolution</value>
+  </data>
+  <data name="Tweak_r_LightShaftDownSampleFactor_Desc" xml:space="preserve">
+    <value>1 to 8, higher = lower resolution. Game default: 2.</value>
+  </data>
+  <data name="Tweak_r_Kuro_KuroTyndallScatteringsDownSampleFactor_Title" xml:space="preserve">
+    <value>Tyndall scattering resolution</value>
+  </data>
+  <data name="Tweak_r_Kuro_KuroTyndallScatteringsDownSampleFactor_Desc" xml:space="preserve">
+    <value>Higher = lower resolution.</value>
+  </data>
+  <data name="Tweak_r_KuroVolumetricLight_ColorMaskDownSampleFactor_Title" xml:space="preserve">
+    <value>Volumetric light colour mask resolution</value>
+  </data>
+  <data name="Tweak_r_KuroVolumetricLight_ColorMaskDownSampleFactor_Desc" xml:space="preserve">
+    <value>Higher = lower quality. Game default: 4.</value>
+  </data>
+  <data name="Tweak_r_KuroVolumetricLight_DownSampleFactor_Title" xml:space="preserve">
+    <value>Volumetric light resolution</value>
+  </data>
+  <data name="Tweak_r_KuroVolumetricLight_DownSampleFactor_Desc" xml:space="preserve">
+    <value>Higher = lower quality. Game default: 4.</value>
+  </data>
+  <data name="Tweak_r_SSR_Quality_Title" xml:space="preserve">
+    <value>Screen-space reflection quality</value>
+  </data>
+  <data name="Tweak_r_SSR_Quality_Desc" xml:space="preserve">
+    <value>Changing the quality does not seem to do anything except Off, which Config 5 uses to disable SSR.</value>
+  </data>
+  <data name="Tweak_r_SSR_MaxRoughness_Title" xml:space="preserve">
+    <value>SSR max roughness</value>
+  </data>
+  <data name="Tweak_r_SSR_MaxRoughness_Desc" xml:space="preserve">
+    <value>0.0–1.0, the roughness at which SSR starts to fade out. Game default: 0.6; presets use 1.0.</value>
+  </data>
+  <data name="Tweak_r_SSR_HalfResSceneColor_Title" xml:space="preserve">
+    <value>SSR scene colour resolution</value>
+  </data>
+  <data name="Tweak_r_SSR_HalfResSceneColor_Desc" xml:space="preserve">
+    <value>Use full or half resolution scene colour for reflections.</value>
+  </data>
+  <data name="Tweak_r_GBufferFormat_Title" xml:space="preserve">
+    <value>GBuffer format</value>
+  </data>
+  <data name="Tweak_r_GBufferFormat_Desc" xml:space="preserve">
+    <value>Not in the presets. High precision normals (3) improve SSR quality; high precision (5) is better than default but slightly worse than 3.</value>
+  </data>
+  <data name="Tweak_r_SSFS_Title" xml:space="preserve">
+    <value>Screen-space fog scattering</value>
+  </data>
+  <data name="Tweak_r_SSFS_Desc" xml:space="preserve">
+    <value>The in-game Volumetric Fog option does not remove all fog; turning this off removes the rest. Game default: On.</value>
+  </data>
+  <data name="Tweak_r_SSFS_DownSampleFator_Title" xml:space="preserve">
+    <value>Fog scattering resolution</value>
+  </data>
+  <data name="Tweak_r_SSFS_DownSampleFator_Desc" xml:space="preserve">
+    <value>Resolution of screen-space fog scattering. (The misspelt name is the real cvar.)</value>
+  </data>
+  <data name="Tweak_a_URO_Enable_Title" xml:space="preserve">
+    <value>Animation rate optimisation</value>
+  </data>
+  <data name="Tweak_a_URO_Enable_Desc" xml:space="preserve">
+    <value>Off fixes low-FPS animation of some things in Jinzhou and Rinascita, but not in newer areas. Game default: On.</value>
+  </data>
+  <data name="Tweak_a_URO_EnableScreenRatio_Title" xml:space="preserve">
+    <value>Screen-ratio animation optimisation</value>
+  </data>
+  <data name="Tweak_a_URO_EnableScreenRatio_Desc" xml:space="preserve">
+    <value>Added in 3.5. Lowers animation rate for small on-screen objects. Game default: On.</value>
+  </data>
+  <data name="Tweak_r_Upscale_Quality_Title" xml:space="preserve">
+    <value>Upscale quality</value>
+  </data>
+  <data name="Tweak_r_Upscale_Quality_Desc" xml:space="preserve">
+    <value>Also affects UI sharpness at native resolution. 3 is best; some GPUs default lower. Above 3 makes parts of the UI glitch.</value>
+  </data>
+  <data name="Tweak_r_DetailMode_Title" xml:space="preserve">
+    <value>Detail mode</value>
+  </data>
+  <data name="Tweak_r_DetailMode_Desc" xml:space="preserve">
+    <value>Not in the presets. Changes object details, lights and particle effects.</value>
+  </data>
+  <data name="Tweak_r_VRS_Enable_Title" xml:space="preserve">
+    <value>Variable rate shading</value>
+  </data>
+  <data name="Tweak_r_VRS_Enable_Desc" xml:space="preserve">
+    <value>Shades parts of the screen at lower rate for performance. Game default: On; every preset turns it off.</value>
+  </data>
+  <data name="Tweak_r_Kuro_KuroFFTDynamicQuality_Title" xml:space="preserve">
+    <value>FFT dynamic quality</value>
+  </data>
+  <data name="Tweak_r_Kuro_KuroFFTDynamicQuality_Desc" xml:space="preserve">
+    <value>Lets the game lower the FFT effect quality on the fly. Every preset turns it off.</value>
+  </data>
+  <data name="Tweak_r_Kuro_KuroFFTHighQuality_Title" xml:space="preserve">
+    <value>FFT quality level</value>
+  </data>
+  <data name="Tweak_r_Kuro_KuroFFTHighQuality_Desc" xml:space="preserve">
+    <value>Smaller is finer: the presets use 1 (Config 1), 2 (Config 2–3), 3 (Config 4) and 4 (Config 5).</value>
+  </data>
+  <data name="Tweak_r_KuroDownsampleTranslucencyFullRes_Title" xml:space="preserve">
+    <value>Full-res translucency</value>
+  </data>
+  <data name="Tweak_r_KuroDownsampleTranslucencyFullRes_Desc" xml:space="preserve">
+    <value>Renders translucent effects at full resolution. Only Config 1 turns it on.</value>
+  </data>
+  <data name="Tweak_foliage_DensityScaleLOD_DrawCallOptimize_Title" xml:space="preserve">
+    <value>Foliage draw call optimisation</value>
+  </data>
+  <data name="Tweak_foliage_DensityScaleLOD_DrawCallOptimize_Desc" xml:space="preserve">
+    <value>Optimises draw calls for the foliage density LOD scale. Game default: Off; every preset turns it on.</value>
+  </data>
+  <data name="Tweak_r_Kuro_InteractionEffect_EnableBushInteractionEffect_Title" xml:space="preserve">
+    <value>Bush interaction effect</value>
+  </data>
+  <data name="Tweak_r_Kuro_InteractionEffect_EnableBushInteractionEffect_Desc" xml:space="preserve">
+    <value>Bushes reacting to the character. Config 5 turns it off.</value>
+  </data>
+  <data name="Tweak_r_Kuro_InteractionEffect_EnableFoliageEffect_Title" xml:space="preserve">
+    <value>Foliage interaction effect</value>
+  </data>
+  <data name="Tweak_r_Kuro_InteractionEffect_EnableFoliageEffect_Desc" xml:space="preserve">
+    <value>Foliage reacting to the character. Config 5 turns it off.</value>
+  </data>
+  <data name="Tweak_r_Kuro_InteractionEffect_UseCppWaterEffect_Title" xml:space="preserve">
+    <value>Water ripples</value>
+  </data>
+  <data name="Tweak_r_Kuro_InteractionEffect_UseCppWaterEffect_Desc" xml:space="preserve">
+    <value>Ripples when flying close to water or casting skills. Game default: On; Config 5 turns it off.</value>
+  </data>
+  <data name="Tweak_r_HZBOcclusion_Title" xml:space="preserve">
+    <value>Occlusion culling method</value>
+  </data>
+  <data name="Tweak_r_HZBOcclusion_Desc" xml:space="preserve">
+    <value>Not in the presets. HZB reduces white spots when turning the camera (Vault Underground, Minos Sewers…) but lowers FPS in some areas.</value>
+  </data>
+  <data name="Tweak_r_PSO_CacheEvictScheme_Title" xml:space="preserve">
+    <value>PSO cache eviction</value>
+  </data>
+  <data name="Tweak_r_PSO_CacheEvictScheme_Desc" xml:space="preserve">
+    <value>Not in the presets. LRU was the default up to 3.5.</value>
+  </data>
+  <data name="Tweak_r_PSO_LRUCapacity_Title" xml:space="preserve">
+    <value>PSO LRU cache size</value>
+  </data>
+  <data name="Tweak_r_PSO_LRUCapacity_Desc" xml:space="preserve">
+    <value>Not in the presets. Default 2000; below 1000 objects and UI may not render properly and flicker.</value>
+  </data>
+  <data name="Tweak_Kuro_Blueprint_EnableGameBudget_Title" xml:space="preserve">
+    <value>Blueprint tick time budget</value>
+  </data>
+  <data name="Tweak_Kuro_Blueprint_EnableGameBudget_Desc" xml:space="preserve">
+    <value>Not in the presets. Off fixes low-FPS animation in Septimont/Lahai-Roi but disables some interactive quest objects (Honami umbrella, Lahai-Roi ball).</value>
+  </data>
+  <data name="Tweak_t_Streamline_Reflex_Enable_Title" xml:space="preserve">
+    <value>NVIDIA Reflex</value>
+  </data>
+  <data name="Tweak_t_Streamline_Reflex_Enable_Desc" xml:space="preserve">
+    <value>Not in the presets. Has no effect on RTX 40/50 while Frame Generation is on.</value>
+  </data>
+  <data name="Tweak_t_Streamline_Reflex_Mode_Title" xml:space="preserve">
+    <value>NVIDIA Reflex mode</value>
+  </data>
+  <data name="Tweak_t_Streamline_Reflex_Mode_Desc" xml:space="preserve">
+    <value>Low latency, or low latency with boost.</value>
+  </data>
+  <data name="Tweak_t_Streamline_Reflex_HandleMaxTickRate_Title" xml:space="preserve">
+    <value>Reflex handles frame cap</value>
+  </data>
+  <data name="Tweak_t_Streamline_Reflex_HandleMaxTickRate_Desc" xml:space="preserve">
+    <value>Use together with Reflex.</value>
+  </data>
+  <data name="Tweak_r_RayTracing_LoadConfig_Title" xml:space="preserve">
+    <value>Load ray-tracing config</value>
+  </data>
+  <data name="Tweak_r_RayTracing_LoadConfig_Desc" xml:space="preserve">
+    <value>Must be set before launching the game. Config 1 turns it on; turn it off if you do not use ray tracing.</value>
+  </data>
+  <data name="Tweak_r_Lumen_ScreenProbeGather_Temporal_DistanceThreshold_Title" xml:space="preserve">
+    <value>RT GI temporal distance threshold</value>
+  </data>
+  <data name="Tweak_r_Lumen_ScreenProbeGather_Temporal_DistanceThreshold_Desc" xml:space="preserve">
+    <value>Lower reduces ghosting behind characters near walls/foliage but increases flicker. Default 0.05 (Low/Medium), 0.03 (High).</value>
+  </data>
+  <data name="Tweak_r_Lumen_Reflections_AsyncCompute_Title" xml:space="preserve">
+    <value>Async compute for reflections</value>
+  </data>
+  <data name="Tweak_r_Lumen_Reflections_AsyncCompute_Desc" xml:space="preserve">
+    <value>May improve performance on some GPUs. Game default: Off.</value>
+  </data>
+  <data name="Tweak_r_Lumen_Reflections_ScreenTraces_Title" xml:space="preserve">
+    <value>Reflection screen traces</value>
+  </data>
+  <data name="Tweak_r_Lumen_Reflections_ScreenTraces_Desc" xml:space="preserve">
+    <value>Off fixes SSR-like problems (e.g. blocky shadows on characters/objects) but some objects are no longer reflected.</value>
+  </data>
+  <data name="Tweak_r_Lumen_Reflections_SmoothBias_Title" xml:space="preserve">
+    <value>Reflection smooth bias</value>
+  </data>
+  <data name="Tweak_r_Lumen_Reflections_SmoothBias_Desc" xml:space="preserve">
+    <value>0–1, default 0.5. Global roughness bias for Lumen reflections; 1 is a full mirror.</value>
+  </data>
+  <data name="Tweak_r_Lumen_Reflections_DownsampleFactor_Title" xml:space="preserve">
+    <value>RT reflection resolution</value>
+  </data>
+  <data name="Tweak_r_Lumen_Reflections_DownsampleFactor_Desc" xml:space="preserve">
+    <value>Set to full res to keep RT High reflections while using RT Low/Medium for GI and shadows.</value>
+  </data>
+  <data name="Tweak_r_Lumen_Reflections_WaterDownsampleFactor_Title" xml:space="preserve">
+    <value>RT water reflection resolution</value>
+  </data>
+  <data name="Tweak_r_Lumen_Reflections_WaterDownsampleFactor_Desc" xml:space="preserve">
+    <value>As above, for water.</value>
+  </data>
+  <data name="Tweak_r_Lumen_TranslucencyReflections_FrontLayer_Allow_Title" xml:space="preserve">
+    <value>Translucent front-layer reflections</value>
+  </data>
+  <data name="Tweak_r_Lumen_TranslucencyReflections_FrontLayer_Allow_Desc" xml:space="preserve">
+    <value>As above: part of keeping RT High reflections.</value>
+  </data>
+  <data name="Tweak_r_Lumen_TranslucencyReflections_FrontLayer_DownsampleFactor_Title" xml:space="preserve">
+    <value>Translucent front-layer reflection resolution</value>
+  </data>
+  <data name="Tweak_r_Lumen_TranslucencyReflections_FrontLayer_DownsampleFactor_Desc" xml:space="preserve">
+    <value>As above.</value>
+  </data>
+  <data name="Tweak_r_Water_SingleLayer_Reflection_DownsampleCheckerboard_Title" xml:space="preserve">
+    <value>Checkerboard water reflections</value>
+  </data>
+  <data name="Tweak_r_Water_SingleLayer_Reflection_DownsampleCheckerboard_Desc" xml:space="preserve">
+    <value>Off as part of keeping RT High reflections.</value>
+  </data>
+  <data name="Tweak_r_Reflections_Denoiser_Title" xml:space="preserve">
+    <value>Reflection denoiser</value>
+  </data>
+  <data name="Tweak_r_Reflections_Denoiser_Desc" xml:space="preserve">
+    <value>Off together with the TAA/filter items below for DLSS Preset L/M. Only works well with RT High.</value>
+  </data>
+  <data name="Tweak_r_Water_SingleLayer_SSRTAA_Title" xml:space="preserve">
+    <value>Water reflection TAA</value>
+  </data>
+  <data name="Tweak_r_Water_SingleLayer_SSRTAA_Desc" xml:space="preserve">
+    <value>Off together with the reflection denoiser.</value>
+  </data>
+  <data name="Tweak_r_Lumen_Reflections_BilateralFilter_Title" xml:space="preserve">
+    <value>Reflection bilateral filter</value>
+  </data>
+  <data name="Tweak_r_Lumen_Reflections_BilateralFilter_Desc" xml:space="preserve">
+    <value>Off together with the reflection denoiser.</value>
+  </data>
+  <data name="Tweak_r_Lumen_Reflections_Temporal_Title" xml:space="preserve">
+    <value>Reflection temporal filter</value>
+  </data>
+  <data name="Tweak_r_Lumen_Reflections_Temporal_Desc" xml:space="preserve">
+    <value>Off together with the reflection denoiser.</value>
+  </data>
+  <data name="Tweak_r_Lumen_Reflections_ScreenSpaceReconstruction_Title" xml:space="preserve">
+    <value>Reflection screen-space reconstruction</value>
+  </data>
+  <data name="Tweak_r_Lumen_Reflections_ScreenSpaceReconstruction_Desc" xml:space="preserve">
+    <value>Off together with the reflection denoiser.</value>
+  </data>
+  <data name="Tweak_r_NGX_DLSS_DenoiserMode_Title" xml:space="preserve">
+    <value>DLSS Ray Reconstruction</value>
+  </data>
+  <data name="Tweak_r_NGX_DLSS_DenoiserMode_Desc" xml:space="preserve">
+    <value>Demanding. Use together with the denoiser/TAA items above turned off.</value>
+  </data>
+  <data name="Tweak_bEnableMouseSmoothing_Title" xml:space="preserve">
+    <value>Mouse smoothing</value>
+  </data>
+  <data name="Tweak_bEnableMouseSmoothing_Desc" xml:space="preserve">
+    <value>Off for raw mouse movement.</value>
+  </data>
+  <data name="Tweak_bEnableFOVScaling_Title" xml:space="preserve">
+    <value>FOV scaling of mouse</value>
+  </data>
+  <data name="Tweak_bEnableFOVScaling_Desc" xml:space="preserve">
+    <value>Off so mouse sensitivity does not change with field of view.</value>
+  </data>
+</root>
