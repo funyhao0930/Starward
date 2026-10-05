@@ -69,6 +69,12 @@ public class GameNoticeItem
 
 
     /// <summary>
+    /// 供应商自己的细分类，没有时为 0。鸣潮的游戏内公告板按它换列表里的图标。
+    /// </summary>
+    public int Tag { get; set; }
+
+
+    /// <summary>
     /// 官方标了要提示红点。没有这项标记的接口由 Mapper 按发布时间推断。
     /// </summary>
     public bool NeedRedDot { get; set; }

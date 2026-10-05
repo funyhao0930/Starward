@@ -118,7 +118,8 @@ public static partial class AppConfig
 
             // 米哈游以外的游戏内公告，米哈游那边是官方网页，另有一套
             sc.AddSingleton<GameNoticeProviderRegistry>();
-            sc.AddSingleton<IGameNoticeProvider, KuroGameNoticeProvider>();
+            sc.AddSingleton<KuroGameNoticeProvider>();
+            sc.AddSingleton<IGameNoticeProvider>(sp => sp.GetRequiredService<KuroGameNoticeProvider>());
             sc.AddSingleton<IGameNoticeProvider, GryphlineGameNoticeProvider>();
             sc.AddSingleton<IGameNoticeProvider, HottaGameNoticeProvider>();
 

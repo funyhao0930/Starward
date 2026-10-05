@@ -61,22 +61,34 @@ internal class KuroGameNoticeProvider : IGameNoticeProvider
 
     public async Task<string?> GetContentHtmlAsync(GameKey key, GameNoticeItem item, CancellationToken cancellationToken = default)
     {
-        if (!Supports(key) || item.ContentUrls.Count is 0)
+        if (!Supports(key))
+        {
+            return null;
+        }
+        return KuroNoticeMapper.ToContentHtml(await GetContentAsync(item, cancellationToken));
+    }
+
+
+    /// <summary>
+    /// 一则公告的正文，连同正文上方的横幅。<see cref="KuroNoticeWindow"/> 要分开排版，所以不只给 HTML。
+    /// </summary>
+    public async Task<KuroGameNoticeContent?> GetContentAsync(GameNoticeItem item, CancellationToken cancellationToken = default)
+    {
+        if (item.ContentUrls.Count is 0)
         {
             return null;
         }
         string language = KuroLauncherClient.GetLanguageCode();
         string cacheKey = $"{nameof(KuroGameNoticeProvider)}_{item.Id}_{language}";
-        if (!_memoryCache.TryGetValue(cacheKey, out string? html))
+        if (!_memoryCache.TryGetValue(cacheKey, out KuroGameNoticeContent? content))
         {
-            KuroGameNoticeContent? content = await _client.GetGameNoticeContentAsync(item.ContentUrls, language, cancellationToken);
-            html = KuroNoticeMapper.ToContentHtml(content);
-            if (html is not null)
+            content = await _client.GetGameNoticeContentAsync(item.ContentUrls, language, cancellationToken);
+            if (content is not null)
             {
-                _memoryCache.Set(cacheKey, html, TimeSpan.FromMinutes(10));
+                _memoryCache.Set(cacheKey, content, TimeSpan.FromMinutes(10));
             }
         }
-        return html;
+        return content;
     }
 
 }

@@ -18,13 +18,11 @@ public static class KuroNoticeMapper
 
 
     /// <summary>
-    /// 分页顺序，与游戏内一致：公告在前
-    /// </summary>
-    private static readonly string[] TabOrder = [GamePostType.POST_TYPE_ANNOUNCE, GamePostType.POST_TYPE_ACTIVITY, GamePostType.POST_TYPE_INFO];
-
-
-    /// <summary>
-    /// 换成公告板，没有可显示的公告时返回 null
+    /// 换成公告板，没有可显示的公告时返回 null。
+    /// <para/>
+    /// 分页与游戏内一致：「公告」是 <see cref="KuroGameNoticeList.Game"/> 整组（活动说明也在里面），
+    /// 「资讯」是 <see cref="KuroGameNoticeList.Activity"/>；各自按清单的顺序。
+    /// 游戏里还有一页「推荐」，放的是唤取横幅，那份数据在游戏本体里，这里没有。
     /// </summary>
     /// <param name="language">官方启动器的语言代码，见 <see cref="KuroLauncherClient.GetLanguageCode"/></param>
     /// <param name="now">筛上下架时间用的当前时刻</param>
@@ -34,25 +32,27 @@ public static class KuroNoticeMapper
         {
             return null;
         }
-        var items = new List<(string Type, GameNoticeItem Item)>();
-        // 两组里各自按清单的顺序，那就是游戏内的顺序
-        foreach (KuroGameNotice notice in (list.Game ?? []).Concat(list.Activity ?? []))
+        var board = new GameNoticeBoard();
+        AddTab(board, GamePostType.POST_TYPE_ANNOUNCE, list.Game, language, now);
+        AddTab(board, GamePostType.POST_TYPE_INFO, list.Activity, language, now);
+        return board.Tabs.Count > 0 ? board : null;
+    }
+
+
+    private static void AddTab(GameNoticeBoard board, string type, List<KuroGameNotice>? notices, string language, DateTimeOffset now)
+    {
+        var items = new List<GameNoticeItem>();
+        foreach (KuroGameNotice notice in notices ?? [])
         {
             if (ToNoticeItem(notice, language, now) is GameNoticeItem item)
             {
-                items.Add((GetPostType(notice, list), item));
+                items.Add(item);
             }
         }
-        var board = new GameNoticeBoard();
-        foreach (string type in TabOrder)
+        if (items.Count > 0)
         {
-            List<GameNoticeItem> tabItems = items.Where(x => x.Type == type).Select(x => x.Item).ToList();
-            if (tabItems.Count > 0)
-            {
-                board.Tabs.Add(new GameNoticeTab { Type = type, Items = tabItems });
-            }
+            board.Tabs.Add(new GameNoticeTab { Type = type, Items = items });
         }
-        return board.Tabs.Count > 0 ? board : null;
     }
 
 
@@ -88,24 +88,10 @@ public static class KuroNoticeMapper
             Id = notice.Id,
             Title = title.Trim(),
             Date = notice.StartTimeMs > 0 ? DateTimeOffset.FromUnixTimeMilliseconds(notice.StartTimeMs).ToLocalTime().ToString("MM/dd", CultureInfo.InvariantCulture) : "",
+            Tag = notice.Tag,
             NeedRedDot = notice.Red is 1,
             BannerUrl = GetLocalized(notice.TabBanner, language)?.FirstOrDefault(x => !string.IsNullOrWhiteSpace(x)),
             ContentUrls = notice.ContentPrefix.Where(x => !string.IsNullOrWhiteSpace(x)).ToList(),
-        };
-    }
-
-
-    /// <summary>
-    /// 游戏内按 <see cref="KuroGameNotice.Category"/> 分页；认不出来的按它所在的那一组
-    /// </summary>
-    private static string GetPostType(KuroGameNotice notice, KuroGameNoticeList list)
-    {
-        return notice.Category switch
-        {
-            1 => GamePostType.POST_TYPE_ANNOUNCE,
-            2 => GamePostType.POST_TYPE_ACTIVITY,
-            4 => GamePostType.POST_TYPE_INFO,
-            _ => list.Activity?.Contains(notice) is true ? GamePostType.POST_TYPE_INFO : GamePostType.POST_TYPE_ANNOUNCE,
         };
     }
 

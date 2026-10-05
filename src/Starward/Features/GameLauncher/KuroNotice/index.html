@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <!-- 只跑本页自己的脚本；公告正文来自库洛的 CDN，插入前先清掉脚本与事件属性，这里再挡一层 -->
+    <meta http-equiv="Content-Security-Policy"
+          content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src https: data:; media-src https:; connect-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <link rel="stylesheet" href="notice.css">
+</head>
+<body>
+    <div class="board" id="board">
+        <div class="header">
+            <svg class="header-deco" viewBox="0 0 440 113" preserveAspectRatio="none" aria-hidden="true"></svg>
+            <div class="tabs" id="tabs"></div>
+            <button class="icon-button back" id="back" aria-label="back"></button>
+            <button class="icon-button close" id="close" aria-label="close"></button>
+        </div>
+
+        <!-- 卡片墙 -->
+        <svg class="grid-deco" viewBox="0 0 14 670" aria-hidden="true"></svg>
+        <div class="scroll grid-scroll" id="grid-scroll">
+            <div class="grid" id="grid"></div>
+        </div>
+        <div class="scrollbar grid-bar" id="grid-bar"><div class="thumb"></div></div>
+
+        <!-- 详细模式 -->
+        <div class="scroll list-scroll" id="list-scroll">
+            <div class="list" id="list"></div>
+        </div>
+        <div class="scroll content-scroll" id="content-scroll">
+            <div class="content" id="content"></div>
+        </div>
+        <div class="scrollbar content-bar" id="content-bar"><div class="thumb"></div></div>
+
+        <div class="message" id="message"></div>
+    </div>
+    <script src="notice.js"></script>
+</body>
+</html>

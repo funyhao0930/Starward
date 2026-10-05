@@ -83,6 +83,11 @@
 		<Content Include="Images\**" CopyToOutputDirectory="PreserveNewest" />
 	</ItemGroup>
 
+	<!-- 鸣潮游戏内公告板的网页，KuroNoticeWindow 从输出目录读来供给 WebView2 -->
+	<ItemGroup>
+		<Content Include="Features\GameLauncher\KuroNotice\**" CopyToOutputDirectory="PreserveNewest" />
+	</ItemGroup>
+
 	<Target Name="RemoveDlls" AfterTargets="Publish">
 		<Delete Files="$(PublishDir)DirectML.dll" />
 		<Delete Files="$(PublishDir)onnxruntime.dll" />

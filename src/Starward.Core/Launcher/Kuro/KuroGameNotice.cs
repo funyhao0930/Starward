@@ -99,10 +99,18 @@ public class KuroGameNotice
 
 
     /// <summary>
-    /// 1 是公告，2 是活动，4 是资讯；游戏内就按这个分页
+    /// 1 是公告，2 是活动，4 是资讯。游戏内不按它分页（分页按所在的那一组），只作参考。
     /// </summary>
     [JsonPropertyName("category")]
     public int Category { get; set; }
+
+
+    /// <summary>
+    /// 细分类，游戏内公告板按它换图标：1 公告看板、4 商城活动、6 新玩法、10 资讯报纸，
+    /// 其余（3 签到收集、5 挑战）还没看过游戏里的样子
+    /// </summary>
+    [JsonPropertyName("tag")]
+    public int Tag { get; set; }
 
 }
 

@@ -97,14 +97,18 @@ public class KuroNoticeMapperTests
     }
 
 
+    /// <summary>
+    /// 与游戏内一样：「公告」是 game 整组（活动说明也在里面），「资讯」是 activity，顺序照清单
+    /// </summary>
     [Fact]
-    public void Tabs_FollowCategory_InGameOrder()
+    public void Tabs_FollowLists_InGameOrder()
     {
         GameNoticeBoard board = Map();
-        Assert.Equal([GamePostType.POST_TYPE_ANNOUNCE, GamePostType.POST_TYPE_ACTIVITY, GamePostType.POST_TYPE_INFO], board.Tabs.Select(x => x.Type));
-        Assert.Equal(["50612", "50365"], board.Tabs[0].Items.Select(x => x.Id));
-        Assert.Equal(["50606"], board.Tabs[1].Items.Select(x => x.Id));
-        Assert.Equal(["50611"], board.Tabs[2].Items.Select(x => x.Id));
+        Assert.Equal([GamePostType.POST_TYPE_ANNOUNCE, GamePostType.POST_TYPE_INFO], board.Tabs.Select(x => x.Type));
+        Assert.Equal(["50612", "50606", "50365"], board.Tabs[0].Items.Select(x => x.Id));
+        Assert.Equal(["50611"], board.Tabs[1].Items.Select(x => x.Id));
+        Assert.Equal([1, 4, 0], board.Tabs[0].Items.Select(x => x.Tag));
+        Assert.Equal(10, board.Tabs[1].Items[0].Tag);
     }
 
 
@@ -135,8 +139,8 @@ public class KuroNoticeMapperTests
         Assert.Equal(2, first.ContentUrls.Count);
         Assert.Null(first.ContentHtml);
         Assert.True(first.NeedRedDot);
-        Assert.Equal("[Event] Only in English", board.Tabs[1].Items[0].Title);
-        Assert.False(board.Tabs[0].Items[1].NeedRedDot);
+        Assert.Equal("[Event] Only in English", board.Tabs[0].Items[1].Title);
+        Assert.False(board.Tabs[0].Items[2].NeedRedDot);
     }
 
 

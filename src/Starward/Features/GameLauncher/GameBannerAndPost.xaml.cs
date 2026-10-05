@@ -382,6 +382,21 @@ public sealed partial class GameBannerAndPost : UserControl
                     }.Activate(),
                 }.Activate();
             }
+            else if (KuroNoticeWindow.Supports(CurrentGameKey))
+            {
+                // 鸣潮的公告板照游戏里的样子画；网页打不开时退回通用的公告板
+                GameKey key = CurrentGameKey;
+                new KuroNoticeWindow
+                {
+                    CurrentGameKey = key,
+                    ParentWindowHandle = parentWindowHandle,
+                    Fallback = () => new VendorNoticeWindow
+                    {
+                        CurrentGameKey = key,
+                        ParentWindowHandle = parentWindowHandle,
+                    }.Activate(),
+                }.Activate();
+            }
             else if (_gameNoticeRegistry.Supports(CurrentGameKey))
             {
                 new VendorNoticeWindow

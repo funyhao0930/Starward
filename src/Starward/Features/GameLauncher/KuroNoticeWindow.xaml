@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<sf:WindowEx x:Class="Starward.Features.GameLauncher.KuroNoticeWindow"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="using:Starward.Features.GameLauncher"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:sf="using:Starward.Frameworks"
+             mc:Ignorable="d">
+
+    <!--  公告板与后面的暗色都由网页画，网页背景透明  -->
+    <Grid x:Name="RootGrid" Loaded="RootGrid_Loaded">
+        <Border x:Name="Border_Loading"
+                Padding="20"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Background="#60000000"
+                CornerRadius="8">
+            <ProgressRing Width="60"
+                          Height="60"
+                          Foreground="#C4A46B"
+                          IsIndeterminate="True" />
+        </Border>
+        <WebView2 x:Name="WebView_Notice"
+                  DefaultBackgroundColor="Transparent"
+                  Visibility="Collapsed">
+            <WebView2.Resources>
+                <SolidColorBrush x:Key="BrushForThemeBackgroundColor" Color="Transparent" />
+            </WebView2.Resources>
+        </WebView2>
+    </Grid>
+</sf:WindowEx>

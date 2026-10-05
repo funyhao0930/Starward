@@ -62,6 +62,13 @@ public static class KuroGameMapping
     public static readonly string UserEngineIniRelativePath = Path.Combine(GameFolderName, @"Client\Config\UserEngine.ini");
 
 
+    /// <summary>
+    /// 游戏 SDK 带的文鼎方新书 H7，游戏内公告板的字就是这一套，相对于启动器安装根目录。
+    /// 只在本机读来显示，不随 Starward 分发。
+    /// </summary>
+    public static readonly string NoticeFontRelativePath = Path.Combine(GameFolderName, @"Client\Binaries\Win64\ThirdParty\KrPcSdk_Global\H7GBKHeavy.TTF");
+
+
     public static IReadOnlyList<GameKey> SupportedGameKeys { get; } = new[] { WutheringWavesGlobal }.AsReadOnly();
 
 

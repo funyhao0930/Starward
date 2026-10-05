@@ -1,0 +1,571 @@
+/*
+ * 鸣潮游戏内公告板。
+ * 所有尺寸都照 2000×1125 的游戏截图量出来，用 --u 换算成窗口里的像素，
+ * 所以写成 calc(N * var(--u)) 的地方，N 就是截图上的像素。
+ */
+
+@font-face {
+    /* 游戏 SDK 带的文鼎方新书 H7，由 Starward 从本机的游戏目录读来，没装游戏时退回后面的字体 */
+    font-family: "KuroH7";
+    src: url("/font/h7.ttf");
+    font-weight: 100 900;
+    font-display: swap;
+}
+
+:root {
+    --u: min(calc(100vw / 2000), calc(100vh / 1125));
+    --board-bg: #F2F2F2;
+    --text: #59564E;
+    --text-dim: #737373;
+    --gold: #AE9A7C;
+    --gold-light: #D8CCB6;
+    --ink: #706650;
+    --red: #D0373B;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html, body {
+    margin: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-drag: none;
+}
+
+body {
+    /* 游戏里公告板后面的画面是压暗的 */
+    background: rgba(0, 0, 0, 0.62);
+    font-family: "KuroH7", "Microsoft JhengHei UI", "Microsoft YaHei UI", "Yu Gothic UI", "Malgun Gothic", sans-serif;
+    font-weight: 700;
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+
+body.ready {
+    opacity: 1;
+}
+
+button {
+    font: inherit;
+    border: none;
+    background: none;
+    padding: 0;
+    cursor: pointer;
+}
+
+
+/* ---------- 公告板 ---------- */
+
+.board {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: calc(1424 * var(--u));
+    height: calc(955 * var(--u));
+    transform: translate(-50%, -50%);
+    background: var(--board-bg);
+    border-radius: calc(10 * var(--u));
+    box-shadow: 0 0 calc(60 * var(--u)) rgba(0, 0, 0, 0.45);
+    overflow: hidden;
+    transition: width 0.26s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.board.detail {
+    width: calc(1832 * var(--u));
+}
+
+
+/* ---------- 标题列 ---------- */
+
+.header {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: calc(113 * var(--u));
+    background: linear-gradient(#F1F1F1, #E8E8E8);
+}
+
+.header-deco {
+    position: absolute;
+    right: calc(130 * var(--u));
+    top: 0;
+    width: calc(440 * var(--u));
+    height: 100%;
+    pointer-events: none;
+}
+
+.tabs {
+    position: absolute;
+    left: calc(34 * var(--u));
+    top: calc(26 * var(--u));
+    display: flex;
+    gap: calc(16 * var(--u));
+}
+
+.tab {
+    --icon-cut: #111111;
+    position: relative;
+    width: calc(255 * var(--u));
+    height: calc(57 * var(--u));
+    border-radius: calc(4 * var(--u));
+    background: #111111;
+    color: #FFFFFF;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: calc(8 * var(--u));
+    overflow: hidden;
+    transition: background-color 0.12s;
+}
+
+.tab:hover {
+    --icon-cut: #222222;
+    background: #222222;
+}
+
+/* 分页牌右边那几道扫过去的细线 */
+.tab::after {
+    content: "";
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 46%;
+    height: 100%;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 57' preserveAspectRatio='none'%3E%3Cg fill='none' stroke='white' stroke-width='0.9'%3E%3Cpath d='M118 2 C96 10 58 15 0 15'/%3E%3Cpath d='M119 9 C98 18 62 24 0 24'/%3E%3Cpath d='M119 17 C100 27 66 33 0 33'/%3E%3Cpath d='M118 26 C102 36 72 42 0 42'/%3E%3Cpath d='M116 36 C104 45 80 50 10 52'/%3E%3C/g%3E%3C/svg%3E");
+    background-size: 100% 100%;
+    opacity: 0.16;
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 45%);
+    pointer-events: none;
+}
+
+.tab.active {
+    --icon-cut: #AC8F63;
+    background: linear-gradient(180deg, #B49C72 0%, #A8895E 100%);
+    box-shadow: 0 calc(2 * var(--u)) calc(6 * var(--u)) rgba(0, 0, 0, 0.22), inset 0 calc(1 * var(--u)) 0 rgba(255, 255, 255, 0.18);
+}
+
+.tab.active::after {
+    opacity: 0.22;
+}
+
+/* 图标坐标系是整块方块，画出来的部分约占七成，所以框要比看到的图标大一些 */
+.tab svg {
+    width: calc(60 * var(--u));
+    height: calc(60 * var(--u));
+    margin: 0 calc(-6 * var(--u));
+    flex: none;
+}
+
+.tab .label {
+    font-size: calc(34 * var(--u));
+    letter-spacing: calc(3 * var(--u));
+    line-height: 1;
+}
+
+.tab .dot,
+.card .dot,
+.item .dot {
+    position: absolute;
+    width: calc(14 * var(--u));
+    height: calc(14 * var(--u));
+    background: var(--red);
+    transform: rotate(45deg);
+}
+
+.tab .dot {
+    right: calc(10 * var(--u));
+    top: calc(9 * var(--u));
+}
+
+.icon-button {
+    position: absolute;
+    top: calc(28 * var(--u));
+    width: calc(54 * var(--u));
+    height: calc(54 * var(--u));
+    color: var(--ink);
+    transition: color 0.12s, transform 0.12s;
+}
+
+.icon-button:hover {
+    color: #4A4334;
+}
+
+.icon-button:active {
+    transform: scale(0.92);
+}
+
+.icon-button svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.close {
+    right: calc(41 * var(--u));
+}
+
+.back {
+    right: calc(125 * var(--u));
+    display: none;
+}
+
+.board.detail .back {
+    display: block;
+}
+
+
+/* ---------- 卷动区与卷轴 ---------- */
+
+.scroll {
+    position: absolute;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: none;
+    /* 底部淡出，与游戏内一样 */
+    -webkit-mask-image: linear-gradient(to bottom, #000 0, #000 calc(100% - 80 * var(--u)), transparent 100%);
+}
+
+.scroll::-webkit-scrollbar {
+    display: none;
+}
+
+.scrollbar {
+    position: absolute;
+    top: calc(147 * var(--u));
+    bottom: calc(40 * var(--u));
+    width: calc(10 * var(--u));
+}
+
+/* 细的灰色轨道 */
+.scrollbar::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 0;
+    bottom: 0;
+    width: calc(2 * var(--u));
+    transform: translateX(-50%);
+    background: #DADADA;
+}
+
+.scrollbar .thumb {
+    position: absolute;
+    left: 0;
+    width: 100%;
+    background: #000000;
+    cursor: pointer;
+}
+
+.scrollbar.hidden {
+    display: none;
+}
+
+
+/* ---------- 卡片墙 ---------- */
+
+.grid-deco {
+    position: absolute;
+    left: calc(52 * var(--u));
+    top: calc(178 * var(--u));
+    width: calc(14 * var(--u));
+    height: calc(670 * var(--u));
+    pointer-events: none;
+}
+
+.grid-scroll {
+    left: calc(110 * var(--u));
+    top: calc(147 * var(--u));
+    bottom: calc(40 * var(--u));
+    width: calc(1230 * var(--u));
+    padding: calc(8 * var(--u)) 0 calc(80 * var(--u)) calc(10 * var(--u));
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(2, calc(567 * var(--u)));
+    column-gap: calc(25 * var(--u));
+    row-gap: calc(27 * var(--u));
+}
+
+.card {
+    position: relative;
+    height: calc(320 * var(--u));
+    border-radius: calc(12 * var(--u));
+    overflow: hidden;
+    background: #2B2B2B;
+    box-shadow: 0 calc(3 * var(--u)) calc(9 * var(--u)) rgba(0, 0, 0, 0.22);
+    cursor: pointer;
+}
+
+.card img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+/* 没有横幅图时用标题顶上 */
+.card .fallback {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 calc(40 * var(--u));
+    background: linear-gradient(135deg, #2F2E2B, #4A4740);
+    color: #EDE6D6;
+    font-size: calc(40 * var(--u));
+    text-align: center;
+    white-space: pre-line;
+}
+
+/* 选中的那张有一圈金框 */
+.card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    box-shadow: inset 0 0 0 calc(2 * var(--u)) #C5B79E, inset 0 0 0 calc(4 * var(--u)) #A08B69, inset 0 0 0 calc(5 * var(--u)) rgba(30, 25, 18, 0.7);
+    opacity: 0;
+    transition: opacity 0.12s;
+}
+
+.card.focus::after {
+    opacity: 1;
+}
+
+.card .dot {
+    right: calc(16 * var(--u));
+    top: calc(16 * var(--u));
+    box-shadow: 0 0 0 calc(2 * var(--u)) rgba(255, 255, 255, 0.85);
+}
+
+.grid-bar {
+    left: calc(1345 * var(--u));
+}
+
+.board.detail .grid-scroll,
+.board.detail .grid-bar,
+.board.detail .grid-deco {
+    display: none;
+}
+
+
+/* ---------- 详细模式 ---------- */
+
+.list-scroll,
+.content-scroll,
+.content-bar {
+    display: none;
+}
+
+.board.detail .list-scroll,
+.board.detail .content-scroll {
+    display: block;
+}
+
+.board.detail .content-bar {
+    display: block;
+}
+
+.board.detail .content-bar.hidden {
+    display: none;
+}
+
+.list-scroll {
+    left: calc(45 * var(--u));
+    top: calc(142 * var(--u));
+    bottom: calc(40 * var(--u));
+    width: calc(592 * var(--u));
+    padding: calc(8 * var(--u)) calc(8 * var(--u)) calc(80 * var(--u));
+}
+
+.item {
+    position: relative;
+    width: calc(571 * var(--u));
+    height: calc(140 * var(--u));
+    margin-bottom: calc(27 * var(--u));
+    display: flex;
+    align-items: center;
+    background: #E8E8E8;
+    border: calc(2 * var(--u)) solid #EFEFEF;
+    border-radius: calc(6 * var(--u));
+    box-shadow: 0 calc(2 * var(--u)) calc(5 * var(--u)) rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    transition: background-color 0.12s;
+}
+
+
+/* 卡片右边的斜纹 */
+.item::after {
+    content: "";
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 42%;
+    border-radius: inherit;
+    background: repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.6) 0 calc(1.5 * var(--u)), transparent calc(1.5 * var(--u)) calc(10 * var(--u)));
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 75%);
+    opacity: 0.55;
+    pointer-events: none;
+}
+
+/* 选中的卡是一圈较粗的金框，框内还有一道亮边。游戏里鼠标移到哪张，哪张就是这个样子 */
+.item.selected,
+.item:hover {
+    background: #EAEAEA;
+    border: calc(3 * var(--u)) solid var(--gold);
+    box-shadow: 0 0 0 calc(1 * var(--u)) var(--gold-light), inset 0 0 0 calc(2 * var(--u)) rgba(255, 255, 255, 0.75), 0 calc(3 * var(--u)) calc(7 * var(--u)) rgba(0, 0, 0, 0.16);
+}
+
+/* 图标方块：左上、右下小圆角，右上、左下大圆角 */
+.item .tile {
+    --icon-cut: #737373;
+    flex: none;
+    width: calc(115 * var(--u));
+    height: calc(115 * var(--u));
+    margin-left: calc(13 * var(--u));
+    border-radius: calc(12 * var(--u)) calc(32 * var(--u)) calc(6 * var(--u)) calc(32 * var(--u));
+    background: #737373;
+    color: #FFFFFF;
+    transition: background-color 0.12s;
+}
+
+.item.selected .tile,
+.item:hover .tile {
+    --icon-cut: #000000;
+    background: #000000;
+}
+
+/* 图标的坐标系就是整块方块 */
+.item .tile svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.item .title {
+    margin: 0 calc(18 * var(--u)) 0 calc(23 * var(--u));
+    /* 游戏里 12 个字占 365，行距 37 */
+    font-size: calc(30 * var(--u));
+    line-height: 1.24;
+    color: var(--text-dim);
+    white-space: pre-line;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.item.selected .title,
+.item:hover .title {
+    color: var(--text);
+}
+
+/* 标题会写到卡片右缘，菱形压在卡片右上角外缘，不挡字 */
+.item .dot {
+    right: calc(-6 * var(--u));
+    top: calc(-6 * var(--u));
+    box-shadow: 0 0 0 calc(2 * var(--u)) #F2F2F2;
+}
+
+.content-scroll {
+    left: calc(689 * var(--u));
+    top: calc(152 * var(--u));
+    bottom: calc(40 * var(--u));
+    width: calc(1000 * var(--u));
+    padding-bottom: calc(80 * var(--u));
+}
+
+.content-bar {
+    left: calc(1754 * var(--u));
+}
+
+.content .banner {
+    display: block;
+    width: 100%;
+    height: auto;
+    margin-bottom: calc(12 * var(--u));
+}
+
+/* 照游戏截图量：字高约 24、同一行折下去的行距 34、行与行之间再多 13 */
+.content .text {
+    font-size: calc(27 * var(--u));
+    line-height: 1.24;
+    color: var(--text);
+    word-break: break-word;
+    user-select: text;
+}
+
+/* 正文一行一个 data-line 的 div；外层包着别行的那种不算 */
+.content .text [data-line]:not(:has([data-line])),
+.content .text p {
+    margin: 0 0 calc(13 * var(--u));
+}
+
+.content .text img,
+.content .text video {
+    max-width: 100% !important;
+    height: auto !important;
+}
+
+.content .text a {
+    color: #A8823F;
+    cursor: pointer;
+}
+
+.content .text table {
+    max-width: 100%;
+    border-collapse: collapse;
+}
+
+.content .text td,
+.content .text th {
+    border: calc(1 * var(--u)) solid #D8D2C4;
+    padding: calc(4 * var(--u)) calc(8 * var(--u));
+}
+
+.content .loading {
+    margin: calc(200 * var(--u)) auto 0;
+    width: calc(56 * var(--u));
+    height: calc(56 * var(--u));
+    border-radius: 50%;
+    border: calc(5 * var(--u)) solid #DDD8CC;
+    border-top-color: var(--gold);
+    animation: spin 0.8s linear infinite;
+}
+
+.content .error {
+    margin-top: calc(200 * var(--u));
+    text-align: center;
+    font-size: calc(30 * var(--u));
+    color: var(--text-dim);
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.message {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    text-align: center;
+    font-size: calc(32 * var(--u));
+    color: var(--text-dim);
+    display: none;
+}
+
+.message.show {
+    display: block;
+}
