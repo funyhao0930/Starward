@@ -195,86 +195,6 @@ public static class HottaContentMapper
 
 
     /// <summary>
-    /// 换成公告板，没有可用内容时返回 null。
-    /// <para/>
-    /// 异环游戏内的公告由游戏服务器下发、本机日志是加密的，找不到公开的数据来源，
-    /// 这里用的是官网「情报速递」的同一批文章，正文另外到文章页取，见 <see cref="ParseArticleContent"/>。
-    /// 官网没有红点标记，按发布时间推断：<see cref="RedDotDays"/> 天内发布的算新公告。
-    /// </summary>
-    /// <param name="newsLists">各个分页解析出来的新闻，按 <see cref="NewsLists"/> 的顺序</param>
-    /// <param name="now">推断红点用的当前时刻</param>
-    public static GameNoticeBoard? ToNoticeBoard(IEnumerable<(string PostType, List<HottaNewsItem> Items)>? newsLists, DateTimeOffset now)
-    {
-        var board = new GameNoticeBoard();
-        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach ((string type, List<HottaNewsItem> news) in newsLists ?? [])
-        {
-            var items = new List<GameNoticeItem>();
-            foreach (HottaNewsItem item in news)
-            {
-                if (!seen.Add(item.Link))
-                {
-                    continue;
-                }
-                DateTimeOffset? published = ParsePublishDate(item.Date);
-                items.Add(new GameNoticeItem
-                {
-                    Id = item.Link,
-                    Title = item.Title,
-                    Date = FormatDate(item.Date),
-                    NeedRedDot = published is not null && now - published.Value < TimeSpan.FromDays(RedDotDays),
-                    ContentUrls = [item.Link],
-                    BaseUrl = item.Link,
-                });
-            }
-            if (items.Count > 0)
-            {
-                board.Tabs.Add(new GameNoticeTab { Type = type, Items = items });
-            }
-        }
-        return board.Tabs.Count > 0 ? board : null;
-    }
-
-
-    /// <summary>
-    /// 发布几天内的公告提示红点
-    /// </summary>
-    public const int RedDotDays = 7;
-
-
-    /// <summary>
-    /// 文章页的正文容器。正文之后紧接着的是分享列，分享列里还留着没替换的模板占位符，不取。
-    /// </summary>
-    private static readonly Regex ArticleContentStartRegex = new(ClassTagPattern("div", "articleContent"), RegexOptions.Compiled | RegexOptions.IgnoreCase);
-
-    private static readonly Regex ArticleBottomStartRegex = new(ClassTagPattern("div", "articleBottom"), RegexOptions.Compiled | RegexOptions.IgnoreCase);
-
-
-    /// <summary>
-    /// 从官网文章页切出正文 HTML，认不出来时返回 null。
-    /// <para/>
-    /// 正文里的图片是站内相对路径，显示时要以文章地址为基准。
-    /// 切到分享列为止，结尾会多出正文容器本身的结束标签，浏览器会忽略多余的结束标签。
-    /// </summary>
-    public static string? ParseArticleContent(string? html)
-    {
-        if (string.IsNullOrWhiteSpace(html))
-        {
-            return null;
-        }
-        Match start = ArticleContentStartRegex.Match(html);
-        if (!start.Success)
-        {
-            return null;
-        }
-        int begin = start.Index + start.Length;
-        Match bottom = ArticleBottomStartRegex.Match(html, begin);
-        string content = html[begin..(bottom.Success ? bottom.Index : html.Length)];
-        return string.IsNullOrWhiteSpace(content) ? null : content.Trim();
-    }
-
-
-    /// <summary>
     /// 某个类名的开始标签。类名两边不能再接字母或连字号，
     /// 否则 <c>carousel-item</c> 也会认到 <c>carousel-item-next</c> 这类状态类。
     /// </summary>
@@ -368,19 +288,6 @@ public static class HottaContentMapper
             return time.ToString("MM/dd", CultureInfo.InvariantCulture);
         }
         return date?.Trim() ?? "";
-    }
-
-
-    /// <summary>
-    /// 片段给的发布日期是台湾的日期，认不出来返回 null
-    /// </summary>
-    private static DateTimeOffset? ParsePublishDate(string? date)
-    {
-        if (DateTime.TryParseExact(date?.Trim(), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime time))
-        {
-            return new DateTimeOffset(time, PublishTimeOffset);
-        }
-        return null;
     }
 
 }

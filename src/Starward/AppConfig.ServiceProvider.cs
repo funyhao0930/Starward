@@ -116,12 +116,12 @@ public static partial class AppConfig
             sc.AddSingleton<IGameLauncherContentProvider, GryphlineLauncherContentProvider>();
             sc.AddSingleton<IGameLauncherContentProvider, HottaLauncherContentProvider>();
 
-            // 米哈游以外的游戏内公告，米哈游那边是官方网页，另有一套
+            // 米哈游以外的游戏内公告，米哈游那边是官方网页，另有一套。
+            // 异环没有：游戏内的公告由游戏服务器下发，找不到公开的数据来源，所以不放公告按钮
             sc.AddSingleton<GameNoticeProviderRegistry>();
             sc.AddSingleton<KuroGameNoticeProvider>();
             sc.AddSingleton<IGameNoticeProvider>(sp => sp.GetRequiredService<KuroGameNoticeProvider>());
             sc.AddSingleton<IGameNoticeProvider, GryphlineGameNoticeProvider>();
-            sc.AddSingleton<IGameNoticeProvider, HottaGameNoticeProvider>();
 
             // 启动页的角色卡片，米哈游那边是实时便笺，另有一套
             sc.AddSingleton<RoleCardProviderRegistry>();

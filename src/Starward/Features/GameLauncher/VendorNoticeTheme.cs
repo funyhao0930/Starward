@@ -2,7 +2,6 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media;
 using Starward.Core.Games;
 using Starward.Core.Games.Gryphline;
-using Starward.Core.Games.Hotta;
 using Starward.Core.Games.Kuro;
 using Starward.Core.HoYoPlay;
 using System;
@@ -12,13 +11,12 @@ using Windows.UI;
 namespace Starward.Features.GameLauncher;
 
 /// <summary>
-/// 公告板的外观，每款游戏照自己游戏内或官网的公告样式配一套。
+/// 通用公告板 <see cref="VendorNoticeWindow"/> 的外观，每款游戏照自己游戏内或官网的公告样式配一套。
 /// <para/>
-/// 米哈游的公告是官方网页，样式是现成的；其他几家由 <see cref="VendorNoticeWindow"/> 自己画，
-/// 为了打开时一眼认得出是哪款游戏，颜色、圆角、分页的样子都跟着游戏走：
+/// 鸣潮与终末地平时用的是 <see cref="KuroNoticeWindow"/> 与 <see cref="GryphlineBulletinWindow"/>，
+/// 这里的样式只在那两个网页打不开、退回通用公告板时用上，所以仍按游戏配色：
 /// 鸣潮取自游戏内公告板（米白纸底、黑色分页牌、金色选中、红色菱形提示），
-/// 终末地取自官网（#FFFA00 亮黄、#191919 黑、直角、宽体英文小标），
-/// 异环取自官网（#1D1D1D 黑、#7CECFC 青、#FB5692 粉、粗黑边框）。
+/// 终末地取自官网（#FFFA00 亮黄、#191919 黑、直角、宽体英文小标）。
 /// </summary>
 public sealed class VendorNoticeTheme
 {
@@ -134,7 +132,6 @@ public sealed class VendorNoticeTheme
         {
             KuroGameMapping.ProviderId => WutheringWaves,
             GryphlineGameMapping.ProviderId => Endfield,
-            HottaGameMapping.ProviderId => NevernessToEverness,
             _ => Default,
         };
     }
@@ -240,52 +237,6 @@ public sealed class VendorNoticeTheme
             .sw-banner { border-radius: 0; }
             """,
     };
-
-
-    /// <summary>
-    /// 异环：官网的黑白粗框，选中用青色，提示用粉色
-    /// </summary>
-    public static VendorNoticeTheme NevernessToEverness { get; } = new()
-    {
-        Overlay = Hex("#B3000000"),
-        BoardBackground = Hex("#E8E8E8"),
-        BoardCornerRadius = new(0),
-        BoardBorder = Hex("#1D1D1D"),
-        BoardBorderThickness = new(3),
-        HeaderBackground = Hex("#1D1D1D"),
-        CloseForeground = Hex("#FFFFFF"),
-        TabAlignment = HorizontalAlignment.Left,
-        TabBackground = Hex("#00000000"),
-        TabHoverBackground = Hex("#313131"),
-        TabForeground = Hex("#AAAAAA"),
-        TabSelectedBackground = Hex("#00000000"),
-        TabSelectedForeground = Hex("#7CECFC"),
-        TabIndicator = Hex("#7CECFC"),
-        TabCornerRadius = new(0),
-        TabMinWidth = 96,
-        TabMargin = new(0, 0, 4, 0),
-        ListBackground = Hex("#F1F1F1"),
-        ListItemMargin = new(0),
-        ListItemCornerRadius = new(0),
-        ItemHoverBackground = Hex("#E2E2E2"),
-        ItemSelectedBackground = Hex("#1D1D1D"),
-        ItemForeground = Hex("#313131"),
-        ItemSecondaryForeground = Hex("#777474"),
-        ItemSelectedForeground = Hex("#FFFFFF"),
-        ItemSelectedSecondaryForeground = Hex("#AAAAAA"),
-        ItemSelectedMarker = Hex("#7CECFC"),
-        RedDot = Hex("#FB5692"),
-        RedDotShape = NoticeDotShape.Circle,
-        ContentBackground = Hex("#FFFFFF"),
-        Accent = Hex("#1D1D1D"),
-        ContentCss = """
-            :root { --fg: #313131; --muted: #777474; --link: #E51737; --thumb: #31313160; --rule: #DEDEDE; }
-            .sw-title { color: #1D1D1D; padding-bottom: 10px; border-bottom: 3px solid #313131; }
-            .sw-date { margin-top: 10px; }
-            .sw-banner { border-radius: 0; }
-            """,
-    };
-
 
 
     /// <summary>
