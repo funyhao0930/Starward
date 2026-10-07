@@ -73,6 +73,28 @@ public sealed class KuroEngineTweak
 
 
 /// <summary>
+/// 写进 Engine.ini 也不会生效的原因
+/// </summary>
+public enum KuroIneffectiveReason
+{
+    /// <summary>
+    /// 游戏在运行期用控制台设置（SetByConsole），优先级高于 ini
+    /// </summary>
+    OverriddenByGame,
+
+    /// <summary>
+    /// 由设备配置文件设置（SetByDeviceProfile），优先级高于 <c>[SystemSettings]</c>，要改 DeviceProfiles.ini
+    /// </summary>
+    DeviceProfile,
+
+    /// <summary>
+    /// 游戏主程序里没有这个控制台变量，写了等于空设置
+    /// </summary>
+    NotInGame,
+}
+
+
+/// <summary>
 /// AlteriaX/WuWa-Configs 的一份 Engine.ini（按显卡分 Config 1～5）
 /// </summary>
 public sealed record KuroEngineTweakPreset(int Number, IReadOnlyDictionary<string, string> Values);
@@ -171,8 +193,13 @@ public static class KuroEngineTweakCatalog
         Choice(CategoryPostProcess, "r.EnableLensflareSceneSample", OffOn),
         Choice(CategoryPostProcess, "r.Kuro.NiagaraBlur.Enable", OffOn),
         Choice(CategoryPostProcess, "r.KuroTonemapping", [new("0", "Off"), new("1", "Tonemapping_Genshin"), new("2", "Tonemapping_DeathStranding"), new("3", "Tonemapping_Kuro")]),
+        // 游戏运行期会改写 r.MotionBlurQuality 与 r.MotionBlur.Amount，只有它能真正关掉动态模糊
+        Choice(CategoryPostProcess, "r.MotionBlur.Max", [new("0", "Off")]),
+        Number(CategoryPostProcess, "r.Tonemapper.Sharpen", 0, 2, 0.1),
 
         // 阴影
+        Choice(CategoryShadow, "r.Shadow.MaxCSMResolution", [new("1024"), new("2048"), new("4096")]),
+        Number(CategoryShadow, "r.Shadow.DistanceScale", 0.5, 2, 0.05),
         Number(CategoryShadow, "r.Shadow.RadiusThreshold", 0, 0.1, 0.01),
         Choice(CategoryShadow, "r.Shadow.PerObjectShadowMapResolution", ShadowResolutions),
         Choice(CategoryShadow, "r.Shadow.PerObjectResolutionMax", ShadowResolutions),
@@ -187,6 +214,7 @@ public static class KuroEngineTweakCatalog
         Number(CategoryAmbientOcclusion, "r.AmbientOcclusionMaxQuality", 0, 100, 10),
 
         // 视距
+        Number(CategoryViewDistance, "r.ViewDistanceScale", 0.5, 5, 0.1),
         Number(CategoryViewDistance, "foliage.LODDistanceScale", 0.5, 5, 0.5),
         Number(CategoryViewDistance, "r.Kuro.Foliage.NearCullDistanceMax", 0, 100000, 250),
         Number(CategoryViewDistance, "r.Kuro.Foliage.MiddleCullDistanceMax", 0, 100000, 250),
@@ -202,6 +230,7 @@ public static class KuroEngineTweakCatalog
         Number(CategoryStreaming, "r.StaticMeshLODDistanceScale", 0.1, 2, 0.05),
         Number(CategoryStreaming, "wp.Runtime.PlannedLoadingRangeScale", 0.1, 1, 0.1),
         Number(CategoryStreaming, "r.Kuro.SkeletalMesh.DistanceLODBaseFOV", 30, 180, 10),
+        Number(CategoryStreaming, "r.SkeletalMeshLODBias", -2, 2, 1),
         Choice(CategoryStreaming, "r.Kuro.MaterialDesktopQualityShoulderRender", OffOn),
         Choice(CategoryStreaming, "r.MeshBlend.Quality", [new("1", "Low"), new("2", "Medium"), new("3", "High"), new("4", "Epic")]),
         Choice(CategoryStreaming, "r.MaxAnisotropy", [new("1"), new("2"), new("4"), new("8"), new("16")], RendererSettings),
@@ -273,6 +302,71 @@ public static class KuroEngineTweakCatalog
 
 
     public static KuroEngineTweak? Find(string key) => _byKey.GetValueOrDefault(key);
+
+
+    /// <summary>
+    /// 社区配置里常见、但 3.7 写进 Engine.ini 不会生效的键。
+    /// <para/>
+    /// 依据是 3.7（2026-10）的游戏日志与主程序：日志里 <c>[GameThread]cvar = "value"</c> 是游戏运行期用控制台设置的，
+    /// <c>was ignored ... previous 'SetByDeviceProfile'</c> 表示由设备配置文件占住，
+    /// 主程序的 UTF-16 字符串里找不到名称的就是不存在。游戏改版后可能变化。
+    /// </summary>
+    public static IReadOnlyDictionary<string, KuroIneffectiveReason> IneffectiveKeys { get; } = BuildIneffectiveKeys();
+
+
+    private static Dictionary<string, KuroIneffectiveReason> BuildIneffectiveKeys()
+    {
+        string[] overriddenByGame =
+        [
+            "a.EnableSoftAnimAssetRelease", "foliage.DensityScale", "fx.Niagara.QualityLevel", "Kuro.Niagara.SystemSimulation.SpawnAlignment",
+            "Kuro.Niagara.SystemSimulation.TickDeltaTime", "r.AmbientOcclusionLevels", "r.DefaultFeature.AntiAliasing", "r.DisableDistortion",
+            "r.DistanceField.EnableGlobalDFSeperately", "r.DistanceFieldAO", "r.DX11AsyncCompileShader", "r.DX12PSOStreaming",
+            "r.EnableKuroTranslucentPrePassStencilFixed", "r.FidelityFX.FI.Enabled", "r.FidelityFX.FSR.SecondaryUpscale", "r.Fog",
+            "r.imp.UpdateBatch", "r.InvalidSeveralFrameOcculusion", "r.Kuro.AutoExposure", "r.Kuro.AutoExposurePlayerCustom",
+            "r.Kuro.DisableGlobalGITransition", "r.Kuro.DisableKawaiiSimulate", "r.Kuro.EnablePlanarReflection", "r.Kuro.GlobalGIRenderQuality",
+            "r.Kuro.GlobalLightQuality", "r.Kuro.GrassInteractionFadingSpeed", "r.Kuro.KuroBloomEnable", "r.Kuro.KuroDisableToonVelocity",
+            "r.Kuro.KuroEnableScreenFilter", "r.Kuro.NeedRenderKuroToonDepth", "r.Kuro.ToonOutlineDrawDistancePc", "r.Kuro.VRS.VolumeCloudQuality",
+            "r.Kuro.WaterRainDrop", "r.KuroFI.EnableSingleOcclusionBloomReplace", "r.KuroFI.TranslucentLightingMode", "r.LightGrid.Skip",
+            "r.LightShaftQuality", "r.Lumen.DiffuseIndirect.Allow", "r.Lumen.Reflections.Allow", "r.Lumen.Reflections.HardwareRayTracing.ShaderExecutionReordering",
+            "r.Lumen.Reflections.RadianceCache", "r.Lumen.ScreenProbeGather.AdaptiveProbeAllocationFraction", "r.MegaLights.Allowed", "r.MeshBlend.Enable",
+            "r.MotionBlur.Amount", "r.MotionBlur.TargetFPS", "r.MotionBlurQuality", "r.NGX.DLSS.Enable",
+            "r.NGX.DLSS.Quality", "r.NGX.DLSS.Quality.Auto", "r.PSO.CompilationMode", "r.PSO.IgnoreCreationHints",
+            "r.RayTracing.Shadows", "r.Shadow.CacheMode3CacheUpdateIntervals", "r.Shadow.CacheMode3CacheUpdateIntervalsOverride", "r.Shadow.CacheWholeSceneShadows",
+            "r.Shadow.CSMMode3EnableUpdateIntervalOverride", "r.Shadow.DirectLightCacheNeedOriginChange", "r.Shadow.EnableCSMStable", "r.Shadow.ForceUpdateCSMOnce",
+            "r.Streaming.FullyLoadUsedTextures", "r.Streaming.PoolSize", "r.Streamline.DLSSG.Enable", "r.Streamline.DLSSG.RetainResourcesWhenOff",
+            "r.TemporalAAFilterSize", "r.TemporalAASamples", "r.VelocityScreenSizeCull", "r.VolumetricCloud.DistanceToSampleMaxCount",
+            "r.VolumetricFog", "r.XeFG.Enabled", "s.AsyncLoadingTimeLimit", "s.LevelStreamingActorsUpdateTimeLimit",
+            "sg.KuroRenderQuality", "sg.RayTracingQuality", "sg.ShadowQuality", "t.MaxFPS",
+            "UBInstancing.Enabled", "wo.ParallelOffset", "wp.Runtime.BlockOnSlowStreaming", "wp.Runtime.LoadingRangeScaleExtra",
+            "wp.Runtime.MaxLoadingStreamingCells", "wp.Runtime.ModifyStreamingUpdateInterval", "wp.Runtime.PlannedLoadingRangeScaleExtra",
+        ];
+        string[] deviceProfile =
+        [
+            "r.LandscapeReverseLODScaleFactor", "sg.AntiAliasingQuality", "sg.EffectsQuality", "sg.FoliageQuality",
+            "sg.PostProcessQuality", "sg.TextureQuality", "sg.ViewDistanceQuality",
+        ];
+        string[] notInGame =
+        [
+            "r.AmbientOcclusion.UseHistory", "r.Color.Saturation", "r.FadeOutDistance", "r.HLOD.DistanceOverride",
+            "r.HLOD.ForceDisable", "r.Kuro.TexturePool.ExtraBudgetMB", "r.LODDistanceFactor", "r.RayTracing.LimitDevice",
+            "r.RHICmdFlushDispatch", "r.RHICmdUseAsyncCompute", "r.Streaming.CPUReadback", "r.Streaming.UseAsyncCPUReadback",
+            "r.TextureGroup.Landscape.TextureLODBias", "r.UseAsyncShaderPrecompilation", "wp.Runtime.OverrideMultipleRuntimeGridLoadingRangeValues",
+        ];
+        var dict = new Dictionary<string, KuroIneffectiveReason>(StringComparer.OrdinalIgnoreCase);
+        foreach (string key in overriddenByGame)
+        {
+            dict[key] = KuroIneffectiveReason.OverriddenByGame;
+        }
+        foreach (string key in deviceProfile)
+        {
+            dict[key] = KuroIneffectiveReason.DeviceProfile;
+        }
+        foreach (string key in notInGame)
+        {
+            dict[key] = KuroIneffectiveReason.NotInGame;
+        }
+        return dict;
+    }
 
 
     /// <summary>

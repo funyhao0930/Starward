@@ -408,13 +408,13 @@
     <value>静态模型细节距离倍率</value>
   </data>
   <data name="Tweak_r_StaticMeshLODDistanceScale_Desc" xml:space="preserve">
-    <value>越低远处对象越精细。低于 0.5 可能让地面材质闪烁。</value>
+    <value>越低远处对象越精细。低于 0.5 可能让地面材质闪烁。部分 3.x 地图的局部性能盒子进出时会改写这个值，离开后要重开游戏才会回到这里的设置。</value>
   </data>
   <data name="Tweak_wp_Runtime_PlannedLoadingRangeScale_Title" xml:space="preserve">
     <value>世界加载范围</value>
   </data>
   <data name="Tweak_wp_Runtime_PlannedLoadingRangeScale_Desc" xml:space="preserve">
-    <value>越高远处画出的对象越多、材质越好。上限看来是 1.0。</value>
+    <value>越高远处画出的对象越多、材质越好。上限看来是 1.0。部分 3.x 地图的局部性能盒子进出时会改写这个值，离开后要重开游戏才会回到这里的设置。</value>
   </data>
   <data name="Tweak_r_Kuro_SkeletalMesh_DistanceLODBaseFOV_Title" xml:space="preserve">
     <value>骨架模型细节基准视角</value>
@@ -450,7 +450,7 @@
     <value>丁达尔散射品质</value>
   </data>
   <data name="Tweak_r_TyndallScatteringQuality_Desc" xml:space="preserve">
-    <value>光束穿过雾与枝叶的散射品质。Config 1–2 用高。</value>
+    <value>光束穿过雾与枝叶的散射品质。Config 1–2 用高。部分 3.x 地图的局部性能盒子进出时会改写这个值，离开后要重开游戏才会回到这里的设置。</value>
   </data>
   <data name="Tweak_r_LightShaftDownSampleFactor_Title" xml:space="preserve">
     <value>光柱分辨率</value>
@@ -733,5 +733,68 @@
   </data>
   <data name="Tweak_bEnableFOVScaling_Desc" xml:space="preserve">
     <value>关闭后鼠标灵敏度不再随视角改变。</value>
+  </data>
+  <data name="Ui_IneffectiveKeysFound" xml:space="preserve">
+    <value>Engine.ini 里有 {0} 个设置在 3.7 不会生效，可以删掉：{1}。</value>
+  </data>
+  <data name="Ui_ListSeparator" xml:space="preserve">
+    <value>、</value>
+  </data>
+  <data name="Ineffective_OverriddenByGame" xml:space="preserve">
+    <value>游戏运行期会改写</value>
+  </data>
+  <data name="Ineffective_DeviceProfile" xml:space="preserve">
+    <value>由设备配置文件决定，要改 DeviceProfiles.ini</value>
+  </data>
+  <data name="Ineffective_NotInGame" xml:space="preserve">
+    <value>游戏里没有这个设置</value>
+  </data>
+  <data name="Tweak_r_MotionBlur_Max_Title" xml:space="preserve">
+    <value>动态模糊长度上限</value>
+  </data>
+  <data name="Tweak_r_MotionBlur_Max_Desc" xml:space="preserve">
+    <value>不在预设组合中。设为关闭（0）才能确实关掉动态模糊：游戏运行期会改写 r.MotionBlurQuality 与 r.MotionBlur.Amount，所以游戏内关了还可能自己开回来。</value>
+  </data>
+  <data name="Tweak_r_Tonemapper_Sharpen_Title" xml:space="preserve">
+    <value>锐化</value>
+  </data>
+  <data name="Tweak_r_Tonemapper_Sharpen_Desc" xml:space="preserve">
+    <value>不在预设组合中。0 关闭（游戏默认）、0.5 半强度、1 全强度。0.3–0.5 可补回 TAA／DLSS 造成的偏糊；超过 1 会出现白边与杂点。</value>
+  </data>
+  <data name="Tweak_r_Shadow_MaxCSMResolution_Title" xml:space="preserve">
+    <value>太阳阴影分辨率</value>
+  </data>
+  <data name="Tweak_r_Shadow_MaxCSMResolution_Desc" xml:space="preserve">
+    <value>不在预设组合中。级联阴影贴图的分辨率。游戏较高画质用 2048、最低用 1024；4096 让太阳阴影更锐利，但明显更吃 GPU 与显存。</value>
+  </data>
+  <data name="Tweak_r_Shadow_DistanceScale_Title" xml:space="preserve">
+    <value>太阳阴影距离倍率</value>
+  </data>
+  <data name="Tweak_r_Shadow_DistanceScale_Desc" xml:space="preserve">
+    <value>不在预设组合中。游戏由高到低画质用 1.0／0.85／0.7。越低远处阴影越早消失、FPS 越高；超过 1 会被引擎限制。</value>
+  </data>
+  <data name="Tweak_r_ViewDistanceScale_Title" xml:space="preserve">
+    <value>视距倍率</value>
+  </data>
+  <data name="Tweak_r_ViewDistanceScale_Desc" xml:space="preserve">
+    <value>不在预设组合中。缩放所有对象的最大绘制距离（游戏默认 1.0）。越高远处对象越多、越吃 GPU，但画不出 World Partition 还没加载的东西，远景请一并调「世界加载范围」。</value>
+  </data>
+  <data name="Tweak_r_SkeletalMeshLODBias_Title" xml:space="preserve">
+    <value>角色细节偏移</value>
+  </data>
+  <data name="Tweak_r_SkeletalMeshLODBias_Desc" xml:space="preserve">
+    <value>不在预设组合中。在所有距离平移角色与生物的细节等级（游戏默认 0）。负数让远处保持较高细节；正数降低细节换一点 FPS，近看也看得出来。</value>
+  </data>
+  <data name="Ui_SearchPlaceholder" xml:space="preserve">
+    <value>搜索设置（名称、说明或 ini 键名）</value>
+  </data>
+  <data name="Ui_NoSearchResult" xml:space="preserve">
+    <value>没有符合的设置。</value>
+  </data>
+  <data name="Ui_ConfirmResetAll" xml:space="preserve">
+    <value>要把全部 {0} 个项目改回游戏默认吗？这页目前的选择都会清掉。按下「应用」之前不会写入文件。</value>
+  </data>
+  <data name="Ui_ConfirmLoadPreset" xml:space="preserve">
+    <value>要加载「{0}」吗？预设组合涉及的 {1} 个项目会被它的值取代，其他进阶项目保持不变。按下「应用」之前不会写入文件。</value>
   </data>
 </root>

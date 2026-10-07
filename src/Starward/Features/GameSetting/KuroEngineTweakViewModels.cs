@@ -204,6 +204,7 @@ public sealed partial class KuroEngineTweakCategoryViewModel : ObservableObject
     {
         Title = KuroEngineTweakText.Category(category);
         Items = items;
+        VisibleItems = items;
         foreach (var item in items)
         {
             item.PropertyChanged += (_, e) =>
@@ -218,5 +219,23 @@ public sealed partial class KuroEngineTweakCategoryViewModel : ObservableObject
 
 
     public string Summary => string.Format(KuroEngineTweakText.Ui_ModifiedCount, Items.Count(x => x.IsSet), Items.Count);
+
+
+    /// <summary>
+    /// 符合搜索的项目；没在搜索时就是 <see cref="Items"/>
+    /// </summary>
+    public List<KuroEngineTweakItemViewModel> VisibleItems { get; private set => SetProperty(ref field, value); }
+
+    public bool IsExpanded { get; set => SetProperty(ref field, value); }
+
+
+    /// <summary>
+    /// 按搜索词筛选，返回是否还有符合的项目。分类名本身符合时整个分类都列出。
+    /// </summary>
+    public bool ApplySearch(string? query)
+    {
+        VisibleItems = Items.Where(x => KuroEngineTweakText.MatchesSearch(query, x.Title, x.Key, x.Description, Title)).ToList();
+        return VisibleItems.Count > 0;
+    }
 
 }

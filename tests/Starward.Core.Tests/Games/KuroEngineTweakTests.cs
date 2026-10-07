@@ -115,6 +115,73 @@ public class KuroEngineTweakTests : IDisposable
     }
 
 
+    [Theory]
+    [InlineData(null, true)]
+    [InlineData("  ", true)]
+    [InlineData("陰影", true)]
+    [InlineData("perobject", true)]
+    [InlineData("r.shadow 解析度", true)]
+    [InlineData("陰影 植被", false)]
+    [InlineData("Lumen", false)]
+    public void MatchesSearch_EveryTermMustAppearSomewhere(string? query, bool expected)
+    {
+        Assert.Equal(expected, KuroEngineTweakText.MatchesSearch(query, "角色陰影解析度", "r.Shadow.PerObjectShadowMapResolution", null, "陰影"));
+    }
+
+
+    [Fact]
+    public void Catalog_OffersNoKeyKnownToBeIneffective()
+    {
+        Assert.DoesNotContain(KuroEngineTweakCatalog.Tweaks, x => KuroEngineTweakCatalog.IneffectiveKeys.ContainsKey(x.Key));
+    }
+
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("zh-TW")]
+    [InlineData("zh-HK")]
+    [InlineData("zh-CN")]
+    public void Text_EveryIneffectiveReasonHasAString(string culture)
+    {
+        var set = KuroEngineTweakText.ResourceManager.GetResourceSet(CultureInfo.GetCultureInfo(culture), true, false);
+        Assert.NotNull(set);
+        string[] names = [.. Enum.GetNames<KuroIneffectiveReason>().Select(x => $"Ineffective_{x}"), "Ui_IneffectiveKeysFound", "Ui_ListSeparator"];
+        Assert.Empty(names.Where(x => string.IsNullOrEmpty(set.GetString(x))));
+    }
+
+
+    [Fact]
+    public void FindIneffectiveKeys_OnlyLooksAtCvarSections()
+    {
+        File.WriteAllText(Path.Combine(_dir, KuroEngineIniStore.EngineIniFileName),
+            "[Core.System]\r\n" +
+            "t.MaxFPS=999\r\n" +
+            "\r\n" +
+            "[SystemSettings]\r\n" +
+            "T.MAXFPS=120\r\n" +
+            ";r.Streaming.PoolSize=4000\r\n" +
+            "foliage.LODDistanceScale=2\r\n" +
+            "r.HLOD.ForceDisable=1\r\n" +
+            "\r\n" +
+            "[ConsoleVariables]\r\n" +
+            "t.MaxFPS=144\r\n" +
+            "sg.FoliageQuality=3\r\n");
+
+        var found = KuroEngineIniStore.FindIneffectiveKeys(_dir);
+
+        Assert.Equal(
+            [("T.MAXFPS", KuroIneffectiveReason.OverriddenByGame), ("r.HLOD.ForceDisable", KuroIneffectiveReason.NotInGame), ("sg.FoliageQuality", KuroIneffectiveReason.DeviceProfile)],
+            found);
+    }
+
+
+    [Fact]
+    public void FindIneffectiveKeys_MissingFileIsEmpty()
+    {
+        Assert.Empty(KuroEngineIniStore.FindIneffectiveKeys(_dir));
+    }
+
+
     private const string GameEngineIni =
         "[Core.System]\r\n" +
         "Paths=../../../Engine/Content\r\n" +

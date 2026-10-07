@@ -50,5 +50,29 @@ public static class KuroEngineTweakText
     public static string Ui_ModifiedCount => Get(nameof(Ui_ModifiedCount));
     public static string Ui_UserEngineIniFound => Get(nameof(Ui_UserEngineIniFound));
     public static string Ui_DisableUserEngineIni => Get(nameof(Ui_DisableUserEngineIni));
+    public static string Ui_SearchPlaceholder => Get(nameof(Ui_SearchPlaceholder));
+    public static string Ui_NoSearchResult => Get(nameof(Ui_NoSearchResult));
+    public static string Ui_ConfirmResetAll => Get(nameof(Ui_ConfirmResetAll));
+    public static string Ui_ConfirmLoadPreset => Get(nameof(Ui_ConfirmLoadPreset));
+
+
+    /// <summary>
+    /// 搜索框用：按空白拆成几个词，每个词都要出现在某个字段里（忽略大小写）。空查询算全部符合。
+    /// </summary>
+    public static bool MatchesSearch(string? query, params string?[] fields)
+    {
+        string[] terms = (query ?? "").Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+        return terms.All(term => fields.Any(field => field?.Contains(term, StringComparison.CurrentCultureIgnoreCase) ?? false));
+    }
+
+
+    /// <summary>
+    /// 「Engine.ini 里有 N 个设置不会生效：键（原因）、……」
+    /// </summary>
+    public static string IneffectiveKeys(IReadOnlyCollection<(string Key, KuroIneffectiveReason Reason)> keys)
+    {
+        string list = string.Join(Get("Ui_ListSeparator"), keys.Select(x => string.Format(Get("Ui_OptionFormat"), x.Key, Get($"Ineffective_{x.Reason}"))));
+        return string.Format(Get("Ui_IneffectiveKeysFound"), keys.Count, list);
+    }
 
 }

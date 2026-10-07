@@ -408,13 +408,13 @@
     <value>Static mesh LOD distance scale</value>
   </data>
   <data name="Tweak_r_StaticMeshLODDistanceScale_Desc" xml:space="preserve">
-    <value>Lower = better detail on far objects. Values below 0.5 can make ground textures flicker.</value>
+    <value>Lower = better detail on far objects. Values below 0.5 can make ground textures flicker. Some 3.x areas (local performance volumes) change this value when you enter or leave them; it stays changed until you restart the game.</value>
   </data>
   <data name="Tweak_wp_Runtime_PlannedLoadingRangeScale_Title" xml:space="preserve">
     <value>World loading range</value>
   </data>
   <data name="Tweak_wp_Runtime_PlannedLoadingRangeScale_Desc" xml:space="preserve">
-    <value>Higher = more objects rendered and better textures in the distance. 1.0 appears to be the limit.</value>
+    <value>Higher = more objects rendered and better textures in the distance. 1.0 appears to be the limit. Some 3.x areas (local performance volumes) change this value when you enter or leave them; it stays changed until you restart the game.</value>
   </data>
   <data name="Tweak_r_Kuro_SkeletalMesh_DistanceLODBaseFOV_Title" xml:space="preserve">
     <value>Skeletal mesh LOD base FOV</value>
@@ -450,7 +450,7 @@
     <value>Tyndall scattering quality</value>
   </data>
   <data name="Tweak_r_TyndallScatteringQuality_Desc" xml:space="preserve">
-    <value>Quality of light beams through fog and foliage. Config 1–2 use High.</value>
+    <value>Quality of light beams through fog and foliage. Config 1–2 use High. Some 3.x areas (local performance volumes) change this value when you enter or leave them; it stays changed until you restart the game.</value>
   </data>
   <data name="Tweak_r_LightShaftDownSampleFactor_Title" xml:space="preserve">
     <value>Light shaft resolution</value>
@@ -733,5 +733,68 @@
   </data>
   <data name="Tweak_bEnableFOVScaling_Desc" xml:space="preserve">
     <value>Off so mouse sensitivity does not change with field of view.</value>
+  </data>
+  <data name="Ui_IneffectiveKeysFound" xml:space="preserve">
+    <value>Engine.ini contains {0} setting(s) that have no effect in 3.7, so they can be removed: {1}.</value>
+  </data>
+  <data name="Ui_ListSeparator" xml:space="preserve">
+    <value>, </value>
+  </data>
+  <data name="Ineffective_OverriddenByGame" xml:space="preserve">
+    <value>the game overrides it at runtime</value>
+  </data>
+  <data name="Ineffective_DeviceProfile" xml:space="preserve">
+    <value>set by the device profile, change DeviceProfiles.ini instead</value>
+  </data>
+  <data name="Ineffective_NotInGame" xml:space="preserve">
+    <value>not in the game</value>
+  </data>
+  <data name="Tweak_r_MotionBlur_Max_Title" xml:space="preserve">
+    <value>Motion blur length cap</value>
+  </data>
+  <data name="Tweak_r_MotionBlur_Max_Desc" xml:space="preserve">
+    <value>Not in the presets. Off (0) is the reliable way to turn motion blur off: the game rewrites r.MotionBlurQuality and r.MotionBlur.Amount at runtime, so motion blur can come back even with the in-game option off.</value>
+  </data>
+  <data name="Tweak_r_Tonemapper_Sharpen_Title" xml:space="preserve">
+    <value>Sharpening</value>
+  </data>
+  <data name="Tweak_r_Tonemapper_Sharpen_Desc" xml:space="preserve">
+    <value>Not in the presets. 0 = off (game default), 0.5 = half, 1 = full strength. 0.3–0.5 offsets the softness of TAA/DLSS; above 1 adds halos and noise.</value>
+  </data>
+  <data name="Tweak_r_Shadow_MaxCSMResolution_Title" xml:space="preserve">
+    <value>Sun shadow resolution</value>
+  </data>
+  <data name="Tweak_r_Shadow_MaxCSMResolution_Desc" xml:space="preserve">
+    <value>Not in the presets. Resolution of the cascaded shadow maps. The game uses 2048 on its higher quality levels and 1024 on the lowest; 4096 gives sharper sun shadows at a noticeable GPU and VRAM cost.</value>
+  </data>
+  <data name="Tweak_r_Shadow_DistanceScale_Title" xml:space="preserve">
+    <value>Sun shadow distance scale</value>
+  </data>
+  <data name="Tweak_r_Shadow_DistanceScale_Desc" xml:space="preserve">
+    <value>Not in the presets. The game uses 1.0 / 0.85 / 0.7 from high to low quality. Lower = distant shadows fade out sooner for more FPS; the engine clamps values above 1.</value>
+  </data>
+  <data name="Tweak_r_ViewDistanceScale_Title" xml:space="preserve">
+    <value>View distance scale</value>
+  </data>
+  <data name="Tweak_r_ViewDistanceScale_Desc" xml:space="preserve">
+    <value>Not in the presets. Scales every object's maximum draw distance (game default 1.0). Higher shows more distant objects at a GPU cost, but cannot draw what World Partition has not loaded — see World loading range.</value>
+  </data>
+  <data name="Tweak_r_SkeletalMeshLODBias_Title" xml:space="preserve">
+    <value>Character LOD bias</value>
+  </data>
+  <data name="Tweak_r_SkeletalMeshLODBias_Desc" xml:space="preserve">
+    <value>Not in the presets. Shifts the level of detail of characters and creatures at every distance (game default 0). Negative keeps more detail further away; positive lowers detail for a little FPS, visible even up close.</value>
+  </data>
+  <data name="Ui_SearchPlaceholder" xml:space="preserve">
+    <value>Search settings (name, description or ini key)</value>
+  </data>
+  <data name="Ui_NoSearchResult" xml:space="preserve">
+    <value>No settings match.</value>
+  </data>
+  <data name="Ui_ConfirmResetAll" xml:space="preserve">
+    <value>Change all {0} items back to the game default? Your current choices on this page will be cleared. Nothing is written until you press Apply.</value>
+  </data>
+  <data name="Ui_ConfirmLoadPreset" xml:space="preserve">
+    <value>Load "{0}"? It replaces your current values for the {1} items the presets cover; other advanced items stay as they are. Nothing is written until you press Apply.</value>
   </data>
 </root>

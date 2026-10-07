@@ -174,6 +174,12 @@
                         </InfoBar.ActionButton>
                     </InfoBar>
 
+                    <InfoBar IsClosable="False"
+                             IsOpen="True"
+                             Message="{x:Bind KuroIneffectiveKeysMessage, Mode=OneWay}"
+                             Severity="Informational"
+                             Visibility="{x:Bind KuroIneffectiveKeysMessage, Mode=OneWay, Converter={StaticResource ObjectToVisibilityConverter}}" />
+
                     <!--  预设组合  -->
                     <Grid ColumnSpacing="8">
                         <Grid.ColumnDefinitions>
@@ -204,14 +210,26 @@
                         <Button Command="{x:Bind OpenKuroConfigFolderCommand}" Content="{x:Bind kuro:KuroEngineTweakText.Ui_OpenFolder}" />
                     </StackPanel>
 
+                    <!--  搜索  -->
+                    <AutoSuggestBox MaxWidth="640"
+                                    HorizontalAlignment="Left"
+                                    PlaceholderText="{x:Bind kuro:KuroEngineTweakText.Ui_SearchPlaceholder}"
+                                    QueryIcon="Find"
+                                    TextChanged="AutoSuggestBox_KuroTweakSearch_TextChanged" />
+                    <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               Text="{x:Bind kuro:KuroEngineTweakText.Ui_NoSearchResult}"
+                               Visibility="{x:Bind KuroSearchNoResult, Mode=OneWay}" />
+
                     <!--  各分类  -->
-                    <ItemsRepeater ItemsSource="{x:Bind KuroTweakCategories}">
+                    <ItemsRepeater ItemsSource="{x:Bind KuroVisibleTweakCategories, Mode=OneWay}">
                         <ItemsRepeater.Layout>
                             <StackLayout Spacing="8" />
                         </ItemsRepeater.Layout>
                         <ItemsRepeater.ItemTemplate>
                             <DataTemplate x:DataType="local:KuroEngineTweakCategoryViewModel">
-                                <Expander HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                                <Expander HorizontalAlignment="Stretch"
+                                          HorizontalContentAlignment="Stretch"
+                                          IsExpanded="{x:Bind IsExpanded, Mode=TwoWay}">
                                     <Expander.Header>
                                         <Grid>
                                             <TextBlock FontWeight="SemiBold" Text="{x:Bind Title}" />
@@ -220,7 +238,7 @@
                                                        Text="{x:Bind Summary, Mode=OneWay}" />
                                         </Grid>
                                     </Expander.Header>
-                                    <ItemsRepeater ItemsSource="{x:Bind Items}">
+                                    <ItemsRepeater ItemsSource="{x:Bind VisibleItems, Mode=OneWay}">
                                         <ItemsRepeater.Layout>
                                             <StackLayout Spacing="16" />
                                         </ItemsRepeater.Layout>

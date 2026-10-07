@@ -48,6 +48,34 @@ public static partial class KuroEngineIniStore
 
 
     /// <summary>
+    /// Engine.ini 里写了、但 3.7 不会生效的键（见 <see cref="KuroEngineTweakCatalog.IneffectiveKeys"/>），按出现顺序，不重复
+    /// </summary>
+    public static List<(string Key, KuroIneffectiveReason Reason)> FindIneffectiveKeys(string configDirectory)
+    {
+        var result = new List<(string, KuroIneffectiveReason)>();
+        string path = Path.Join(configDirectory, EngineIniFileName);
+        if (!File.Exists(path))
+        {
+            return result;
+        }
+        IniDocument doc = IniDocument.Load(path);
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        string[] sections = [KuroEngineTweakCatalog.SystemSettings, KuroEngineTweakCatalog.ConsoleVariables, KuroEngineTweakCatalog.RendererSettings];
+        foreach (string section in sections)
+        {
+            foreach (string key in doc.Keys(section))
+            {
+                if (KuroEngineTweakCatalog.IneffectiveKeys.TryGetValue(key, out KuroIneffectiveReason reason) && seen.Add(key))
+                {
+                    result.Add((key, reason));
+                }
+            }
+        }
+        return result;
+    }
+
+
+    /// <summary>
     /// 写入调校项。值为 null 表示删除这个键（让游戏用默认值）；不在字典里的键不动。
     /// </summary>
     /// <returns>实际改写了的文件</returns>
@@ -285,6 +313,28 @@ public static partial class KuroEngineIniStore
                 }
             }
             return null;
+        }
+
+
+        /// <summary>
+        /// 一节里所有键的名字（同名的节出现多次时都算）
+        /// </summary>
+        public IEnumerable<string> Keys(string section)
+        {
+            bool inSection = false;
+            foreach (string line in _lines)
+            {
+                Match sectionMatch = SectionRegex().Match(line);
+                if (sectionMatch.Success)
+                {
+                    inSection = string.Equals(sectionMatch.Groups[1].Value.Trim(), section, StringComparison.OrdinalIgnoreCase);
+                    continue;
+                }
+                if (inSection && KeyLineRegex().Match(line) is { Success: true } keyMatch)
+                {
+                    yield return keyMatch.Groups[1].Value.Trim();
+                }
+            }
         }
 
 

@@ -408,13 +408,13 @@
     <value>靜態模型細節距離倍率</value>
   </data>
   <data name="Tweak_r_StaticMeshLODDistanceScale_Desc" xml:space="preserve">
-    <value>越低遠處物件越精細。低於 0.5 可能讓地面材質閃爍。</value>
+    <value>越低遠處物件越精細。低於 0.5 可能讓地面材質閃爍。部分 3.x 地圖的局部性能盒子進出時會改寫這個值，離開後要重開遊戲才會回到這裡的設定。</value>
   </data>
   <data name="Tweak_wp_Runtime_PlannedLoadingRangeScale_Title" xml:space="preserve">
     <value>世界載入範圍</value>
   </data>
   <data name="Tweak_wp_Runtime_PlannedLoadingRangeScale_Desc" xml:space="preserve">
-    <value>越高遠處畫出的物件越多、材質越好。上限看來是 1.0。</value>
+    <value>越高遠處畫出的物件越多、材質越好。上限看來是 1.0。部分 3.x 地圖的局部性能盒子進出時會改寫這個值，離開後要重開遊戲才會回到這裡的設定。</value>
   </data>
   <data name="Tweak_r_Kuro_SkeletalMesh_DistanceLODBaseFOV_Title" xml:space="preserve">
     <value>骨架模型細節基準視角</value>
@@ -450,7 +450,7 @@
     <value>丁達爾散射品質</value>
   </data>
   <data name="Tweak_r_TyndallScatteringQuality_Desc" xml:space="preserve">
-    <value>光束穿過霧與枝葉的散射品質。Config 1–2 用高。</value>
+    <value>光束穿過霧與枝葉的散射品質。Config 1–2 用高。部分 3.x 地圖的局部性能盒子進出時會改寫這個值，離開後要重開遊戲才會回到這裡的設定。</value>
   </data>
   <data name="Tweak_r_LightShaftDownSampleFactor_Title" xml:space="preserve">
     <value>光柱解析度</value>
@@ -733,5 +733,68 @@
   </data>
   <data name="Tweak_bEnableFOVScaling_Desc" xml:space="preserve">
     <value>關閉後滑鼠靈敏度不再隨視角改變。</value>
+  </data>
+  <data name="Ui_IneffectiveKeysFound" xml:space="preserve">
+    <value>Engine.ini 裡有 {0} 個設定在 3.7 不會生效，可以刪掉：{1}。</value>
+  </data>
+  <data name="Ui_ListSeparator" xml:space="preserve">
+    <value>、</value>
+  </data>
+  <data name="Ineffective_OverriddenByGame" xml:space="preserve">
+    <value>遊戲執行期會改寫</value>
+  </data>
+  <data name="Ineffective_DeviceProfile" xml:space="preserve">
+    <value>由裝置設定檔決定，要改 DeviceProfiles.ini</value>
+  </data>
+  <data name="Ineffective_NotInGame" xml:space="preserve">
+    <value>遊戲裡沒有這個設定</value>
+  </data>
+  <data name="Tweak_r_MotionBlur_Max_Title" xml:space="preserve">
+    <value>動態模糊長度上限</value>
+  </data>
+  <data name="Tweak_r_MotionBlur_Max_Desc" xml:space="preserve">
+    <value>不在預設組合中。設為關閉（0）才能確實關掉動態模糊：遊戲執行期會改寫 r.MotionBlurQuality 與 r.MotionBlur.Amount，所以遊戲內關了還可能自己開回來。</value>
+  </data>
+  <data name="Tweak_r_Tonemapper_Sharpen_Title" xml:space="preserve">
+    <value>銳化</value>
+  </data>
+  <data name="Tweak_r_Tonemapper_Sharpen_Desc" xml:space="preserve">
+    <value>不在預設組合中。0 關閉（遊戲預設）、0.5 半強度、1 全強度。0.3–0.5 可補回 TAA／DLSS 造成的偏糊；超過 1 會出現白邊與雜點。</value>
+  </data>
+  <data name="Tweak_r_Shadow_MaxCSMResolution_Title" xml:space="preserve">
+    <value>太陽陰影解析度</value>
+  </data>
+  <data name="Tweak_r_Shadow_MaxCSMResolution_Desc" xml:space="preserve">
+    <value>不在預設組合中。級聯陰影貼圖的解析度。遊戲較高畫質用 2048、最低用 1024；4096 讓太陽陰影更銳利，但明顯更吃 GPU 與顯示記憶體。</value>
+  </data>
+  <data name="Tweak_r_Shadow_DistanceScale_Title" xml:space="preserve">
+    <value>太陽陰影距離倍率</value>
+  </data>
+  <data name="Tweak_r_Shadow_DistanceScale_Desc" xml:space="preserve">
+    <value>不在預設組合中。遊戲由高到低畫質用 1.0／0.85／0.7。越低遠處陰影越早消失、FPS 越高；超過 1 會被引擎限制。</value>
+  </data>
+  <data name="Tweak_r_ViewDistanceScale_Title" xml:space="preserve">
+    <value>視距倍率</value>
+  </data>
+  <data name="Tweak_r_ViewDistanceScale_Desc" xml:space="preserve">
+    <value>不在預設組合中。縮放所有物件的最大繪製距離（遊戲預設 1.0）。越高遠處物件越多、越吃 GPU，但畫不出 World Partition 還沒載入的東西，遠景請一併調「世界載入範圍」。</value>
+  </data>
+  <data name="Tweak_r_SkeletalMeshLODBias_Title" xml:space="preserve">
+    <value>角色細節偏移</value>
+  </data>
+  <data name="Tweak_r_SkeletalMeshLODBias_Desc" xml:space="preserve">
+    <value>不在預設組合中。在所有距離平移角色與生物的細節等級（遊戲預設 0）。負數讓遠處保持較高細節；正數降低細節換一點 FPS，近看也看得出來。</value>
+  </data>
+  <data name="Ui_SearchPlaceholder" xml:space="preserve">
+    <value>搜尋設定（名稱、說明或 ini 鍵名）</value>
+  </data>
+  <data name="Ui_NoSearchResult" xml:space="preserve">
+    <value>沒有符合的設定。</value>
+  </data>
+  <data name="Ui_ConfirmResetAll" xml:space="preserve">
+    <value>要把全部 {0} 個項目改回遊戲預設嗎？這頁目前的選擇都會清掉。按下「套用」之前不會寫入檔案。</value>
+  </data>
+  <data name="Ui_ConfirmLoadPreset" xml:space="preserve">
+    <value>要載入「{0}」嗎？預設組合涉及的 {1} 個項目會被它的值取代，其他進階項目保持不變。按下「套用」之前不會寫入檔案。</value>
   </data>
 </root>

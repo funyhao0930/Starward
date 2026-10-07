@@ -468,7 +468,24 @@ public sealed partial class GameSettingPage : PageBase
 
     public bool UserEngineIniExists { get; set => SetProperty(ref field, value); }
 
+    /// <summary>
+    /// Engine.ini 里写了但不会生效的键，没有时为 null
+    /// </summary>
+    public string? KuroIneffectiveKeysMessage { get; set => SetProperty(ref field, value); }
+
     public List<KuroEngineTweakCategoryViewModel> KuroTweakCategories { get; set => SetProperty(ref field, value); } = [];
+
+    /// <summary>
+    /// 有符合搜索的项目的分类；没在搜索时等于 <see cref="KuroTweakCategories"/>
+    /// </summary>
+    public List<KuroEngineTweakCategoryViewModel> KuroVisibleTweakCategories { get; set => SetProperty(ref field, value); } = [];
+
+    public bool KuroSearchNoResult { get; set => SetProperty(ref field, value); }
+
+    /// <summary>
+    /// 开始搜索前各分类的展开状态，清空搜索时还原
+    /// </summary>
+    private Dictionary<KuroEngineTweakCategoryViewModel, bool>? _kuroExpandedBeforeSearch;
 
     public List<string> KuroPresetNames { get; } = KuroEngineTweakCatalog.Presets.Select(KuroEngineTweakText.Preset).ToList();
 
@@ -516,7 +533,12 @@ public sealed partial class GameSettingPage : PageBase
                 categories.Add(new KuroEngineTweakCategoryViewModel(category, items));
             }
             KuroTweakCategories = categories;
+            KuroVisibleTweakCategories = categories;
+            _kuroExpandedBeforeSearch = null;
+            KuroSearchNoResult = false;
             UserEngineIniExists = File.Exists(GetUserEngineIniPath());
+            var ineffective = KuroEngineIniStore.FindIneffectiveKeys(configDirectory);
+            KuroIneffectiveKeysMessage = ineffective.Count > 0 ? KuroEngineTweakText.IneffectiveKeys(ineffective) : null;
             IsKuroTweakEnable = true;
         }
         catch (Exception ex)
@@ -527,13 +549,18 @@ public sealed partial class GameSettingPage : PageBase
 
 
     [RelayCommand]
-    private void LoadKuroPreset()
+    private async Task LoadKuroPresetAsync()
     {
         if (SelectedKuroPresetIndex < 0 || SelectedKuroPresetIndex >= KuroEngineTweakCatalog.Presets.Count)
         {
             return;
         }
         KuroEngineTweakPreset preset = KuroEngineTweakCatalog.Presets[SelectedKuroPresetIndex];
+        string message = string.Format(KuroEngineTweakText.Ui_ConfirmLoadPreset, KuroEngineTweakText.Preset(preset), KuroEngineTweakCatalog.PresetKeys.Count);
+        if (!await ConfirmKuroTweakActionAsync(KuroEngineTweakText.Ui_LoadPreset, message))
+        {
+            return;
+        }
         foreach (KuroEngineTweakItemViewModel item in KuroTweakItems)
         {
             // 任一份预设涉及的键都要重设，否则从 Config 1 换到 Config 5 会留下 Config 1 才有的键
@@ -547,13 +574,40 @@ public sealed partial class GameSettingPage : PageBase
 
 
     [RelayCommand]
-    private void ResetKuroTweaks()
+    private async Task ResetKuroTweaksAsync()
     {
+        if (!KuroTweakItems.Any(x => x.IsSet))
+        {
+            return;
+        }
+        string message = string.Format(KuroEngineTweakText.Ui_ConfirmResetAll, KuroTweakItems.Count());
+        if (!await ConfirmKuroTweakActionAsync(KuroEngineTweakText.Ui_ResetAll, message))
+        {
+            return;
+        }
         foreach (KuroEngineTweakItemViewModel item in KuroTweakItems)
         {
             item.SetValue(null, raiseChanged: false);
         }
         IsApplyButtonEnable = true;
+    }
+
+
+    /// <summary>
+    /// 载入预设、全部重设会一次盖掉很多项，先问一声；这时还没写文件，按「应用」才写
+    /// </summary>
+    private async Task<bool> ConfirmKuroTweakActionAsync(string action, string message)
+    {
+        var dialog = new ContentDialog
+        {
+            Title = action,
+            Content = new TextBlock { Text = message, TextWrapping = TextWrapping.Wrap },
+            PrimaryButtonText = action,
+            SecondaryButtonText = Lang.Common_Cancel,
+            DefaultButton = ContentDialogButton.Secondary,
+            XamlRoot = this.XamlRoot,
+        };
+        return await dialog.ShowAsync() is ContentDialogResult.Primary;
     }
 
 
@@ -600,6 +654,39 @@ public sealed partial class GameSettingPage : PageBase
             ErrorMessage = ex.Message;
             _logger.LogError(ex, "Disable UserEngine.ini");
         }
+    }
+
+
+    private void AutoSuggestBox_KuroTweakSearch_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
+    {
+        string query = sender.Text.Trim();
+        if (string.IsNullOrEmpty(query))
+        {
+            foreach (KuroEngineTweakCategoryViewModel category in KuroTweakCategories)
+            {
+                category.ApplySearch(null);
+                if (_kuroExpandedBeforeSearch?.TryGetValue(category, out bool expanded) ?? false)
+                {
+                    category.IsExpanded = expanded;
+                }
+            }
+            _kuroExpandedBeforeSearch = null;
+            KuroVisibleTweakCategories = KuroTweakCategories;
+            KuroSearchNoResult = false;
+            return;
+        }
+        _kuroExpandedBeforeSearch ??= KuroTweakCategories.ToDictionary(x => x, x => x.IsExpanded);
+        var visible = new List<KuroEngineTweakCategoryViewModel>();
+        foreach (KuroEngineTweakCategoryViewModel category in KuroTweakCategories)
+        {
+            if (category.ApplySearch(query))
+            {
+                category.IsExpanded = true;
+                visible.Add(category);
+            }
+        }
+        KuroVisibleTweakCategories = visible;
+        KuroSearchNoResult = visible.Count == 0;
     }
 
 
