@@ -57,7 +57,7 @@ public class SkportClient
 
     public SkportClient(HttpClient? httpClient = null)
     {
-        _httpClient = httpClient ?? new(new HttpClientHandler { AutomaticDecompression = DecompressionMethods.All }) { DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrHigher };
+        _httpClient = httpClient ?? new(new SocketsHttpHandler { AutomaticDecompression = DecompressionMethods.All, ConnectCallback = FastFallbackConnector.ConnectAsync }) { DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrHigher };
     }
 
 

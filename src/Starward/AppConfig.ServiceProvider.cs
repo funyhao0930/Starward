@@ -2,6 +2,7 @@ using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Serilog;
+using Starward.Core;
 using Starward.Core.Gacha.Genshin;
 using Starward.Core.Gacha.Gryphline;
 using Starward.Core.Gacha.Hotta;
@@ -270,6 +271,8 @@ public static partial class AppConfig
             EnableMultipleHttp2Connections = true,
             EnableMultipleHttp3Connections = true,
             PooledConnectionLifetime = TimeSpan.FromMinutes(10),
+            // 域名有多个地址、其中一个不通时，不必等 21 秒的 TCP 超时才换下一个
+            ConnectCallback = FastFallbackConnector.ConnectAsync,
         });
     }
 
@@ -297,6 +300,8 @@ public static partial class AppConfig
             EnableMultipleHttp2Connections = true,
             EnableMultipleHttp3Connections = true,
             PooledConnectionLifetime = TimeSpan.FromMinutes(10),
+            // 域名有多个地址、其中一个不通时，不必等 21 秒的 TCP 超时才换下一个
+            ConnectCallback = FastFallbackConnector.ConnectAsync,
         });
     }
 
