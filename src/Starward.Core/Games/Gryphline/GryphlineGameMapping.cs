@@ -68,9 +68,12 @@ public static class GryphlineGameMapping
                 // 这家没有提供卡片图的接口，取自官网的开服主视觉（kv-obt-pc）与网页 SDK 的标题 SVG，放在 Images\Gryphline。
                 ThumbnailUri = "ms-appx:///Images/Gryphline/Endfield_Thumbnail.jpg",
                 LogoUri = "ms-appx:///Images/Gryphline/Endfield_Logo.png",
-                // Unity 游戏，启动的就是游戏本体
+                // Unity 游戏本体。装了官方启动器时实际启动的是它，见 GryphlineGameLaunchProvider；
+                // 这里仍写游戏本体，安装检测与没有官方启动器时的直接启动都用它。
                 ExecutableName = Path.Combine(GameFolderName, "Endfield.exe"),
                 ProcessName = "Endfield.exe",
+                // 经官方启动器时要等玩家在启动器里按开始，游戏进程可能几分钟后才出现
+                ProcessStartTimeout = TimeSpan.FromMinutes(10),
                 // 终末地默认用 DX12，与其他游戏相反，因此需要一个退回 DX11 的开关。
                 // Unity 的写法是 -force-d3d11。
                 DX11LaunchArgument = "-force-d3d11",

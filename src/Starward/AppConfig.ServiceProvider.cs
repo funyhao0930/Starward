@@ -95,7 +95,7 @@ public static partial class AppConfig
             AddSimpleGameProvider(sc, HottaGameMapping.ProviderId, HottaGameMapping.GetDescriptors);
             sc.AddSingleton<IGameDiscoveryProvider, HottaDiscoveryProvider>();
 
-            AddSimpleGameProvider(sc, GryphlineGameMapping.ProviderId, GryphlineGameMapping.GetDescriptors);
+            AddSimpleGameProvider(sc, GryphlineGameMapping.ProviderId, GryphlineGameMapping.GetDescriptors, (catalog, settings) => new GryphlineGameLaunchProvider(catalog, settings));
             sc.AddSingleton<IGameDiscoveryProvider, GryphlineDiscoveryProvider>();
 
             // 在线背景图。各家官方启动器的接口形状差别很大，

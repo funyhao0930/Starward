@@ -209,6 +209,71 @@ public class NewGameProviderTests
 
 
     /// <summary>
+    /// 终末地会检查父进程是不是官方启动器，装了官方启动器时要经它的 deep link 启动，
+    /// 游戏本体由启动器拉起，按进程名记录游玩时间
+    /// </summary>
+    [Fact]
+    public async Task Endfield_StartsThroughOfficialLauncherWhenPresent()
+    {
+        string root = Path.Combine(Path.GetTempPath(), "StarwardTests", Guid.NewGuid().ToString("N"));
+        try
+        {
+            GameDescriptor descriptor = GryphlineGameMapping.GetDescriptors()[0];
+            string exe = Path.Combine(root, descriptor.ExecutableName!);
+            Directory.CreateDirectory(Path.GetDirectoryName(exe)!);
+            File.WriteAllText(exe, "");
+            File.WriteAllText(Path.Combine(root, GryphlineGameLaunchProvider.LauncherExecutableName), "");
+
+            var catalog = new SimpleGameCatalogProvider(GryphlineGameMapping.ProviderId, GryphlineGameMapping.GetDescriptors);
+            var provider = new GryphlineGameLaunchProvider(catalog, new FakeGameLaunchSettings { EnableDX11 = true });
+            GameLaunchCommand command = await provider.CreateLaunchCommandAsync(
+                descriptor.Key,
+                new GameLaunchOptions { InstallPath = root },
+                TestContext.Current.CancellationToken);
+
+            Assert.Equal(Path.Combine(root, "Launcher.exe"), command.FileName);
+            Assert.Equal("\"gryphlinklauncher-TiaytKBUIEdoEwRT://start?ta=endfield\"", command.Arguments);
+            Assert.True(command.TrackByProcessName);
+        }
+        finally
+        {
+            try { Directory.Delete(root, true); } catch { }
+        }
+    }
+
+
+    /// <summary>
+    /// 只用 Starward 装了游戏本体、没有官方启动器时，照旧直接启动游戏
+    /// </summary>
+    [Fact]
+    public async Task Endfield_FallsBackToGameExeWithoutOfficialLauncher()
+    {
+        string root = Path.Combine(Path.GetTempPath(), "StarwardTests", Guid.NewGuid().ToString("N"));
+        try
+        {
+            GameDescriptor descriptor = GryphlineGameMapping.GetDescriptors()[0];
+            string exe = Path.Combine(root, descriptor.ExecutableName!);
+            Directory.CreateDirectory(Path.GetDirectoryName(exe)!);
+            File.WriteAllText(exe, "");
+
+            var catalog = new SimpleGameCatalogProvider(GryphlineGameMapping.ProviderId, GryphlineGameMapping.GetDescriptors);
+            var provider = new GryphlineGameLaunchProvider(catalog, new FakeGameLaunchSettings { EnableDX11 = true });
+            GameLaunchCommand command = await provider.CreateLaunchCommandAsync(
+                descriptor.Key,
+                new GameLaunchOptions { InstallPath = root },
+                TestContext.Current.CancellationToken);
+
+            Assert.Equal(exe, command.FileName);
+            Assert.Contains("-force-d3d11", command.Arguments, StringComparison.Ordinal);
+        }
+        finally
+        {
+            try { Directory.Delete(root, true); } catch { }
+        }
+    }
+
+
+    /// <summary>
     /// DX11 与停用 DLSS 的开关写法各游戏不同，必须由游戏描述给出而不是写死在启动代码里。
     /// 终末地是 Unity，鸣潮是虚幻，两边的参数不一样。
     /// </summary>

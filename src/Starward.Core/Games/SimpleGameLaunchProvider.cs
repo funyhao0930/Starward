@@ -35,7 +35,7 @@ public class SimpleGameLaunchProvider : IGameLaunchProvider
     }
 
 
-    public ValueTask<GameLaunchCommand> CreateLaunchCommandAsync(GameKey key, GameLaunchOptions options, CancellationToken cancellationToken = default)
+    public virtual ValueTask<GameLaunchCommand> CreateLaunchCommandAsync(GameKey key, GameLaunchOptions options, CancellationToken cancellationToken = default)
     {
         GameDescriptor descriptor = _catalog.GetGame(key)
             ?? throw new ArgumentOutOfRangeException(nameof(key), key.ToString(), "Unknown game.");
