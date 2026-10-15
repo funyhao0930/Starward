@@ -163,8 +163,7 @@ public class GryphlineProxyResponse
 
 
 /// <summary>
-/// 最新游戏包。补丁（patch / pre_patch）这里不建模：它是用 cd_key 加密的 zip，
-/// 里面的 VFS 差分是 hpatch 的 HDIFFSF20，Starward 目前按完整文件比对更新，用不到。
+/// 最新游戏包，以及从请求里那个版本过来的补丁与预下载
 /// </summary>
 public class GryphlineLatestGame
 {
@@ -177,14 +176,241 @@ public class GryphlineLatestGame
 
 
     /// <summary>
-    /// 请求里的版本号是最新版时为 0，留空时为 1（整包安装）
+    /// 请求里的版本号是最新版时为 0，留空或落后时为 1
     /// </summary>
     [JsonPropertyName("action")]
     public int Action { get; set; }
 
 
+    /// <summary>
+    /// 请求里带的本机版本号，原样返回
+    /// </summary>
+    [JsonPropertyName("request_version")]
+    public string? RequestVersion { get; set; }
+
+
     [JsonPropertyName("pkg")]
     public GryphlineGamePackage? Package { get; set; }
+
+
+    /// <summary>
+    /// 从请求的版本更新到 <see cref="Version"/> 的补丁。请求里的版本号留空、或那个版本没有补丁时为 null
+    /// </summary>
+    [JsonPropertyName("patch")]
+    public GryphlinePatch? Patch { get; set; }
+
+
+    /// <summary>
+    /// 预下载：请求的版本已是最新、下一版的补丁已经放出时才有。
+    /// 只有分卷，没有 <see cref="GryphlinePatch.CdKey"/> 与 patch.json：
+    /// 分卷与正式上线后 <see cref="Patch"/> 的分卷是同一批文件（MD5 相同），上线后才能解密。
+    /// </summary>
+    [JsonPropertyName("pre_patch")]
+    public GryphlinePatch? PrePatch { get; set; }
+
+}
+
+
+/// <summary>
+/// 补丁。是一个按 1 GiB 切开的 zip，WinZip AES-256 加密，密码是 <see cref="CdKey"/>。
+/// <para/>
+/// zip 里：变了的非 VFS 文件按游戏目录里的相对路径放；新的 VFS 文件在 <c>vfs_files/files/</c> 下；
+/// VFS 的差分在 <c>vfs_files/vfs_patch/</c> 下（HDIFFSF20）；另有 patch.json、verify_files.json、
+/// delete_files.txt 与新版的 game_files、config.ini。
+/// </summary>
+public class GryphlinePatch
+{
+
+    /// <summary>
+    /// 补丁的目标版本，只有预下载会给
+    /// </summary>
+    [JsonPropertyName("version")]
+    public string? Version { get; set; }
+
+
+    /// <summary>
+    /// 分卷，与 <see cref="GryphlineGamePackage.Packs"/> 一样是同一个 zip 直接切开
+    /// </summary>
+    [JsonPropertyName("patches")]
+    public List<GryphlinePackageFile>? Patches { get; set; }
+
+
+    /// <summary>
+    /// 分卷总大小，字符串形式的数字
+    /// </summary>
+    [JsonPropertyName("package_size")]
+    public string? PackageSize { get; set; }
+
+    public long Size => long.TryParse(PackageSize, out long size) ? size : Patches?.Sum(x => x.Size) ?? 0;
+
+
+    /// <summary>
+    /// zip 的密码，正式上线后才有
+    /// </summary>
+    [JsonPropertyName("cd_key")]
+    public string? CdKey { get; set; }
+
+
+    /// <summary>
+    /// 明文的 patch.json，与 zip 里那份相同，可以先拿来确认本机是不是补丁的起点版本
+    /// </summary>
+    [JsonPropertyName("v2_patch_info_url")]
+    public string? PatchInfoUrl { get; set; }
+
+
+    [JsonPropertyName("v2_patch_info_md5")]
+    public string? PatchInfoMd5 { get; set; }
+
+}
+
+
+/// <summary>
+/// 补丁里的 patch.json：新版本 VFS 目录里与这次更新有关的全部文件
+/// </summary>
+public class GryphlinePatchInfo
+{
+
+    [JsonPropertyName("version")]
+    public string? Version { get; set; }
+
+
+    /// <summary>
+    /// VFS 目录相对游戏目录的路径，<c>Endfield_Data/StreamingAssets/VFS</c>
+    /// </summary>
+    [JsonPropertyName("vfs_base_path")]
+    public string? VfsBasePath { get; set; }
+
+
+    [JsonPropertyName("files")]
+    public List<GryphlinePatchFile>? Files { get; set; }
+
+}
+
+
+/// <summary>
+/// patch.json 里的一个文件。三种情况：
+/// 有 <see cref="Patch"/> 的由旧文件打差分得到；有 <see cref="LocalPath"/> 的是 zip 里的新文件；
+/// 都没有的是没变的文件，本机应该已经有了。
+/// </summary>
+public class GryphlinePatchFile
+{
+
+    /// <summary>
+    /// 相对 VFS 目录的路径
+    /// </summary>
+    [JsonPropertyName("name")]
+    public string Name { get; set; } = "";
+
+
+    [JsonPropertyName("md5")]
+    public string? Md5 { get; set; }
+
+
+    [JsonPropertyName("size")]
+    public long Size { get; set; }
+
+
+    [JsonPropertyName("patch")]
+    public List<GryphlinePatchDiff>? Patch { get; set; }
+
+
+    /// <summary>
+    /// 新文件在 zip 里的路径
+    /// </summary>
+    [JsonPropertyName("local_path")]
+    public string? LocalPath { get; set; }
+
+}
+
+
+/// <summary>
+/// 一个差分
+/// </summary>
+public class GryphlinePatchDiff
+{
+
+    /// <summary>
+    /// 旧文件，相对 VFS 目录。一个旧文件可能是好几个新文件的起点
+    /// </summary>
+    [JsonPropertyName("base_file")]
+    public string BaseFile { get; set; } = "";
+
+
+    [JsonPropertyName("base_md5")]
+    public string? BaseMd5 { get; set; }
+
+
+    [JsonPropertyName("base_size")]
+    public long BaseSize { get; set; }
+
+
+    /// <summary>
+    /// 差分在 zip 里 <c>vfs_files/vfs_patch/</c> 下的路径
+    /// </summary>
+    [JsonPropertyName("patch")]
+    public string Patch { get; set; } = "";
+
+
+    [JsonPropertyName("patch_size")]
+    public long PatchSize { get; set; }
+
+}
+
+
+/// <summary>
+/// 补丁里的 verify_files.json：官方更新完要校验的文件
+/// </summary>
+public class GryphlineVerifyFiles
+{
+
+    /// <summary>
+    /// 从 zip 原样放进游戏目录的文件（含新的 VFS 文件、game_files 与 config.ini）
+    /// </summary>
+    [JsonPropertyName("move")]
+    public List<GryphlineVerifyFile>? Move { get; set; }
+
+
+    /// <summary>
+    /// 打差分得到的文件
+    /// </summary>
+    [JsonPropertyName("patch")]
+    public List<GryphlineVerifyFile>? Patch { get; set; }
+
+}
+
+
+public class GryphlineVerifyFile
+{
+
+    /// <summary>
+    /// 相对游戏目录的路径
+    /// </summary>
+    [JsonPropertyName("path")]
+    public string Path { get; set; } = "";
+
+
+    [JsonPropertyName("md5")]
+    public string? Md5 { get; set; }
+
+
+    [JsonPropertyName("size")]
+    public long Size { get; set; }
+
+}
+
+
+/// <summary>
+/// 预下载完成的标记，放在暂存目录里
+/// </summary>
+public class GryphlinePredownloadMarker
+{
+
+    [JsonPropertyName("local_version")]
+    public string LocalVersion { get; set; } = "";
+
+
+    [JsonPropertyName("target_version")]
+    public string TargetVersion { get; set; } = "";
 
 }
 

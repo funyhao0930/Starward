@@ -116,7 +116,7 @@ internal class GryphlineDiscoveryProvider : UninstallRegistryDiscoveryProvider
         {
             using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             timeout.CancelAfter(RequestTimeout);
-            GryphlineLatestGame? latest = await _launcherClient.GetLatestGameAsync(GryphlineLauncherClient.ENDFIELD_APP_CODE, timeout.Token);
+            GryphlineLatestGame? latest = await _launcherClient.GetLatestGameAsync(GryphlineLauncherClient.ENDFIELD_APP_CODE, cancellationToken: timeout.Token);
             if (latest is not null)
             {
                 _latestGame = latest;

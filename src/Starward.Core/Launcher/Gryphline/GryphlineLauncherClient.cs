@@ -288,7 +288,11 @@ public class GryphlineLauncherClient
     /// 渠道填错时接口不报错，只是 proxy_rsps 整个缺席，这里同样按「问不到」返回 null。
     /// </summary>
     /// <param name="appCode">游戏标识，见 <see cref="ENDFIELD_APP_CODE"/></param>
-    public async Task<GryphlineLatestGame?> GetLatestGameAsync(string appCode, CancellationToken cancellationToken = default)
+    /// <param name="localVersion">
+    /// 本机版本号。留空时只有整包（带分卷列表）；填了才会有从这个版本过来的
+    /// <see cref="GryphlineLatestGame.Patch"/> 或 <see cref="GryphlineLatestGame.PrePatch"/>
+    /// </param>
+    public async Task<GryphlineLatestGame?> GetLatestGameAsync(string appCode, string? localVersion = null, CancellationToken cancellationToken = default)
     {
         var request = new GryphlineBatchProxyRequest
         {
@@ -303,12 +307,38 @@ public class GryphlineLauncherClient
                         LauncherAppCode = GLOBAL_LAUNCHER_APP_CODE,
                         Channel = GLOBAL_OFFICIAL_CHANNEL,
                         SubChannel = GLOBAL_OFFICIAL_CHANNEL,
+                        Version = localVersion ?? "",
                     },
                 },
             ],
         };
         GryphlineBatchProxyResponse? result = await PostAsync(API_GAME_BATCH_PROXY, request, cancellationToken);
         return Find(result, KIND_LATEST_GAME)?.LatestGameResponse;
+    }
+
+
+    /// <summary>
+    /// 补丁的明文 patch.json（<see cref="GryphlinePatch.PatchInfoUrl"/>），校验 MD5。预下载没有这个地址，返回 null
+    /// </summary>
+    public async Task<GryphlinePatchInfo?> GetPatchInfoAsync(GryphlinePatch patch, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(patch.PatchInfoUrl))
+        {
+            return null;
+        }
+        using HttpResponseMessage response = await _httpClient.GetAsync(patch.PatchInfoUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        using var body = new MemoryStream();
+        using (var stream = new IdleTimeoutStream(await response.Content.ReadAsStreamAsync(cancellationToken), PackageReadTimeout))
+        {
+            await stream.CopyToAsync(body, cancellationToken);
+        }
+        byte[] bytes = body.ToArray();
+        if (!string.IsNullOrWhiteSpace(patch.PatchInfoMd5) && !string.Equals(Convert.ToHexStringLower(System.Security.Cryptography.MD5.HashData(bytes)), patch.PatchInfoMd5, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidDataException("patch.json MD5 mismatch.");
+        }
+        return GryphlinePatchPlanner.ParsePatchInfo(bytes);
     }
 
 

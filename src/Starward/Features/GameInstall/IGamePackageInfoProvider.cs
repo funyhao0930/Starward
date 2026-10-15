@@ -80,7 +80,7 @@ public sealed record GamePackageState
 {
 
     /// <summary>
-    /// 本机版本，读不到时为 null（终末地的版本文件是加密的）
+    /// 本机版本，读不到时为 null（终末地的版本文件是加密的，只有已是最新版或预下载过时才知道）
     /// </summary>
     public string? LocalVersion { get; init; }
 

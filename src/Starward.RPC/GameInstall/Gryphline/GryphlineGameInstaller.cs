@@ -15,24 +15,20 @@ using System.Threading.Tasks;
 namespace Starward.RPC.GameInstall.Gryphline;
 
 /// <summary>
-/// 明日方舟：终末地的安装、更新与修复。
+/// 明日方舟：终末地的安装、更新、修复与预下载。
 /// <para/>
-/// 三件事是同一个动作：以线上最新整包的文件清单为准，逐个文件比对 CRC32，
+/// 安装与修复是同一个动作：以线上最新整包的文件清单为准，逐个文件比对 CRC32，
 /// 不对或缺少的从 <c>{file_path}/{相对路径}</c> 单独下载，最后清掉 VFS 目录里新清单上没有的旧文件。
+/// 不照官方启动器那样下整包：整包要先放下 57 GB 的分卷再解压出 62 GB，按文件下载只需要一份空间，而且每个文件都能续传。
+/// 文件清单不必解密本机的 game_files：整包末尾的 zip 中央目录是明文，带每个文件的 CRC32，
+/// 见 <see cref="GryphlineLauncherClient.GetPackageEntriesAsync"/>。
 /// <para/>
-/// 为什么不照官方启动器那样下整包或补丁：
-/// <list type="bullet">
-/// <item>整包要先放下 57 GB 的分卷再解压出 62 GB，按文件下载只需要一份空间，而且每个文件都能续传。</item>
-/// <item>补丁是用接口给的 cd_key 加密的 zip，里面的 VFS 差分是 hpatch 的 HDIFFSF20，
-/// Starward 带的 hpatch 只认 HDIFF13；而且要拿到补丁得先知道本机版本，
-/// 那记在加密的 config.ini 里。按文件比对不需要知道本机是哪一版。</item>
-/// <item>文件清单不必解密本机的 game_files：整包末尾的 zip 中央目录是明文，带每个文件的 CRC32，
-/// 见 <see cref="GryphlineLauncherClient.GetPackageEntriesAsync"/>。</item>
-/// </list>
+/// 更新与预下载走官方的补丁（见 GryphlineGameInstaller.Patch.cs）；
+/// 认不出本机版本、或这个版本没有补丁时，更新退回按文件比对。
 /// <see cref="GameInstallContext.InstallPath"/> 是 GRYPHLINK 的安装根目录，
 /// 游戏在其下的 <see cref="GryphlineGameMapping.GameFolderName"/>，与官方的目录结构一致。
 /// </summary>
-internal class GryphlineGameInstaller : IGameInstallVendor
+internal partial class GryphlineGameInstaller : IGameInstallVendor
 {
 
     private readonly ILogger<GryphlineGameInstaller> _logger;
@@ -62,7 +58,7 @@ internal class GryphlineGameInstaller : IGameInstallVendor
 
     public IReadOnlyList<string> GetUninstallDirectories(GameKey key, string installPath)
     {
-        return [GetGameDirectory(installPath)];
+        return [GetGameDirectory(installPath), Path.Combine(installPath, GryphlinePatchPlanner.StagingFolderName)];
     }
 
 
@@ -90,15 +86,51 @@ internal class GryphlineGameInstaller : IGameInstallVendor
         {
             throw new NotSupportedException($"Unsupported game: {key}");
         }
-        if (context.Operation is not (GameInstallOperation.Install or GameInstallOperation.Update or GameInstallOperation.Repair))
+        if (context.Operation is not (GameInstallOperation.Install or GameInstallOperation.Update or GameInstallOperation.Repair or GameInstallOperation.Predownload))
         {
-            // 预下载的 pre_patch 还没有实际见过，不猜它的格式
             throw new NotSupportedException($"Unsupported operation: {context.Operation}");
         }
         string gameDir = GetGameDirectory(context.InstallPath);
         Directory.CreateDirectory(gameDir);
-
         context.State = GameInstallState.Waiting;
+
+        if (context.Operation is GameInstallOperation.Predownload)
+        {
+            if (context.VendorState is not GryphlinePatchPlan predownload)
+            {
+                predownload = await PreparePredownloadAsync(context, gameDir, cancellationToken);
+                context.VendorState = predownload;
+            }
+            await DownloadPatchPartsAsync(context, predownload, cancellationToken);
+            await WritePredownloadMarkerAsync(predownload, cancellationToken);
+            return;
+        }
+        if (context.Operation is GameInstallOperation.Update && context.VendorState is not GryphlineInstallPlan)
+        {
+            // 有补丁就打补丁；问不到补丁、或认不出本机版本时，退回按文件比对
+            GryphlinePatchPlan? patch = context.VendorState as GryphlinePatchPlan ?? await TryPrepareUpdateAsync(context, gameDir, cancellationToken);
+            if (patch is not null)
+            {
+                context.VendorState = patch;
+                await UpdateByPatchAsync(context, patch, gameDir, cancellationToken);
+                return;
+            }
+        }
+        await SyncFilesAsync(context, gameDir, cancellationToken);
+        if (context.Operation is GameInstallOperation.Update)
+        {
+            // 暂存的补丁（含预下载）都是旧的了
+            DeleteStagingRoot(context.InstallPath);
+        }
+    }
+
+
+
+    /// <summary>
+    /// 安装、修复与没有补丁时的更新：按整包的文件清单逐个比对、下载
+    /// </summary>
+    private async Task SyncFilesAsync(GameInstallContext context, string gameDir, CancellationToken cancellationToken)
+    {
         if (context.VendorState is not GryphlineInstallPlan plan)
         {
             plan = await PrepareAsync(context, cancellationToken);
@@ -140,7 +172,7 @@ internal class GryphlineGameInstaller : IGameInstallVendor
     private async Task<GryphlineInstallPlan> PrepareAsync(GameInstallContext context, CancellationToken cancellationToken)
     {
         // 版本号留空才会带分卷列表，文件清单要从最后一卷读
-        GryphlineLatestGame latest = await _launcherClient.GetLatestGameAsync(GryphlineLauncherClient.ENDFIELD_APP_CODE, cancellationToken)
+        GryphlineLatestGame latest = await _launcherClient.GetLatestGameAsync(GryphlineLauncherClient.ENDFIELD_APP_CODE, cancellationToken: cancellationToken)
             ?? throw new InvalidOperationException("Endfield game package is not available.");
         GryphlineGamePackage package = latest.Package
             ?? throw new InvalidOperationException("Endfield game package is not available.");

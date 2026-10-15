@@ -37,17 +37,31 @@ internal sealed class FakeCdn : HttpMessageHandler, IHttpClientFactory
     public Action<string>? OnRequest { get; set; }
 
 
-    protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    /// <summary>
+    /// 按请求正文回答的网址（例如同一个接口靠 POST 的内容区分），参数是网址与正文，返回 null 时照常查登记的内容
+    /// </summary>
+    public Func<string, string, byte[]?>? Responder { get; set; }
+
+
+    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         string url = Uri.UnescapeDataString(request.RequestUri!.AbsoluteUri);
         Requests.Enqueue(url);
         OnRequest?.Invoke(url);
         cancellationToken.ThrowIfCancellationRequested();
+        if (Responder is not null)
+        {
+            string body = request.Content is null ? "" : await request.Content.ReadAsStringAsync(cancellationToken);
+            if (Responder(url, body) is byte[] response)
+            {
+                return new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(response) };
+            }
+        }
         if (_files.TryGetValue(url, out byte[]? content))
         {
-            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(content) });
+            return new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(content) };
         }
-        return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound));
+        return new HttpResponseMessage(HttpStatusCode.NotFound);
     }
 
 
