@@ -108,6 +108,52 @@ internal class EndfieldGachaService : GachaLogService
 
 
     /// <summary>
+    /// 早期版本拿区服号当 Uid（记录里存的是 1、2 这样的小数）。启动器缓存里能找到
+    /// 对应的玩家 ID（roleId）时，把这些记录改挂到玩家 ID 名下，在打开页面时就做，
+    /// 不必等下一次更新记录。找不到时不动，退路与旧版一致。
+    /// </summary>
+    public override List<long> GetUids()
+    {
+        try
+        {
+            MigrateServerIdUids(GryphlineGachaClient.FindRoleIdsFromLocalFiles());
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Migrate Endfield gacha records from server id to role id.");
+        }
+        return base.GetUids();
+    }
+
+
+    /// <summary>
+    /// 区服号 → roleId 的迁移。主键是 (Uid, Id)，新旧 Uid 下可能已有同一条记录
+    /// （seqId 相同就是同一抽），先 OR IGNORE 搬走，剩下的重复项直接删掉。
+    /// </summary>
+    internal int MigrateServerIdUids(IReadOnlyDictionary<long, long> roleIds)
+    {
+        int moved = 0;
+        using var dapper = DatabaseService.CreateConnection();
+        using var t = dapper.BeginTransaction();
+        foreach (var (serverId, roleId) in roleIds)
+        {
+            if (serverId == roleId)
+            {
+                continue;
+            }
+            moved += dapper.Execute("UPDATE OR IGNORE EndfieldGachaItem SET Uid = @roleId WHERE Uid = @serverId;", new { roleId, serverId }, t);
+            dapper.Execute("DELETE FROM EndfieldGachaItem WHERE Uid = @serverId;", new { serverId }, t);
+            // 记下的 URL 也跟着换，否则选中新 Uid 时找不到已缓存的 URL
+            dapper.Execute("UPDATE OR IGNORE GachaLogUrl SET Uid = @roleId WHERE Uid = @serverId AND GameBiz = @GameBiz;", new { roleId, serverId, GameBiz = CurrentGameBiz }, t);
+            dapper.Execute("DELETE FROM GachaLogUrl WHERE Uid = @serverId AND GameBiz = @GameBiz;", new { serverId, GameBiz = CurrentGameBiz }, t);
+        }
+        t.Commit();
+        return moved;
+    }
+
+
+
+    /// <summary>
     /// 接口只能从最新往回翻，<paramref name="all"/> 没有意义，永远整池取回。
     /// seqId 是服务器给的，重复获取只会覆盖同样的记录。
     /// </summary>

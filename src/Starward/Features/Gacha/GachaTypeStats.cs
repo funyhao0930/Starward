@@ -12,6 +12,13 @@ public class GachaTypeStats
 
     public int Count { get; set; }
 
+    /// <summary>
+    /// 计入保底的抽数，即扣掉福利十连之后的抽数
+    /// </summary>
+    public int CountForPity { get; set; } = -1;
+
+    public string Count_Text => CountForPity < 0 || CountForPity == Count ? $"{Count}" : $"{Count} ({CountForPity})";
+
     public int Pity_5 { get; set; }
 
     public int Pity_4 { get; set; }

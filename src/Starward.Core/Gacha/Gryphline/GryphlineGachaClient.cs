@@ -104,6 +104,63 @@ public class GryphlineGachaClient : GachaLogClient
     }
 
 
+    /// <summary>
+    /// 缓存里活动页的登录信息 <c>"endfield":{"roleId":"…","serverId":"…","uid":"…"}</c>，
+    /// 这是寻访记录接口唯一没给出的玩家 ID。游戏内个人资料显示的 UID 是其中的 roleId，
+    /// 不是同一个对象里的 uid。
+    /// </summary>
+    private static readonly Regex RoleInfoRegex = new(@"""endfield""\s*:\s*\{[^{}]*\}", RegexOptions.Compiled);
+
+
+    /// <summary>
+    /// 从缓存文本里取出「区服号 → roleId」，同一区服以最新的一条为准。
+    /// </summary>
+    public static Dictionary<long, long> FindRoleIds(string text)
+    {
+        var result = new Dictionary<long, long>();
+        foreach (Match match in RoleInfoRegex.Matches(text))
+        {
+            try
+            {
+                using var doc = JsonDocument.Parse(match.Value[(match.Value.IndexOf('{'))..]);
+                var root = doc.RootElement;
+                if (long.TryParse(root.GetProperty("serverId").GetString(), out long serverId)
+                    && long.TryParse(root.GetProperty("roleId").GetString(), out long roleId)
+                    && roleId > 0)
+                {
+                    result[serverId] = roleId;
+                }
+            }
+            catch (Exception ex) when (ex is JsonException or KeyNotFoundException or InvalidOperationException)
+            {
+                // 缓存里的残片，跳过
+            }
+        }
+        return result;
+    }
+
+
+    /// <summary>
+    /// 读启动器缓存，取出各区服对应的 roleId；读不到时返回空。
+    /// </summary>
+    public static Dictionary<long, long> FindRoleIdsFromLocalFiles()
+    {
+        string file = GetRecordCacheFilePath();
+        if (!File.Exists(file))
+        {
+            return [];
+        }
+        try
+        {
+            return FindRoleIds(Encoding.UTF8.GetString(ReadFileWithSharing(file)));
+        }
+        catch (IOException)
+        {
+            return [];
+        }
+    }
+
+
     #endregion
 
 
@@ -170,14 +227,25 @@ public class GryphlineGachaClient : GachaLogClient
 
 
     /// <summary>
-    /// 寻访 URL 里没有玩家 ID，只有 token 与区服。
-    /// token 每次登录都会变，不能当身份用，因此以区服号作为 Uid；
-    /// 同一区服的多个账号会被并在一起，这是接口没给出账号标识的结果。
+    /// 寻访 URL 里没有玩家 ID，只有 token 与区服。token 每次登录都会变，不能当身份用。
+    /// <para/>
+    /// 玩家 ID（roleId）取自启动器缓存里活动页的登录信息，按区服号对应；
+    /// 缓存里没有时退回以区服号作为 Uid，这时同一区服的多个账号会被并在一起。
     /// </summary>
     public override Task<long> GetUidByGachaUrlAsync(string gachaUrl)
     {
         var auth = ParseRecordUrl(gachaUrl);
-        return Task.FromResult(long.TryParse(auth.ServerId, out long uid) ? uid : 0);
+        return Task.FromResult(ResolveUid(auth));
+    }
+
+
+    private static long ResolveUid(GryphlineRecordAuth auth)
+    {
+        if (!long.TryParse(auth.ServerId, out long serverId))
+        {
+            return 0;
+        }
+        return FindRoleIdsFromLocalFiles().GetValueOrDefault(serverId, serverId);
     }
 
 
@@ -198,10 +266,11 @@ public class GryphlineGachaClient : GachaLogClient
     public override async Task<IEnumerable<GachaLogItem>> GetGachaLogAsync(string gachaUrl, long endId = 0, string? lang = null, IProgress<(IGachaType GachaType, int Page)>? progress = null, CancellationToken cancellationToken = default)
     {
         var auth = ParseRecordUrl(gachaUrl);
+        long uid = ResolveUid(auth);
         var result = new List<GachaLogItem>();
         foreach (IGachaType gachaType in QueryGachaTypes)
         {
-            result.AddRange(await GetGachaLogByTypeAsync(auth, gachaType, progress, cancellationToken));
+            result.AddRange(await GetGachaLogByTypeAsync(auth, gachaType, uid, progress, cancellationToken));
         }
         return result;
     }
@@ -210,7 +279,7 @@ public class GryphlineGachaClient : GachaLogClient
     public override async Task<IEnumerable<GachaLogItem>> GetGachaLogAsync(string gachaUrl, IGachaType gachaType, long endId = 0, string? lang = null, IProgress<(IGachaType GachaType, int Page)>? progress = null, CancellationToken cancellationToken = default)
     {
         var auth = ParseRecordUrl(gachaUrl);
-        return await GetGachaLogByTypeAsync(auth, gachaType, progress, cancellationToken);
+        return await GetGachaLogByTypeAsync(auth, gachaType, ResolveUid(auth), progress, cancellationToken);
     }
 
 
@@ -223,7 +292,7 @@ public class GryphlineGachaClient : GachaLogClient
     }
 
 
-    private async Task<List<GryphlineGachaItem>> GetGachaLogByTypeAsync(GryphlineRecordAuth auth, IGachaType gachaType, IProgress<(IGachaType GachaType, int Page)>? progress, CancellationToken cancellationToken)
+    private async Task<List<GryphlineGachaItem>> GetGachaLogByTypeAsync(GryphlineRecordAuth auth, IGachaType gachaType, long uid, IProgress<(IGachaType GachaType, int Page)>? progress, CancellationToken cancellationToken)
     {
         var type = new GryphlineGachaType(gachaType.Value);
         var items = new List<GryphlineGachaItem>();
@@ -237,7 +306,7 @@ public class GryphlineGachaClient : GachaLogClient
             {
                 break;
             }
-            items.AddRange(ToGachaLogItems(auth, type, list));
+            items.AddRange(ToGachaLogItems(auth, type, list, uid));
             string? next = list[^1].SeqId;
             if (!result.HasMore || string.IsNullOrEmpty(next) || next == cursor)
             {
@@ -287,9 +356,10 @@ public class GryphlineGachaClient : GachaLogClient
     /// <see cref="GachaLogItem.RankType"/> 存游戏本身的稀有度（终末地最高 6★），
     /// 不折算成米哈游的 5★，统计侧按各游戏的最高稀有度处理。
     /// </summary>
-    public static List<GryphlineGachaItem> ToGachaLogItems(GryphlineRecordAuth auth, GryphlineGachaType gachaType, List<GryphlineGachaRecord> records)
+    public static List<GryphlineGachaItem> ToGachaLogItems(GryphlineRecordAuth auth, GryphlineGachaType gachaType, List<GryphlineGachaRecord> records, long? uid = null)
     {
-        long uid = long.TryParse(auth.ServerId, out long value) ? value : 0;
+        // 没给玩家 ID 时用区服号，与 GetUidByGachaUrlAsync 找不到 roleId 时的退路一致
+        uid ??= long.TryParse(auth.ServerId, out long value) ? value : 0;
         var items = new List<GryphlineGachaItem>(records.Count);
         foreach (GryphlineGachaRecord record in records)
         {
@@ -304,7 +374,7 @@ public class GryphlineGachaClient : GachaLogClient
             }
             items.Add(new GryphlineGachaItem
             {
-                Uid = uid,
+                Uid = uid.Value,
                 Id = ToRecordId(record.SeqId, weapon),
                 GachaType = gachaType.Value,
                 Name = (weapon ? record.WeaponName : record.CharName) ?? "",

@@ -68,7 +68,7 @@
             <TextBlock Grid.Column="1"
                        FontSize="16"
                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                       Text="{x:Bind WarpTypeStats.Count}" />
+                       Text="{x:Bind WarpTypeStats.Count_Text}" />
         </Grid>
 
 

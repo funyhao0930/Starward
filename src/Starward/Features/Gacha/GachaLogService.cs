@@ -333,6 +333,7 @@ internal abstract class GachaLogService
                     GachaType = type.Value,
                     GachaTypeText = type.ToLocalization(),
                     Count = list.Count,
+                    CountForPity = list.Count(CountsForPity),
                     Count_5_Up = list.Count(x => x.RankType == TopRankType && x.IsUp),
                     Count_5 = list.Count(x => x.RankType == TopRankType),
                     Count_4 = list.Count(x => x.RankType == SecondRankType),
