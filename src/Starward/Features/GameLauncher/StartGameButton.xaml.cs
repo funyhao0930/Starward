@@ -202,7 +202,7 @@ public sealed partial class StartGameButton : UserControl
     public string InstallStateText => InstallState switch
     {
         GameInstallState.Waiting => Lang.StartGameButton_Waiting,
-        GameInstallState.Downloading => Lang.DownloadGamePage_Downloading,
+        GameInstallState.Downloading => IsVerifyingExistingFiles ? Lang.DownloadGamePage_Verifying : Lang.DownloadGamePage_Downloading,
         GameInstallState.Decompressing => Lang.DownloadGamePage_Decompressing,
         GameInstallState.Merging => Lang.DownloadGamePage_Merging,
         GameInstallState.Verifying => Lang.DownloadGamePage_Verifying,
@@ -250,9 +250,37 @@ public sealed partial class StartGameButton : UserControl
 
 
 
+    /// <summary>
+    /// 下载阶段里其实在校验本机已有的文件（例如按文件比对的更新、续传、预下载过的补丁）：
+    /// 没有网络流量、只有读盘。这时显示「校验中」，免得看起来像下载卡住。
+    /// 网速是每次采样的瞬时值，进出用不同的门槛，免得下载中短暂的空档让文字来回跳。
+    /// </summary>
+    private bool IsVerifyingExistingFiles
+    {
+        get;
+        set
+        {
+            if (field != value)
+            {
+                field = value;
+                OnPropertyChanged(nameof(InstallStateText));
+            }
+        }
+    }
+
+    private const long VerifyingEnterNetworkSpeed = 64 << 10;
+
+    private const long VerifyingExitNetworkSpeed = 512 << 10;
+
+    private const long VerifyingMinReadSpeed = 1 << 20;
+
+
     public void UpdateGameInstallTaskState(GameInstallContext task)
     {
         InstallState = task.State;
+        IsVerifyingExistingFiles = task.State is GameInstallState.Downloading
+                                   && task.StorageReadSpeed >= VerifyingMinReadSpeed
+                                   && task.NetworkDownloadSpeed < (IsVerifyingExistingFiles ? VerifyingExitNetworkSpeed : VerifyingEnterNetworkSpeed);
         DownloadBytesText = ToBytesText(task.Progress_DownloadFinishBytes, task.Progress_DownloadTotalBytes);
         InstallBytesText = ToBytesText(task.Progress_WriteFinishBytes, task.Progress_WriteTotalBytes);
         ErrorMessage = task.ErrorMessage;
