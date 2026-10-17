@@ -55,6 +55,7 @@ public sealed partial class GameSelector : UserControl
     {
         this.InitializeComponent();
         InitializeGameSelector();
+        InitializeGameIconMagnifier();
         this.Loaded += GameSelector_Loaded;
         WeakReferenceMessenger.Default.Register<LanguageChangedMessage>(this, OnLanguageChanged);
         WeakReferenceMessenger.Default.Register<MainWindowStateChangedMessage>(this, OnMainWindowStateChanged);
@@ -552,6 +553,41 @@ public sealed partial class GameSelector : UserControl
         {
             Border_FullBackground.Visibility = Visibility.Collapsed;
             Border_Pin.Visibility = Visibility.Collapsed;
+        }
+    }
+
+
+    private DockMagnifier? _gameIconMagnifier;
+
+
+    /// <summary>
+    /// 顶部图标栏像 macOS 程序坞：指针附近的图标往下放大，右边的图标被推开
+    /// </summary>
+    private void InitializeGameIconMagnifier()
+    {
+        _gameIconMagnifier = new DockMagnifier(ListView_GameIcons, GetGameIconContainers)
+        {
+            MaxScale = 1.5f,
+            RangeInItems = 2.5f,
+            ScaleAnchor = DockMagnifier.Anchor.Top,
+            // ListViewItem 上方有 8 的 Padding，以图标的上边为准往下长
+            AnchorInset = 8,
+            SpreadDirection = DockMagnifier.Spread.Right,
+        };
+        // 拖动排序时先收回，免得放大后的位置和拖动的占位对不上
+        ListView_GameIcons.DragItemsStarting += (_, _) => _gameIconMagnifier.IsSuspended = true;
+        ListView_GameIcons.DragItemsCompleted += (_, _) => _gameIconMagnifier.IsSuspended = false;
+    }
+
+
+    private IEnumerable<FrameworkElement> GetGameIconContainers()
+    {
+        for (int i = 0; i < ListView_GameIcons.Items.Count; i++)
+        {
+            if (ListView_GameIcons.ContainerFromIndex(i) is FrameworkElement container)
+            {
+                yield return container;
+            }
         }
     }
 
