@@ -398,4 +398,26 @@ public sealed partial class BackgroundViewPage : PageBase
     }
 
 
+
+    /// <summary>
+    /// 缩略图悬停放大，spring 比原来的 Storyboard 更柔和，移开时也能从任意位置接着缩回
+    /// </summary>
+    private void Grid_ImageItem_PointerEntered(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+    {
+        if (sender is Microsoft.UI.Xaml.Controls.Grid grid && grid.Children.Count > 0)
+        {
+            Starward.Helpers.Motion.SpringScaleTo(grid.Children[0], 1.12f);
+        }
+    }
+
+
+    private void Grid_ImageItem_PointerExited(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+    {
+        if (sender is Microsoft.UI.Xaml.Controls.Grid grid && grid.Children.Count > 0)
+        {
+            Starward.Helpers.Motion.SpringScaleTo(grid.Children[0], 1);
+        }
+    }
+
+
 }

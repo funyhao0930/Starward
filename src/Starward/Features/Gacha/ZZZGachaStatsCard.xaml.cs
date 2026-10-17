@@ -33,6 +33,15 @@ public sealed partial class ZZZGachaStatsCard : UserControl
     private int _pityBarIndex;
 
 
+    private void TextBlock_TotalCount_Loaded(object sender, RoutedEventArgs e)
+    {
+        if (Environment.TickCount64 - _loadedAt < 1500)
+        {
+            TextBlock_TotalCount.CountUp();
+        }
+    }
+
+
     private void PityBar_Loaded(object sender, RoutedEventArgs e)
     {
         if (sender is UIElement bar && Environment.TickCount64 - _loadedAt < 1500)

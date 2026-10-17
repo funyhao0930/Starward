@@ -158,6 +158,8 @@
             <GridView.ItemTemplate>
                 <DataTemplate x:DataType="local:BackgroundFileItem">
                     <Grid Name="Grid_ImageItem"
+                          PointerEntered="Grid_ImageItem_PointerEntered"
+                          PointerExited="Grid_ImageItem_PointerExited"
                           sh:PointerCursor.CursorShape="Hand"
                           ui:UIElementExtensions.ClipToBounds="True">
                         <sc:CachedImage Name="Image_Thumb"
@@ -260,41 +262,6 @@
                                 </MenuFlyoutItem>
                             </MenuFlyout>
                         </Grid.ContextFlyout>
-                        <Grid.Resources>
-                            <CircleEase x:Key="CircleEase" EasingMode="EaseOut" />
-                            <Storyboard x:Key="GridZoomInStoryboard">
-                                <DoubleAnimation EasingFunction="{StaticResource CircleEase}"
-                                                 Storyboard.TargetName="Image_Thumb"
-                                                 Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-                                                 To="1.15"
-                                                 Duration="0:0:0.3" />
-                                <DoubleAnimation EasingFunction="{StaticResource CircleEase}"
-                                                 Storyboard.TargetName="Image_Thumb"
-                                                 Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-                                                 To="1.15"
-                                                 Duration="0:0:0.3" />
-                            </Storyboard>
-                            <Storyboard x:Key="GridZoomOutStoryboard">
-                                <DoubleAnimation EasingFunction="{StaticResource CircleEase}"
-                                                 Storyboard.TargetName="Image_Thumb"
-                                                 Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-                                                 To="1"
-                                                 Duration="0:0:0.6" />
-                                <DoubleAnimation EasingFunction="{StaticResource CircleEase}"
-                                                 Storyboard.TargetName="Image_Thumb"
-                                                 Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-                                                 To="1"
-                                                 Duration="0:0:0.6" />
-                            </Storyboard>
-                        </Grid.Resources>
-                        <mxi:Interaction.Behaviors>
-                            <mxi:EventTriggerBehavior EventName="PointerEntered">
-                                <mxi:ControlStoryboardAction Storyboard="{StaticResource GridZoomInStoryboard}" />
-                            </mxi:EventTriggerBehavior>
-                            <mxi:EventTriggerBehavior EventName="PointerExited">
-                                <mxi:ControlStoryboardAction Storyboard="{StaticResource GridZoomOutStoryboard}" />
-                            </mxi:EventTriggerBehavior>
-                        </mxi:Interaction.Behaviors>
                     </Grid>
                 </DataTemplate>
             </GridView.ItemTemplate>

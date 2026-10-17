@@ -96,7 +96,50 @@ public sealed partial class GameRoleCardButton : UserControl
 
     public string? RoleName => Card?.RoleName ?? SelectedRole?.RoleName;
 
-    public List<GameRoleCardStatItem>? Stats { get; set => SetProperty(ref field, value); }
+    public List<GameRoleCardStatItem>? Stats { get; set { if (SetProperty(ref field, value)) _statsSetAt = Environment.TickCount64; } }
+
+
+    /// <summary>
+    /// 数值换上的时间，之后一小段时间内生成的格子才播进场
+    /// </summary>
+    private long _statsSetAt;
+
+
+    /// <summary>
+    /// 卡片打开时数值依次浮上来
+    /// </summary>
+    private void Flyout_Card_Opened(object? sender, object e)
+    {
+        try
+        {
+            var elements = new List<UIElement>();
+            for (int i = 0; i < (Stats?.Count ?? 0); i++)
+            {
+                if (ItemsRepeater_Stats.TryGetElement(i) is UIElement element)
+                {
+                    elements.Add(element);
+                }
+            }
+            _ = elements.StaggerInAsync(offsetY: 8, delay: TimeSpan.FromMilliseconds(80));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Animate role card stats");
+        }
+    }
+
+
+    /// <summary>
+    /// 卡片已经打开、数值才查回来时，新生成的格子同样依次浮上来
+    /// </summary>
+    private void ItemsRepeater_Stats_ElementPrepared(ItemsRepeater sender, ItemsRepeaterElementPreparedEventArgs args)
+    {
+        if (Flyout_Card.IsOpen && Environment.TickCount64 - _statsSetAt < 1000)
+        {
+            TimeSpan delay = MotionTokens.StaggerStep * Math.Min(args.Index, MotionTokens.StaggerMax);
+            _ = args.Element.EnterAsync(offsetY: 8, delay: delay);
+        }
+    }
 
     public string? ErrorMessage { get; set => SetProperty(ref field, value); }
 

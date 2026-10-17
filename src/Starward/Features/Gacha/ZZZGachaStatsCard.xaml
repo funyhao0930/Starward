@@ -59,9 +59,11 @@
                        IsTextTrimmedChanged="TextBlock_GachaTypeText_IsTextTrimmedChanged"
                        Text="{x:Bind WarpTypeStats.GachaTypeText}"
                        TextTrimming="CharacterEllipsis" />
-            <TextBlock Grid.Column="1"
+            <TextBlock x:Name="TextBlock_TotalCount"
+                       Grid.Column="1"
                        FontSize="16"
                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                       Loaded="TextBlock_TotalCount_Loaded"
                        Text="{x:Bind WarpTypeStats.Count}" />
         </Grid>
 

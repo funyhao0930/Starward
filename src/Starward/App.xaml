@@ -74,7 +74,9 @@
             </Style>
 
             <Style BasedOn="{StaticResource DefaultFlyoutPresenterStyle}" TargetType="FlyoutPresenter">
-                <Setter Property="BorderThickness" Value="0" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="BorderBrush" Value="{StaticResource GlassEdgeHighlightBrush}" />
+                <Setter Property="CornerRadius" Value="12" />
                 <Setter Property="Background" Value="{ThemeResource CustomAcrylicBrush}" />
             </Style>
 

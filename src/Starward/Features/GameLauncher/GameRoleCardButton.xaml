@@ -22,6 +22,7 @@
 
         <Button.Flyout>
             <Flyout x:Name="Flyout_Card"
+                    Opened="Flyout_Card_Opened"
                     Opening="Flyout_Card_Opening"
                     Placement="LeftEdgeAlignedTop">
 
@@ -163,7 +164,10 @@
                             Background="{ThemeResource CustomOverlayAcrylicBrush}"
                             CornerRadius="6">
                         <Grid>
-                            <ItemsRepeater ItemsSource="{x:Bind Stats}" Visibility="{x:Bind ErrorMessage, Converter={StaticResource ObjectToVisibilityReversedConverter}}">
+                            <ItemsRepeater x:Name="ItemsRepeater_Stats"
+                                           ElementPrepared="ItemsRepeater_Stats_ElementPrepared"
+                                           ItemsSource="{x:Bind Stats}"
+                                           Visibility="{x:Bind ErrorMessage, Converter={StaticResource ObjectToVisibilityReversedConverter}}">
                                 <ItemsRepeater.Layout>
                                     <UniformGridLayout MaximumRowsOrColumns="2"
                                                        MinColumnSpacing="8"

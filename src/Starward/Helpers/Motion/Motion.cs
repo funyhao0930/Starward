@@ -319,6 +319,67 @@ public static class Motion
 
 
 
+    private static readonly System.Text.RegularExpressions.Regex _numberRegex = new(@"\d[\d,]*(\.\d+)?");
+
+
+    /// <summary>
+    /// 文字里的每个数字从 0 滚到最终值（例如「123h 45m」「1,234」），结束时换回原文。
+    /// 只是临时改 Text，x:Bind 之后的更新照常覆盖
+    /// </summary>
+    public static void CountUp(this TextBlock textBlock, TimeSpan? duration = null, TimeSpan delay = default)
+    {
+        string final = textBlock.Text;
+        if (!MotionSettings.IsEnabled || string.IsNullOrEmpty(final) || !_numberRegex.IsMatch(final))
+        {
+            return;
+        }
+        double totalMs = (duration ?? TimeSpan.FromMilliseconds(800)).TotalMilliseconds;
+        long start = Environment.TickCount64 + (long)delay.TotalMilliseconds;
+        void Update(double progress)
+        {
+            textBlock.Text = _numberRegex.Replace(final, m =>
+            {
+                string text = m.Value;
+                bool grouped = text.Contains(',');
+                string plain = text.Replace(",", "");
+                int decimals = plain.Contains('.') ? plain.Length - plain.IndexOf('.') - 1 : 0;
+                if (!double.TryParse(plain, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double value))
+                {
+                    return text;
+                }
+                double current = value * progress;
+                string format = grouped ? $"N{decimals}" : $"F{decimals}";
+                return current.ToString(format, System.Globalization.CultureInfo.InvariantCulture);
+            });
+        }
+        Update(0);
+        EventHandler<object>? handler = null;
+        handler = (_, _) =>
+        {
+            try
+            {
+                // 文字被别处改掉（数据刷新）就停，不要盖回旧值
+                double t = Math.Clamp((Environment.TickCount64 - start) / totalMs, 0, 1);
+                double eased = 1 - Math.Pow(1 - t, 3);
+                if (t >= 1)
+                {
+                    Microsoft.UI.Xaml.Media.CompositionTarget.Rendering -= handler;
+                    textBlock.Text = final;
+                    return;
+                }
+                Update(eased);
+            }
+            catch
+            {
+                Microsoft.UI.Xaml.Media.CompositionTarget.Rendering -= handler;
+                textBlock.Text = final;
+            }
+        };
+        Microsoft.UI.Xaml.Media.CompositionTarget.Rendering += handler;
+    }
+
+
+
     /// <summary>
     /// 用 spring 缩放到目标值，按压回馈用
     /// </summary>

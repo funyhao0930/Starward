@@ -160,6 +160,11 @@ public sealed partial class PlayTimeStatsDialog : ContentDialog
         {
             TimeSpan delay = MotionTokens.StaggerStep * Math.Min(args.Index, MotionTokens.StaggerMax);
             _ = args.Element.EnterAsync(offsetY: 12, fromScale: 0.96f, delay: delay);
+            // 卡片第二行是大号的数值
+            if (args.Element is Panel panel && panel.Children.Count > 1 && panel.Children[1] is TextBlock value)
+            {
+                value.CountUp(delay: delay);
+            }
         }
     }
 
