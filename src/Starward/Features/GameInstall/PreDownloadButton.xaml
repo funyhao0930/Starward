@@ -136,12 +136,20 @@
         <!--  下载进度  -->
         <Popup x:Name="Popup_DownloadProgress"
                DesiredPlacement="Top"
-               PlacementTarget="{x:Bind Grid_Root}">
+               PlacementTarget="{x:Bind Grid_Root}"
+               VerticalOffset="-6">
+            <Popup.ChildTransitions>
+                <TransitionCollection>
+                    <PopupThemeTransition FromVerticalOffset="8" />
+                </TransitionCollection>
+            </Popup.ChildTransitions>
             <Border MinWidth="200"
                     MaxWidth="240"
                     Padding="20,12,20,12"
-                    Background="{ThemeResource ControlOnImageFillColorDefaultBrush}"
-                    CornerRadius="8">
+                    Background="{ThemeResource CustomAcrylicBrush}"
+                    BorderBrush="{StaticResource GlassEdgeHighlightBrush}"
+                    BorderThickness="1"
+                    CornerRadius="12">
                 <StackPanel>
                     <!--  下载状态  -->
                     <TextBlock FontSize="14"

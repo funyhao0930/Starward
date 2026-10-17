@@ -50,6 +50,13 @@
                           TintColor="{ThemeResource ControlOnImageFillColorDefault}"
                           TintOpacity="0.4" />
 
+            <!--  玻璃边缘高光：上亮下暗的细描边，配合毛玻璃底使用  -->
+            <LinearGradientBrush x:Key="GlassEdgeHighlightBrush" StartPoint="0,0" EndPoint="0,1">
+                <GradientStop Offset="0" Color="#59FFFFFF" />
+                <GradientStop Offset="0.45" Color="#14FFFFFF" />
+                <GradientStop Offset="1" Color="#0AFFFFFF" />
+            </LinearGradientBrush>
+
             <Thickness x:Key="NavigationViewBorderThickness">0</Thickness>
             <StaticResource x:Key="NavigationViewDefaultPaneBackground" ResourceKey="CustomAcrylicBrush" />
             <StaticResource x:Key="ContentDialogTopOverlay" ResourceKey="ControlFillColorTransparentBrush" />

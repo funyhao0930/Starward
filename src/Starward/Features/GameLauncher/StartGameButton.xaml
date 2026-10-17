@@ -101,11 +101,15 @@
           Shadow="{ThemeResource ThemeShadow}"
           Translation="0,0,16">
 
-        <!--  Accent Color 背景  -->
+        <!--  Accent Color 背景，状态切换时淡入淡出  -->
         <Rectangle x:Name="Rect_AccentBackground"
                    Fill="{ThemeResource AccentFillColorDefaultBrush}"
                    IsHitTestVisible="False"
-                   Visibility="{x:Bind IsAccentColorBackgroundVisible}" />
+                   Opacity="{x:Bind AccentBackgroundOpacity}">
+            <Rectangle.OpacityTransition>
+                <ScalarTransition Duration="0:0:0.25" />
+            </Rectangle.OpacityTransition>
+        </Rectangle>
 
         <!--  主要按键  -->
         <Button x:Name="Button_GameAction"
@@ -125,7 +129,7 @@
                 Style="{ThemeResource GameButtonStyle}">
             <Grid>
                 <!--  非安装状态  -->
-                <Grid Visibility="{x:Bind GameStateIsInstalling, Converter={StaticResource BoolToVisibilityReversedConverter}}">
+                <Grid x:Name="Grid_NormalContent" Visibility="{x:Bind GameStateIsInstalling, Converter={StaticResource BoolToVisibilityReversedConverter}}">
                     <!--  转圈圈  -->
                     <ProgressRing Width="20"
                                   Height="20"
@@ -142,7 +146,8 @@
                 </Grid>
 
                 <!--  安装中信息  -->
-                <Grid Margin="0,0,48,0"
+                <Grid x:Name="Grid_InstallingContent"
+                      Margin="0,0,48,0"
                       ColumnSpacing="10"
                       IsHitTestVisible="False"
                       Visibility="{x:Bind GameStateIsInstalling}">
@@ -157,7 +162,7 @@
                                       Height="28"
                                       Background="{ThemeResource ControlOnImageFillColorDefaultBrush}"
                                       IsIndeterminate="{x:Bind InstallStateIsPending}"
-                                      Value="{x:Bind ProgressRingValue}" />
+                                      Value="{x:Bind SmoothProgressRingValue}" />
                         <TextBlock HorizontalAlignment="Center"
                                    VerticalAlignment="Center"
                                    FontSize="12"
@@ -173,6 +178,9 @@
                           VerticalAlignment="Center"
                           ColumnSpacing="4"
                           Opacity="{x:Bind Button_GameAction_DownloadingRemainTime_Opacity}">
+                        <Grid.OpacityTransition>
+                            <ScalarTransition Duration="0:0:0.15" />
+                        </Grid.OpacityTransition>
                         <Grid.RowDefinitions>
                             <RowDefinition />
                             <RowDefinition />
@@ -216,7 +224,11 @@
                                HorizontalAlignment="Center"
                                VerticalAlignment="Center"
                                Opacity="{x:Bind TextBlock_GameAction_InstallState_Opacity}"
-                               Text="{x:Bind TextBlock_GameAction_InstallState_Text}" />
+                               Text="{x:Bind TextBlock_GameAction_InstallState_Text}">
+                        <TextBlock.OpacityTransition>
+                            <ScalarTransition Duration="0:0:0.15" />
+                        </TextBlock.OpacityTransition>
+                    </TextBlock>
 
 
                     <!--  暂停 / 继续  -->
@@ -225,7 +237,11 @@
                                HorizontalAlignment="Center"
                                VerticalAlignment="Center"
                                Opacity="{x:Bind TextBlock_GameAction_PointerOver_Opacity}"
-                               Text="{x:Bind TextBlock_GameAction_PointerOver_Text}" />
+                               Text="{x:Bind TextBlock_GameAction_PointerOver_Text}">
+                        <TextBlock.OpacityTransition>
+                            <ScalarTransition Duration="0:0:0.15" />
+                        </TextBlock.OpacityTransition>
+                    </TextBlock>
 
 
                 </Grid>
@@ -262,16 +278,31 @@
 
 
 
+        <!--  玻璃边缘的高光：上亮下暗的细描边  -->
+        <Border BorderBrush="{StaticResource GlassEdgeHighlightBrush}"
+                BorderThickness="1"
+                CornerRadius="22"
+                IsHitTestVisible="False" />
+
+
+
         <!--  游戏信息 / 下载进度  -->
         <Popup x:Name="Popup_GameInfoOrDownloadProgress"
                DesiredPlacement="Top"
                PlacementTarget="{x:Bind Grid_Root}"
-               VerticalOffset="-4">
+               VerticalOffset="-6">
+            <Popup.ChildTransitions>
+                <TransitionCollection>
+                    <PopupThemeTransition FromVerticalOffset="8" />
+                </TransitionCollection>
+            </Popup.ChildTransitions>
             <Grid MinWidth="200"
                   MaxWidth="260"
                   Padding="20,12,20,12"
-                  Background="{ThemeResource ControlOnImageFillColorDefaultBrush}"
-                  CornerRadius="8">
+                  Background="{ThemeResource CustomAcrylicBrush}"
+                  BorderBrush="{StaticResource GlassEdgeHighlightBrush}"
+                  BorderThickness="1"
+                  CornerRadius="12">
                 <!--  游戏信息  -->
                 <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                            IsTextScaleFactorEnabled="False"

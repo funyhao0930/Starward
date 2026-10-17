@@ -3,6 +3,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
+using Starward.Helpers;
 using Starward.RPC.GameInstall;
 using System;
 using System.Windows.Input;
@@ -24,6 +25,14 @@ public sealed partial class StartGameButton : UserControl
     {
         this.InitializeComponent();
         this.ActualThemeChanged += StartGameButton_ActualThemeChanged;
+        this.Unloaded += (_, _) => StopProgressTween();
+        // Button 会把按下事件标记为已处理，要连已处理的一起收
+        foreach (UIElement button in new UIElement[] { Button_GameAction, Button_Setting })
+        {
+            button.AddHandler(PointerPressedEvent, new PointerEventHandler(Button_PointerPressed), true);
+            button.AddHandler(PointerReleasedEvent, new PointerEventHandler(Button_PointerReleased), true);
+            button.AddHandler(PointerCaptureLostEvent, new PointerEventHandler(Button_PointerReleased), true);
+        }
     }
 
 
@@ -53,6 +62,9 @@ public sealed partial class StartGameButton : UserControl
 
 
     public bool IsAccentColorBackgroundVisible => Button_GameAction.IsEnabled && GameState is not GameState.Installing;
+
+
+    public double AccentBackgroundOpacity => IsAccentColorBackgroundVisible ? 1 : 0;
 
 
     public bool IsGameActionCommandRunning => !Button_GameAction.IsEnabled && GameState is not GameState.GameIsRunning;
@@ -99,9 +111,44 @@ public sealed partial class StartGameButton : UserControl
             UpdateActionButtonStateWhenInstalling();
         }
         OnPropertyChanged(nameof(IsAccentColorBackgroundVisible));
+        OnPropertyChanged(nameof(AccentBackgroundOpacity));
         OnPropertyChanged(nameof(IsGameActionCommandRunning));
         OnPropertyChanged(nameof(StartGameButtonText));
         UpdateButtonForeground();
+        AnimateGameStateChanged();
+    }
+
+
+
+    private GameState _lastAnimatedGameState;
+
+
+    /// <summary>
+    /// 游戏状态变化时（开始、下载、更新、安装中、运行中），新内容由糊变清、轻微放大进场。
+    /// 这个方法在指针移入移出时也会被调用，只在状态真的变了才播放。
+    /// </summary>
+    private void AnimateGameStateChanged()
+    {
+        if (GameState == _lastAnimatedGameState)
+        {
+            return;
+        }
+        _lastAnimatedGameState = GameState;
+        UIElement content = GameStateIsInstalling ? Grid_InstallingContent : Grid_NormalContent;
+        _ = content.EnterAsync(offsetY: 0, fromScale: 0.94f, blur: MotionTokens.BlurSubtle, duration: MotionTokens.Slow);
+    }
+
+
+
+    private void Button_PointerPressed(object sender, PointerRoutedEventArgs e)
+    {
+        Grid_Root.SpringScaleTo(0.96f);
+    }
+
+
+    private void Button_PointerReleased(object sender, PointerRoutedEventArgs e)
+    {
+        Grid_Root.SpringScaleTo(1);
     }
 
 
@@ -117,6 +164,7 @@ public sealed partial class StartGameButton : UserControl
     private void Button_GameAction_IsEnabledChanged(object sender, DependencyPropertyChangedEventArgs e)
     {
         OnPropertyChanged(nameof(IsAccentColorBackgroundVisible));
+        OnPropertyChanged(nameof(AccentBackgroundOpacity));
         OnPropertyChanged(nameof(IsGameActionCommandRunning));
         OnPropertyChanged(nameof(ActionButtonForeground));
         OnPropertyChanged(nameof(SettingButtonForeground));
@@ -153,6 +201,7 @@ public sealed partial class StartGameButton : UserControl
         else if (sender as Button == Button_GameAction)
         {
             ActionButtonPointerOver = false;
+            Grid_Root.SpringScaleTo(1);
         }
         else if (sender as Button == Button_Setting)
         {
@@ -230,7 +279,56 @@ public sealed partial class StartGameButton : UserControl
 
 
 
-    public int ProgressRingValue { get; set => SetProperty(ref field, value); }
+    public int ProgressRingValue { get; set { if (SetProperty(ref field, value)) StartProgressTween(); } }
+
+
+    /// <summary>
+    /// 进度环显示的值，进度只按整数百分比更新，直接绑定会一格一格跳，这里逐帧追上去
+    /// </summary>
+    public double SmoothProgressRingValue { get; private set => SetProperty(ref field, value); }
+
+
+    private bool _progressTweenRunning;
+
+
+    private void StartProgressTween()
+    {
+        // 进度倒退（新任务从 0 开始）时直接跳过去，不往回转
+        if (!MotionSettings.IsEnabled || !IsLoaded || ProgressRingValue < SmoothProgressRingValue)
+        {
+            StopProgressTween();
+            SmoothProgressRingValue = ProgressRingValue;
+            return;
+        }
+        if (!_progressTweenRunning)
+        {
+            _progressTweenRunning = true;
+            CompositionTarget.Rendering += OnProgressTweenRendering;
+        }
+    }
+
+
+    private void StopProgressTween()
+    {
+        if (_progressTweenRunning)
+        {
+            _progressTweenRunning = false;
+            CompositionTarget.Rendering -= OnProgressTweenRendering;
+        }
+    }
+
+
+    private void OnProgressTweenRendering(object? sender, object e)
+    {
+        double target = ProgressRingValue;
+        double next = SmoothProgressRingValue + (target - SmoothProgressRingValue) * 0.12;
+        if (Math.Abs(target - next) < 0.05)
+        {
+            next = target;
+            StopProgressTween();
+        }
+        SmoothProgressRingValue = next;
+    }
 
     public string ProgressPercentText { get; set => SetProperty(ref field, value); }
 
