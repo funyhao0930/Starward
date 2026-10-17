@@ -227,7 +227,9 @@ public sealed partial class MainView : UserControl
         if (infoOverride is null)
         {
             // 内置的 Entrance 只有滑入，换成淡入、轻微缩放加由糊变清
-            MainView_Frame.NavigateWithMotion(page, param ?? CurrentGameKey, offsetY: 16, fromScale: 0.985f, blur: MotionTokens.BlurSubtle);
+            // 启动器页的 Frame 底下直接就是背景，模糊层会把背景一起糊掉，切游戏时只淡入不模糊
+            float blur = page.Name is nameof(GameLauncherPage) ? 0 : MotionTokens.BlurSubtle;
+            MainView_Frame.NavigateWithMotion(page, param ?? CurrentGameKey, offsetY: 16, fromScale: 0.985f, blur: blur);
         }
         else
         {
