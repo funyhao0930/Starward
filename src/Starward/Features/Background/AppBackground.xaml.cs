@@ -541,9 +541,40 @@ public sealed partial class AppBackground : UserControl
     }
 
 
+    /// <summary>
+    /// 背景被什么盖住了
+    /// </summary>
+    [Flags]
+    public enum VideoCover
+    {
+        None = 0,
+        /// <summary>启动器以外的页面，背景在毛玻璃后面</summary>
+        Page = 1,
+        /// <summary>游戏选择器的全屏面板</summary>
+        GameSelector = 2,
+    }
+
+
+    private VideoCover _videoCover;
+
+
+    /// <summary>
+    /// 背景被整窗的毛玻璃盖住时，视频画面停在当前帧（声音照常播放）。
+    /// 模糊后几乎看不出画面在动，但每一帧新画面都要让整窗的高斯模糊重算一次。
+    /// </summary>
+    public void SetVideoCovered(VideoCover reason, bool covered)
+    {
+        _videoCover = covered ? _videoCover | reason : _videoCover & ~reason;
+    }
+
+
     private void MediaPlayer_VideoFrameAvailable(MediaPlayer sender, object args)
     {
         if (_videoSemaphore.CurrentCount == 0)
+        {
+            return;
+        }
+        if (_videoCover is not VideoCover.None && _videoImageSource is not null)
         {
             return;
         }

@@ -486,7 +486,7 @@ public sealed partial class GachaLogPage : PageBase
 
 
     /// <summary>
-    /// 切换 UID 或卡池后，统计卡片从左到右依次由糊变清、从下方浮上
+    /// 切换 UID 或卡池后，统计卡片从左到右依次淡入、从下方浮上
     /// </summary>
     private void AnimateStatsCardEnter(object sender)
     {
@@ -505,7 +505,8 @@ public sealed partial class GachaLogPage : PageBase
                     index = ItemsControl_ZZZGachaStats?.IndexFromContainer(presenter) ?? 0;
                 }
                 TimeSpan delay = MotionTokens.StaggerStep * 2 * Math.Clamp(index, 0, MotionTokens.StaggerMax);
-                _ = presenter.EnterAsync(offsetY: 24, blur: MotionTokens.BlurSubtle, delay: delay);
+                // 换页时整个 Frame 已经在做模糊进场，卡片只淡入上浮，不再各叠一层模糊
+                _ = presenter.EnterAsync(offsetY: 24, delay: delay);
             }
         }
         catch (Exception ex)

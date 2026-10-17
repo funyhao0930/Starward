@@ -9,6 +9,7 @@ using Microsoft.UI.Xaml.Media;
 using Starward.Core;
 using Starward.Core.Games;
 using Starward.Core.HoYoPlay;
+using Starward.Features.Background;
 using Starward.Features.GameLauncher;
 using Starward.Features.Setting;
 using Starward.Features.ViewHost;
@@ -511,7 +512,7 @@ public sealed partial class GameSelector : UserControl
         Border_Pin.IsHitTestVisible = true;
         Border_Pin.Visibility = Visibility.Visible;
         GameIconsAreaVisible = true;
-        _ = FullBackgroundBrush.AnimateToAsync(MotionTokens.BlurHeavy, 0.5, MotionTokens.Slow);
+        _ = CoverBackgroundVideoAsync(_fullBackgroundVersion);
         ScrollViewer_FullBackground.ResetMotion();
         _ = GetGameBizDisplayContainers().StaggerInAsync(offsetY: 12, fromScale: 0.94f);
     }
@@ -530,6 +531,7 @@ public sealed partial class GameSelector : UserControl
     {
         int version = ++_fullBackgroundVersion;
         FullBackgroundVisible = false;
+        AppBackground.Current?.SetVideoCovered(AppBackground.VideoCover.GameSelector, false);
         Border_FullBackground.IsHitTestVisible = false;
         Border_Pin.Opacity = 0;
         Border_Pin.IsHitTestVisible = false;
@@ -550,6 +552,19 @@ public sealed partial class GameSelector : UserControl
         {
             Border_FullBackground.Visibility = Visibility.Collapsed;
             Border_Pin.Visibility = Visibility.Collapsed;
+        }
+    }
+
+
+    /// <summary>
+    /// 背景模糊到位后，视频画面停在当前帧，免得整窗的模糊每帧重算
+    /// </summary>
+    private async Task CoverBackgroundVideoAsync(int version)
+    {
+        await FullBackgroundBrush.AnimateToAsync(MotionTokens.BlurHeavy, 0.5, MotionTokens.Slow);
+        if (version == _fullBackgroundVersion)
+        {
+            AppBackground.Current?.SetVideoCovered(AppBackground.VideoCover.GameSelector, true);
         }
     }
 

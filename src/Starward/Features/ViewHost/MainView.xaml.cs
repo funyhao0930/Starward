@@ -19,6 +19,7 @@ using Starward.Features.SelfQuery;
 using Starward.Features.Setting;
 using Starward.Features.Update;
 using Starward.Helpers;
+using VideoCover = Starward.Features.Background.AppBackground.VideoCover;
 using Starward.Providers.HoYo;
 using System;
 using System.Net.Http;
@@ -226,7 +227,7 @@ public sealed partial class MainView : UserControl
         if (infoOverride is null)
         {
             // 内置的 Entrance 只有滑入，换成淡入、轻微缩放加由糊变清
-            MainView_Frame.NavigateWithMotion(page, param ?? CurrentGameKey, offsetY: 16, fromScale: 0.985f, blur: MotionTokens.BlurMedium);
+            MainView_Frame.NavigateWithMotion(page, param ?? CurrentGameKey, offsetY: 16, fromScale: 0.985f, blur: MotionTokens.BlurSubtle);
         }
         else
         {
@@ -256,9 +257,14 @@ public sealed partial class MainView : UserControl
             {
                 Border_OverlayMask.Visibility = Visibility.Visible;
                 await OverlayMaskBrush.AnimateToAsync(MotionTokens.BlurHeavy, 0.75, MotionTokens.Emphasized);
+                if (_overlayMaskVisible)
+                {
+                    AppBackground.SetVideoCovered(VideoCover.Page, true);
+                }
             }
             else
             {
+                AppBackground.SetVideoCovered(VideoCover.Page, false);
                 await OverlayMaskBrush.AnimateToAsync(0, 0, MotionTokens.Slow);
                 if (!_overlayMaskVisible)
                 {

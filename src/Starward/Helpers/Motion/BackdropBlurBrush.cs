@@ -135,7 +135,17 @@ public sealed partial class BackdropBlurBrush : XamlCompositionBrushBase
             _pending = new PendingAnimation(fromBlur, fromTint, duration, delay);
             return Task.Delay(delay + duration);
         }
-        return StartAnimations(duration, delay);
+        try
+        {
+            return StartAnimations(duration, delay);
+        }
+        catch
+        {
+            // 动画起不来就直接到终点，不能因为过渡效果让应用崩溃
+            _effectBrush.Properties.InsertScalar(BlurAmountPath, (float)blurAmount);
+            _effectBrush.Properties.InsertColor(TintColorPath, GetTint(tintOpacity));
+            return Task.CompletedTask;
+        }
     }
 
 
@@ -182,7 +192,8 @@ public sealed partial class BackdropBlurBrush : XamlCompositionBrushBase
             Name = "Blur",
             BlurAmount = blurAmount,
             BorderMode = EffectBorderMode.Hard,
-            Optimization = EffectOptimization.Balanced,
+            // 整窗的模糊用 Speed：内部先缩小再模糊，模糊量大时画质差不多，GPU 开销少很多
+            Optimization = EffectOptimization.Speed,
             Source = new CompositionEffectSourceParameter("Backdrop"),
         };
         var color = new ColorSourceEffect
