@@ -127,8 +127,10 @@ public class InAppToast : Behavior<StackPanel>
         {
             if (e.Reason is InfoBarCloseReason.CloseButton && MotionSettings.IsEnabled)
             {
+                // Closing 触发时 IsOpen 已经暂时是 false，取消后 InfoBar 才把它改回 true，
+                // 所以退场要排到下一轮再做
                 e.Cancel = true;
-                _ = DismissAsync(sender);
+                DispatcherQueue.TryEnqueue(() => _ = DismissAsync(sender));
             }
         };
     }
@@ -140,14 +142,25 @@ public class InAppToast : Behavior<StackPanel>
     /// </summary>
     private async Task DismissAsync(InfoBar infoBar)
     {
-        if (!infoBar.IsOpen)
+        // 正在播退场的通知，避免连点关闭重复执行
+        if (!infoBar.IsOpen || !_dismissing.Add(infoBar))
         {
             return;
         }
-        await infoBar.ExitAsync(offsetY: 8, toScale: 0.96f, duration: MotionTokens.Normal);
-        infoBar.IsOpen = false;
-        AssociatedObject?.Children.Remove(infoBar);
+        try
+        {
+            await infoBar.ExitAsync(offsetY: 8, toScale: 0.96f, duration: MotionTokens.Normal);
+        }
+        finally
+        {
+            infoBar.IsOpen = false;
+            AssociatedObject?.Children.Remove(infoBar);
+            _dismissing.Remove(infoBar);
+        }
     }
+
+
+    private readonly System.Collections.Generic.HashSet<InfoBar> _dismissing = new();
 
 
     private void AddInfoBar(InfoBarSeverity severity, string? title, string? message, int duration = 0)

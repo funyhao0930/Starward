@@ -109,7 +109,8 @@ public sealed partial class SettingPage : PageBase
 
 
     /// <summary>
-    /// 广度优先找第一个有三个以上子元素的 Panel
+    /// 找设置项所在的 Panel：优先取第一个 ScrollViewer 的内容。
+    /// 不能直接找子元素多的 Panel，ScrollViewer 模板里放滚动条的 Grid 会先被找到
     /// </summary>
     private static Panel? FindItemsPanel(Microsoft.UI.Xaml.DependencyObject root)
     {
@@ -118,9 +119,13 @@ public sealed partial class SettingPage : PageBase
         while (queue.Count > 0)
         {
             var node = queue.Dequeue();
-            if (node is Panel panel && panel.Children.Count >= 3)
+            if (node is ScrollViewer { Content: Panel content } && content.Children.Count >= 2)
             {
-                return panel;
+                return content;
+            }
+            if (node is StackPanel stack && stack.Children.Count >= 3)
+            {
+                return stack;
             }
             int count = Microsoft.UI.Xaml.Media.VisualTreeHelper.GetChildrenCount(node);
             for (int i = 0; i < count; i++)
