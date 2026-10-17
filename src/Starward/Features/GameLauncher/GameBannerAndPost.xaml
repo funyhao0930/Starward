@@ -32,11 +32,14 @@
         <Grid Name="Grid_BannerContainer"
               PointerEntered="Grid_BannerContainer_PointerEntered"
               PointerExited="Grid_BannerContainer_PointerExited">
+            <!--  自动轮播和点分页点时直接跳页，过渡由 SwitchBannerAsync 自己做（交叉淡化加视差）  -->
             <FlipView Name="FlipView_Banner"
                       Background="Transparent"
                       CornerRadius="8"
                       ItemsSource="{x:Bind Banners}"
-                      Loaded="FlipView_Banner_Loaded">
+                      Loaded="FlipView_Banner_Loaded"
+                      SelectionChanged="FlipView_Banner_SelectionChanged"
+                      UseTouchAnimationsForAllNavigation="False">
                 <FlipView.ItemTemplate>
                     <DataTemplate x:DataType="sch:GameBanner">
                         <sc:CachedImage Name="Image_Banner"
@@ -50,16 +53,25 @@
                     </DataTemplate>
                 </FlipView.ItemTemplate>
             </FlipView>
+            <!--  换页时盖在上面的上一张截图，淡出并往左移  -->
+            <Border x:Name="Border_BannerPrevious"
+                    CornerRadius="8"
+                    IsHitTestVisible="False">
+                <Image x:Name="Image_BannerPrevious" Stretch="Fill" />
+            </Border>
+            <!--  分页点：当前页拉长成胶囊，和导航栏的指示条同一种语言  -->
             <Border Name="Border_PipsPager"
-                    Padding="10,2,10,2"
-                    HorizontalAlignment="Right"
+                    Margin="0,0,0,8"
+                    Padding="6,4,6,4"
+                    HorizontalAlignment="Center"
                     VerticalAlignment="Bottom"
                     Background="{ThemeResource CustomOverlayAcrylicBrush}"
-                    CornerRadius="8,0,8,0"
-                    Visibility="Collapsed">
-                <TextBlock FontSize="14" Foreground="{ThemeResource TextFillColorSecondaryBrush}">
-                    <Run Text="{x:Bind local:GameBannerAndPost.AddOne(FlipView_Banner.SelectedIndex)}" /><Run Text="/" /><Run Text="{x:Bind Banners.Count}" />
-                </TextBlock>
+                    CornerRadius="9"
+                    Opacity="0">
+                <Border.OpacityTransition>
+                    <ScalarTransition Duration="0:0:0.2" />
+                </Border.OpacityTransition>
+                <StackPanel x:Name="StackPanel_BannerPips" Orientation="Horizontal" />
             </Border>
         </Grid>
 

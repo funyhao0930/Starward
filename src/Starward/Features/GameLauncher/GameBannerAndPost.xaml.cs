@@ -140,7 +140,7 @@ public sealed partial class GameBannerAndPost : UserControl
 
 
 
-    public List<GameBanner>? Banners { get; set => SetProperty(ref field, value); }
+    public List<GameBanner>? Banners { get { return field; } set { if (SetProperty(ref field, value)) RebuildBannerPips(); } }
 
 
 
@@ -303,7 +303,7 @@ public sealed partial class GameBannerAndPost : UserControl
         {
             if (Banners?.Count > 0)
             {
-                FlipView_Banner.SelectedIndex = (FlipView_Banner.SelectedIndex + 1) % Banners.Count;
+                _ = SwitchBannerAsync((FlipView_Banner.SelectedIndex + 1) % Banners.Count);
             }
         }
         catch { }
@@ -362,7 +362,10 @@ public sealed partial class GameBannerAndPost : UserControl
     private void Grid_BannerContainer_PointerEntered(object sender, PointerRoutedEventArgs e)
     {
         _bannerTimer.Stop();
-        Border_PipsPager.Visibility = Visibility.Visible;
+        if (Banners?.Count > 1)
+        {
+            Border_PipsPager.Opacity = 1;
+        }
     }
 
 
@@ -370,8 +373,168 @@ public sealed partial class GameBannerAndPost : UserControl
     private void Grid_BannerContainer_PointerExited(object sender, PointerRoutedEventArgs e)
     {
         _bannerTimer.Start();
-        Border_PipsPager.Visibility = Visibility.Collapsed;
+        Border_PipsPager.Opacity = 0;
     }
+
+
+
+    #region Banner Motion
+
+
+    private bool _switchingBanner;
+
+
+    /// <summary>
+    /// 换到指定的横幅：先截一张当前画面盖在上面，直接跳页后，旧图淡出往左移、新图从右边略放大处落位
+    /// </summary>
+    private async Task SwitchBannerAsync(int index)
+    {
+        if (_switchingBanner || index == FlipView_Banner.SelectedIndex || index < 0 || index >= (Banners?.Count ?? 0))
+        {
+            return;
+        }
+        _switchingBanner = true;
+        try
+        {
+            if (!MotionSettings.IsEnabled || FlipView_Banner.ActualWidth <= 0)
+            {
+                FlipView_Banner.SelectedIndex = index;
+                return;
+            }
+            var snapshot = new Microsoft.UI.Xaml.Media.Imaging.RenderTargetBitmap();
+            await snapshot.RenderAsync(FlipView_Banner);
+            Image_BannerPrevious.Source = snapshot;
+            int direction = index > FlipView_Banner.SelectedIndex ? 1 : -1;
+            FlipView_Banner.SelectedIndex = index;
+
+            var oldVisual = Microsoft.UI.Xaml.Hosting.ElementCompositionPreview.GetElementVisual(Border_BannerPrevious);
+            var compositor = oldVisual.Compositor;
+            Microsoft.UI.Xaml.Hosting.ElementCompositionPreview.SetIsTranslationEnabled(Border_BannerPrevious, true);
+            var fadeOut = compositor.CreateScalarKeyFrameAnimation();
+            fadeOut.InsertKeyFrame(0, 1);
+            fadeOut.InsertKeyFrame(1, 0, MotionTokens.Standard(compositor));
+            fadeOut.Duration = MotionTokens.Emphasized;
+            oldVisual.StartAnimation(nameof(Microsoft.UI.Composition.Visual.Opacity), fadeOut);
+            var moveOut = compositor.CreateVector3KeyFrameAnimation();
+            moveOut.InsertKeyFrame(0, System.Numerics.Vector3.Zero);
+            moveOut.InsertKeyFrame(1, new System.Numerics.Vector3(-28 * direction, 0, 0), MotionTokens.Standard(compositor));
+            moveOut.Duration = MotionTokens.Emphasized;
+            oldVisual.StartAnimation("Translation", moveOut);
+
+            // 新图：视差地从同方向略远处、略放大落位
+            if (FlipView_Banner.ContainerFromIndex(index) is ContentControl { ContentTemplateRoot: UIElement image })
+            {
+                var newVisual = Microsoft.UI.Xaml.Hosting.ElementCompositionPreview.GetElementVisual(image);
+                Microsoft.UI.Xaml.Hosting.ElementCompositionPreview.SetIsTranslationEnabled(image, true);
+                newVisual.CenterPoint = new System.Numerics.Vector3(image.ActualSize.X / 2, image.ActualSize.Y / 2, 0);
+                var moveIn = compositor.CreateVector3KeyFrameAnimation();
+                moveIn.InsertKeyFrame(0, new System.Numerics.Vector3(36 * direction, 0, 0));
+                moveIn.InsertKeyFrame(1, System.Numerics.Vector3.Zero, MotionTokens.Decelerate(compositor));
+                moveIn.Duration = TimeSpan.FromMilliseconds(650);
+                newVisual.StartAnimation("Translation", moveIn);
+                var settle = compositor.CreateVector3KeyFrameAnimation();
+                settle.InsertKeyFrame(0, new System.Numerics.Vector3(1.06f, 1.06f, 1));
+                settle.InsertKeyFrame(1, System.Numerics.Vector3.One, MotionTokens.Decelerate(compositor));
+                settle.Duration = TimeSpan.FromMilliseconds(650);
+                newVisual.StartAnimation(nameof(Microsoft.UI.Composition.Visual.Scale), settle);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Switch banner");
+            FlipView_Banner.SelectedIndex = index;
+        }
+        finally
+        {
+            _switchingBanner = false;
+        }
+    }
+
+
+    private void FlipView_Banner_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        UpdateBannerPips(animate: true);
+    }
+
+
+    /// <summary>
+    /// 按横幅数量重建分页点，点一下换到那一页
+    /// </summary>
+    private void RebuildBannerPips()
+    {
+        StackPanel_BannerPips.Children.Clear();
+        int count = Banners?.Count ?? 0;
+        if (count < 2)
+        {
+            return;
+        }
+        for (int i = 0; i < count; i++)
+        {
+            int index = i;
+            var pip = new Border
+            {
+                Width = PipWidth,
+                Height = 6,
+                CornerRadius = new CornerRadius(3),
+            };
+            // 点本身太小，外面包一圈透明的点击区域
+            var hit = new Border
+            {
+                Padding = new Thickness(3),
+                Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent),
+                Child = pip,
+            };
+            hit.Tapped += (_, e) =>
+            {
+                e.Handled = true;
+                _ = SwitchBannerAsync(index);
+            };
+            StackPanel_BannerPips.Children.Add(hit);
+        }
+        UpdateBannerPips(animate: false);
+    }
+
+
+    private const double PipWidth = 6;
+
+    private const double ActivePipWidth = 18;
+
+
+    private void UpdateBannerPips(bool animate)
+    {
+        int selected = FlipView_Banner.SelectedIndex;
+        for (int i = 0; i < StackPanel_BannerPips.Children.Count; i++)
+        {
+            if (StackPanel_BannerPips.Children[i] is not Border { Child: Border pip })
+            {
+                continue;
+            }
+            bool active = i == selected;
+            pip.Background = new SolidColorBrush(active ? Windows.UI.Color.FromArgb(0xF0, 0xFF, 0xFF, 0xFF) : Windows.UI.Color.FromArgb(0x70, 0xFF, 0xFF, 0xFF));
+            double width = active ? ActivePipWidth : PipWidth;
+            if (!animate || !MotionSettings.IsEnabled)
+            {
+                pip.Width = width;
+                continue;
+            }
+            // 宽度会影响旁边的点，所以动的是布局宽度，几个小点的开销可以忽略
+            var animation = new Microsoft.UI.Xaml.Media.Animation.DoubleAnimation
+            {
+                To = width,
+                Duration = new Duration(TimeSpan.FromMilliseconds(320)),
+                EnableDependentAnimation = true,
+                EasingFunction = new Microsoft.UI.Xaml.Media.Animation.BackEase { Amplitude = 0.35, EasingMode = Microsoft.UI.Xaml.Media.Animation.EasingMode.EaseOut },
+            };
+            Microsoft.UI.Xaml.Media.Animation.Storyboard.SetTarget(animation, pip);
+            Microsoft.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(animation, "Width");
+            var storyboard = new Microsoft.UI.Xaml.Media.Animation.Storyboard();
+            storyboard.Children.Add(animation);
+            storyboard.Begin();
+        }
+    }
+
+
+    #endregion
 
 
 
