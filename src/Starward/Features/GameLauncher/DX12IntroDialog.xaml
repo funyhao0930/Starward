@@ -18,7 +18,6 @@
     <ContentDialog.Resources>
         <x:Double x:Key="ContentDialogMaxWidth">1200</x:Double>
         <Thickness x:Key="ContentDialogPadding">0</Thickness>
-        <StaticResource x:Key="ContentDialogSmokeFill" ResourceKey="ControlFillColorTransparentBrush" />
         <StaticResource x:Key="ContentDialogTopOverlay" ResourceKey="ControlFillColorTransparentBrush" />
     </ContentDialog.Resources>
 

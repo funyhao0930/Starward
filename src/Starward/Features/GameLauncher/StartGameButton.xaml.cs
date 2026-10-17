@@ -116,6 +116,72 @@ public sealed partial class StartGameButton : UserControl
         OnPropertyChanged(nameof(StartGameButtonText));
         UpdateButtonForeground();
         AnimateGameStateChanged();
+        UpdateLaunchShimmer();
+    }
+
+
+
+    /// <summary>
+    /// 命令执行中（按下开始游戏到游戏进程出现）按钮上一直有流光扫过，表示正在启动
+    /// </summary>
+    private void UpdateLaunchShimmer()
+    {
+        bool launching = !Button_GameAction.IsEnabled && GameState is not GameState.GameIsRunning and not GameState.ComingSoon;
+        if (launching && MotionSettings.IsEnabled)
+        {
+            if (Border_LaunchShimmer.Opacity != 1)
+            {
+                Border_LaunchShimmer.Opacity = 1;
+                Storyboard_LaunchShimmer.Begin();
+            }
+        }
+        else if (Border_LaunchShimmer.Opacity != 0)
+        {
+            Border_LaunchShimmer.Opacity = 0;
+            Storyboard_LaunchShimmer.Stop();
+        }
+    }
+
+
+
+    private bool _finishCelebrated;
+
+
+    /// <summary>
+    /// 下载安装完成：进度圈换成弹出来的勾，整个按钮闪一下强调色
+    /// </summary>
+    private void UpdateFinishCelebration()
+    {
+        if (InstallState is GameInstallState.Finish)
+        {
+            if (_finishCelebrated)
+            {
+                return;
+            }
+            _finishCelebrated = true;
+            _ = Grid_ProgressRing.ExitAsync(toScale: 0.6f);
+            Icon_InstallFinished.Visibility = Visibility.Visible;
+            _ = Icon_InstallFinished.EnterAsync(offsetY: 0, fromScale: 0.4f, duration: MotionTokens.Slow);
+            FlashAccentAsync();
+        }
+        else if (_finishCelebrated)
+        {
+            _finishCelebrated = false;
+            Grid_ProgressRing.ResetMotion();
+            Icon_InstallFinished.Visibility = Visibility.Collapsed;
+        }
+    }
+
+
+    private async void FlashAccentAsync()
+    {
+        if (!MotionSettings.IsEnabled)
+        {
+            return;
+        }
+        Rect_FinishFlash.Opacity = 0.6;
+        await System.Threading.Tasks.Task.Delay(350);
+        Rect_FinishFlash.Opacity = 0;
     }
 
 
@@ -166,6 +232,7 @@ public sealed partial class StartGameButton : UserControl
         OnPropertyChanged(nameof(IsAccentColorBackgroundVisible));
         OnPropertyChanged(nameof(AccentBackgroundOpacity));
         OnPropertyChanged(nameof(IsGameActionCommandRunning));
+        UpdateLaunchShimmer();
         OnPropertyChanged(nameof(ActionButtonForeground));
         OnPropertyChanged(nameof(SettingButtonForeground));
     }
@@ -274,6 +341,7 @@ public sealed partial class StartGameButton : UserControl
         OnPropertyChanged(nameof(TextBlock_GameAction_InstallState_Text));
         OnPropertyChanged(nameof(TextBlock_GameAction_PointerOver_Text));
         OnPropertyChanged(nameof(InstallStateText));
+        UpdateFinishCelebration();
     }
 
 

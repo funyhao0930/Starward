@@ -90,6 +90,7 @@ public class InAppToast : Behavior<StackPanel>
             try
             {
                 infoBar.IsOpen = true;
+                Decorate(infoBar);
                 if (index > 0)
                 {
                     AssociatedObject.Children.Insert(index, infoBar);
@@ -98,14 +99,54 @@ public class InAppToast : Behavior<StackPanel>
                 {
                     AssociatedObject.Children.Add(infoBar);
                 }
+                _ = infoBar.EnterAsync(offsetY: 24, fromScale: 0.92f, blur: MotionTokens.BlurSubtle);
                 if (duration > 0)
                 {
                     await Task.Delay(duration);
-                    infoBar.IsOpen = false;
+                    await DismissAsync(infoBar);
                 }
             }
             catch { }
         });
+    }
+
+
+
+    /// <summary>
+    /// 圆角和玻璃边缘高光；用户点关闭时先播退场再关
+    /// </summary>
+    private void Decorate(InfoBar infoBar)
+    {
+        infoBar.CornerRadius = new CornerRadius(12);
+        infoBar.BorderThickness = new Thickness(1);
+        if (Application.Current.Resources.TryGetValue("GlassEdgeHighlightBrush", out object? brush) && brush is Brush edge)
+        {
+            infoBar.BorderBrush = edge;
+        }
+        infoBar.Closing += (sender, e) =>
+        {
+            if (e.Reason is InfoBarCloseReason.CloseButton && MotionSettings.IsEnabled)
+            {
+                e.Cancel = true;
+                _ = DismissAsync(sender);
+            }
+        };
+    }
+
+
+
+    /// <summary>
+    /// 缩小淡出后关闭并移除，其他通知由容器的 RepositionThemeTransition 平滑补位
+    /// </summary>
+    private async Task DismissAsync(InfoBar infoBar)
+    {
+        if (!infoBar.IsOpen)
+        {
+            return;
+        }
+        await infoBar.ExitAsync(offsetY: 8, toScale: 0.96f, duration: MotionTokens.Normal);
+        infoBar.IsOpen = false;
+        AssociatedObject?.Children.Remove(infoBar);
     }
 
 

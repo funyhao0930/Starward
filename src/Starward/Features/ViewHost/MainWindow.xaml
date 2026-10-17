@@ -20,11 +20,12 @@
         <StackPanel MaxWidth="600"
                     Margin="24,72,24,72"
                     VerticalAlignment="Bottom">
-            <StackPanel.Transitions>
+            <!--  进场和退场由 InAppToast 自己播，这里只负责其他通知平滑补位  -->
+            <StackPanel.ChildrenTransitions>
                 <TransitionCollection>
-                    <AddDeleteThemeTransition />
+                    <RepositionThemeTransition />
                 </TransitionCollection>
-            </StackPanel.Transitions>
+            </StackPanel.ChildrenTransitions>
             <mxi:Interaction.Behaviors>
                 <sh:InAppToast Tag="MainWindow" />
             </mxi:Interaction.Behaviors>

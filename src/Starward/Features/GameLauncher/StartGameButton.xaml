@@ -111,6 +111,55 @@
             </Rectangle.OpacityTransition>
         </Rectangle>
 
+        <!--  下载完成时闪一下强调色  -->
+        <Rectangle x:Name="Rect_FinishFlash"
+                   Fill="{ThemeResource AccentFillColorDefaultBrush}"
+                   IsHitTestVisible="False"
+                   Opacity="0">
+            <Rectangle.OpacityTransition>
+                <ScalarTransition Duration="0:0:0.35" />
+            </Rectangle.OpacityTransition>
+        </Rectangle>
+
+        <!--  启动游戏中：一道流光从左往右扫过  -->
+        <Border x:Name="Border_LaunchShimmer"
+                CornerRadius="22"
+                IsHitTestVisible="False"
+                Opacity="0">
+            <Border.OpacityTransition>
+                <ScalarTransition Duration="0:0:0.25" />
+            </Border.OpacityTransition>
+            <Border.Background>
+                <LinearGradientBrush StartPoint="0,0.5" EndPoint="1,0.5">
+                    <GradientStop x:Name="ShimmerStop0" Offset="-0.3" Color="#00FFFFFF" />
+                    <GradientStop x:Name="ShimmerStop1" Offset="-0.15" Color="#50FFFFFF" />
+                    <GradientStop x:Name="ShimmerStop2" Offset="0" Color="#00FFFFFF" />
+                </LinearGradientBrush>
+            </Border.Background>
+            <Border.Resources>
+                <Storyboard x:Name="Storyboard_LaunchShimmer" RepeatBehavior="Forever">
+                    <DoubleAnimation EnableDependentAnimation="True"
+                                     Storyboard.TargetName="ShimmerStop0"
+                                     Storyboard.TargetProperty="Offset"
+                                     From="-0.3"
+                                     To="1.0"
+                                     Duration="0:0:1.4" />
+                    <DoubleAnimation EnableDependentAnimation="True"
+                                     Storyboard.TargetName="ShimmerStop1"
+                                     Storyboard.TargetProperty="Offset"
+                                     From="-0.15"
+                                     To="1.15"
+                                     Duration="0:0:1.4" />
+                    <DoubleAnimation EnableDependentAnimation="True"
+                                     Storyboard.TargetName="ShimmerStop2"
+                                     Storyboard.TargetProperty="Offset"
+                                     From="0"
+                                     To="1.3"
+                                     Duration="0:0:1.4" />
+                </Storyboard>
+            </Border.Resources>
+        </Border>
+
         <!--  主要按键  -->
         <Button x:Name="Button_GameAction"
                 Padding="0"
@@ -156,8 +205,16 @@
                         <ColumnDefinition />
                     </Grid.ColumnDefinitions>
 
-                    <!--  进度圈  -->
-                    <Grid Margin="10,0,0,0" HorizontalAlignment="Left">
+                    <!--  进度圈；下载完成时换成一个勾  -->
+                    <FontIcon x:Name="Icon_InstallFinished"
+                              Margin="10,0,0,0"
+                              HorizontalAlignment="Left"
+                              FontSize="20"
+                              Glyph="&#xE73E;"
+                              Visibility="Collapsed" />
+                    <Grid x:Name="Grid_ProgressRing"
+                          Margin="10,0,0,0"
+                          HorizontalAlignment="Left">
                         <ProgressRing Width="28"
                                       Height="28"
                                       Background="{ThemeResource ControlOnImageFillColorDefaultBrush}"

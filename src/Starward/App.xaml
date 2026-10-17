@@ -5,7 +5,8 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="using:Starward"
-             xmlns:scv="using:Starward.Converters">
+             xmlns:scv="using:Starward.Converters"
+             xmlns:sh="using:Starward.Helpers">
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
@@ -60,6 +61,13 @@
             <Thickness x:Key="NavigationViewBorderThickness">0</Thickness>
             <StaticResource x:Key="NavigationViewDefaultPaneBackground" ResourceKey="CustomAcrylicBrush" />
             <StaticResource x:Key="ContentDialogTopOverlay" ResourceKey="ControlFillColorTransparentBrush" />
+            <!--  对话框背后的遮罩：背景模糊并压暗，随对话框的打开动画一起淡入  -->
+            <sh:BackdropBlurBrush x:Key="ContentDialogSmokeFill"
+                                  BlurAmount="24"
+                                  CoversBackground="True"
+                                  FallbackColor="#99000000"
+                                  TintColor="#FF000000"
+                                  TintOpacity="0.3" />
 
             <Style BasedOn="{StaticResource DefaultContentDialogStyle}" TargetType="ContentDialog">
                 <Setter Property="Background" Value="{ThemeResource CustomAcrylicBrush}" />

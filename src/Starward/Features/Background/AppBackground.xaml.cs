@@ -48,6 +48,7 @@ public sealed partial class AppBackground : UserControl
         WeakReferenceMessenger.Default.Register<BackgroundChangedMessage>(this, OnBackgroundChanged);
         WeakReferenceMessenger.Default.Register<MainWindowStateChangedMessage>(this, OnMainWindowStateChanged);
         WeakReferenceMessenger.Default.Register<VideoBgVolumeChangedMessage>(this, OnVideoBgVolumeChanged);
+        BackdropBlurBrush.BackgroundCoveredChanged += covered => SetVideoCovered(VideoCover.Dialog, covered);
         this.Loaded += AppBackground_Loaded;
         this.Unloaded += AppBackground_Unloaded;
     }
@@ -497,6 +498,8 @@ public sealed partial class AppBackground : UserControl
         Page = 1,
         /// <summary>游戏选择器的全屏面板</summary>
         GameSelector = 2,
+        /// <summary>对话框背后的模糊遮罩</summary>
+        Dialog = 4,
     }
 
 

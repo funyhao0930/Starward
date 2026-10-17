@@ -60,6 +60,40 @@ public sealed partial class BackdropBlurBrush : XamlCompositionBrushBase
 
 
 
+    /// <summary>
+    /// 这块模糊会盖住整个背景，显示期间背景视频可以停在当前帧
+    /// </summary>
+    public bool CoversBackground { get; set; }
+
+
+    private static int _coveringCount;
+
+    private bool _covering;
+
+
+    /// <summary>
+    /// 有没有盖住整个背景的模糊正在显示，参数为 true 表示有
+    /// </summary>
+    public static event Action<bool>? BackgroundCoveredChanged;
+
+
+    private void SetCovering(bool covering)
+    {
+        if (!CoversBackground || _covering == covering)
+        {
+            return;
+        }
+        _covering = covering;
+        int before = _coveringCount;
+        _coveringCount = Math.Max(0, _coveringCount + (covering ? 1 : -1));
+        if ((before > 0) != (_coveringCount > 0))
+        {
+            BackgroundCoveredChanged?.Invoke(_coveringCount > 0);
+        }
+    }
+
+
+
     private static void OnEffectPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
         if (d is BackdropBlurBrush brush && !brush._suppressPropertyChanged && brush._effectBrush is not null)
@@ -78,6 +112,7 @@ public sealed partial class BackdropBlurBrush : XamlCompositionBrushBase
             return;
         }
         Compositor compositor = CompositionTarget.GetCompositorForCurrentThread();
+        SetCovering(true);
         if (!MotionSettings.IsTransparencyEnabled)
         {
             CompositionBrush = compositor.CreateColorBrush(FallbackColor);
@@ -99,6 +134,7 @@ public sealed partial class BackdropBlurBrush : XamlCompositionBrushBase
 
     protected override void OnDisconnected()
     {
+        SetCovering(false);
         CompositionBrush?.Dispose();
         CompositionBrush = null;
         _effectBrush = null;
