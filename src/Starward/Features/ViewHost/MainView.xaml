@@ -8,6 +8,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:sfb="using:Starward.Features.Background"
              xmlns:sfg="using:Starward.Features.GameSelector"
+             xmlns:sh="using:Starward.Helpers"
              x:DefaultBindMode="OneWay"
              mc:Ignorable="d">
 
@@ -21,12 +22,13 @@
                 Background="{ThemeResource CustomAcrylicBrush}" />
 
 
-        <Border Name="Border_OverlayMask"
-                Background="{ThemeResource CustomAcrylicBrush}"
-                Opacity="0">
-            <Border.OpacityTransition>
-                <ScalarTransition />
-            </Border.OpacityTransition>
+        <!--  启动器以外的页面，背景退到毛玻璃后面，模糊量从 0 过渡  -->
+        <Border Name="Border_OverlayMask" Visibility="Collapsed">
+            <Border.Background>
+                <sh:BackdropBlurBrush x:Name="OverlayMaskBrush"
+                                      FallbackColor="#F52C2C2C"
+                                      TintColor="{ThemeResource ControlOnImageFillColorDefault}" />
+            </Border.Background>
         </Border>
 
 

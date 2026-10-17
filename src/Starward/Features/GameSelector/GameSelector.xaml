@@ -90,23 +90,23 @@
 
 
 
-        <!--  黑色半透明背景  -->
+        <!--  黑色半透明背景，打开时背景逐渐模糊  -->
         <Border x:Name="Border_FullBackground"
                 Padding="68,80,0,0"
-                Background="#80000000"
                 IsHitTestVisible="False"
-                Opacity="0"
                 Tapped="Border_FullBackground_Tapped"
                 Visibility="Collapsed">
-            <Border.OpacityTransition>
-                <ScalarTransition />
-            </Border.OpacityTransition>
+            <Border.Background>
+                <sh:BackdropBlurBrush x:Name="FullBackgroundBrush"
+                                      FallbackColor="#E0000000"
+                                      TintColor="#FF000000" />
+            </Border.Background>
 
-            <ScrollViewer>
+            <ScrollViewer x:Name="ScrollViewer_FullBackground">
                 <StackPanel Margin="0,0,12,12" Spacing="40">
 
                     <!--  游戏展示和选择，游戏较多时自动换行，避免超出窗口后无法查看  -->
-                    <ItemsControl ItemsSource="{x:Bind GameBizDisplays}">
+                    <ItemsControl x:Name="ItemsControl_GameBizDisplays" ItemsSource="{x:Bind GameBizDisplays}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
                                 <cc:WrapPanel HorizontalSpacing="16"

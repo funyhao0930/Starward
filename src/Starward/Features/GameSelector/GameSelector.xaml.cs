@@ -491,34 +491,91 @@ public sealed partial class GameSelector : UserControl
     #region Full Background 黑色半透明背景
 
 
-    public bool FullBackgroundVisible => Border_FullBackground.Opacity > 0;
+    public bool FullBackgroundVisible { get; private set; }
+
+
+    /// <summary>
+    /// 每次显示或隐藏都加一，隐藏动画结束时用来判断期间有没有又被打开
+    /// </summary>
+    private int _fullBackgroundVersion;
 
 
     [RelayCommand]
     private void ShowFullBackground()
     {
-        Border_FullBackground.Opacity = 1;
+        _fullBackgroundVersion++;
+        FullBackgroundVisible = true;
         Border_FullBackground.IsHitTestVisible = true;
         Border_FullBackground.Visibility = Visibility.Visible;
         Border_Pin.Opacity = 1;
         Border_Pin.IsHitTestVisible = true;
         Border_Pin.Visibility = Visibility.Visible;
         GameIconsAreaVisible = true;
+        _ = FullBackgroundBrush.AnimateToAsync(MotionTokens.BlurHeavy, 0.5, MotionTokens.Slow);
+        ScrollViewer_FullBackground.ResetMotion();
+        _ = GetGameBizDisplayContainers().StaggerInAsync(offsetY: 12, fromScale: 0.94f);
     }
 
 
     private void HideFullBackground()
     {
-        Border_FullBackground.Opacity = 0;
+        HideFullBackground(hideGameIconsArea: true);
+    }
+
+
+    /// <summary>
+    /// 先淡出、背景变清晰，结束后再折叠，否则 Collapsed 会让退场动画来不及播
+    /// </summary>
+    private async void HideFullBackground(bool hideGameIconsArea)
+    {
+        int version = ++_fullBackgroundVersion;
+        FullBackgroundVisible = false;
         Border_FullBackground.IsHitTestVisible = false;
-        Border_FullBackground.Visibility = Visibility.Collapsed;
         Border_Pin.Opacity = 0;
         Border_Pin.IsHitTestVisible = false;
-        Border_Pin.Visibility = Visibility.Collapsed;
-        if (!IsPinned)
+        if (hideGameIconsArea && !IsPinned)
         {
             GameIconsAreaVisible = false;
         }
+        try
+        {
+            await Task.WhenAll(FullBackgroundBrush.AnimateToAsync(0, 0, MotionTokens.Normal),
+                               ScrollViewer_FullBackground.ExitAsync(offsetY: 8, toScale: 0.98f));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Hide full background");
+        }
+        if (version == _fullBackgroundVersion)
+        {
+            Border_FullBackground.Visibility = Visibility.Collapsed;
+            Border_Pin.Visibility = Visibility.Collapsed;
+        }
+    }
+
+
+    /// <summary>
+    /// 全屏游戏卡片的容器，刚从折叠变为可见时还没生成，先强制布局一次
+    /// </summary>
+    private List<UIElement> GetGameBizDisplayContainers()
+    {
+        var list = new List<UIElement>();
+        try
+        {
+            ItemsControl_GameBizDisplays.UpdateLayout();
+            for (int i = 0; i < ItemsControl_GameBizDisplays.Items.Count; i++)
+            {
+                if (ItemsControl_GameBizDisplays.ContainerFromIndex(i) is UIElement element)
+                {
+                    list.Add(element);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Get game biz display containers");
+        }
+        return list;
     }
 
 
@@ -526,19 +583,9 @@ public sealed partial class GameSelector : UserControl
     {
         _isGameBizDisplayPressed = false;
         var position = e.GetPosition(sender as UIElement);
-        if (position.X <= Border_CurrentGameIcon.ActualWidth && position.Y <= Border_CurrentGameIcon.ActualHeight)
-        {
-            Border_FullBackground.Opacity = 0;
-            Border_FullBackground.IsHitTestVisible = false;
-            Border_FullBackground.Visibility = Visibility.Collapsed;
-            Border_Pin.Opacity = 0;
-            Border_Pin.IsHitTestVisible = false;
-            Border_Pin.Visibility = Visibility.Collapsed;
-        }
-        else
-        {
-            HideFullBackground();
-        }
+        // 点在当前游戏图标上时只关掉全屏背景，图标栏保留
+        bool onCurrentGameIcon = position.X <= Border_CurrentGameIcon.ActualWidth && position.Y <= Border_CurrentGameIcon.ActualHeight;
+        HideFullBackground(hideGameIconsArea: !onCurrentGameIcon);
     }
 
 

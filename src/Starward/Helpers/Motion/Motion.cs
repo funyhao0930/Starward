@@ -1,6 +1,8 @@
 using Microsoft.UI.Composition;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Hosting;
+using Microsoft.UI.Xaml.Media.Animation;
 using System;
 using System.Collections.Generic;
 using System.Numerics;
@@ -145,6 +147,18 @@ public static class Motion
             index++;
         }
         return Task.WhenAll(tasks);
+    }
+
+
+
+    /// <summary>
+    /// 导航并用统一的进场代替 Frame 内置的转场：淡入、上滑、由糊变清
+    /// </summary>
+    public static bool NavigateWithMotion(this Frame frame, Type page, object? parameter = null, float offsetY = 12, float fromScale = 1, float blur = MotionTokens.BlurSubtle)
+    {
+        bool result = frame.Navigate(page, parameter, new SuppressNavigationTransitionInfo());
+        _ = frame.EnterAsync(offsetY, fromScale, blur);
+        return result;
     }
 
 

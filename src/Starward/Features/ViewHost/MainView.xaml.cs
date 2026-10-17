@@ -223,14 +223,53 @@ public sealed partial class MainView : UserControl
         {
             MainView_NavigationView.SelectedItem = NavigationViewItem_Launcher;
         }
-        MainView_Frame.Navigate(page, param ?? CurrentGameKey, infoOverride);
-        if (page.Name is nameof(BlankPage) or nameof(GameLauncherPage))
+        if (infoOverride is null)
         {
-            Border_OverlayMask.Opacity = 0;
+            // 内置的 Entrance 只有滑入，换成淡入、轻微缩放加由糊变清
+            MainView_Frame.NavigateWithMotion(page, param ?? CurrentGameKey, offsetY: 16, fromScale: 0.985f, blur: MotionTokens.BlurMedium);
         }
         else
         {
-            Border_OverlayMask.Opacity = 1;
+            MainView_Frame.Navigate(page, param ?? CurrentGameKey, infoOverride);
+        }
+        _ = UpdateOverlayMaskAsync(page.Name is not (nameof(BlankPage) or nameof(GameLauncherPage)));
+    }
+
+
+
+    private bool _overlayMaskVisible;
+
+
+    /// <summary>
+    /// 启动器以外的页面，背景逐渐模糊并压暗；回到启动器时反向，结束后折叠，不再消耗 GPU
+    /// </summary>
+    private async Task UpdateOverlayMaskAsync(bool visible)
+    {
+        if (_overlayMaskVisible == visible)
+        {
+            return;
+        }
+        _overlayMaskVisible = visible;
+        try
+        {
+            if (visible)
+            {
+                Border_OverlayMask.Visibility = Visibility.Visible;
+                await OverlayMaskBrush.AnimateToAsync(MotionTokens.BlurHeavy, 0.75, MotionTokens.Emphasized);
+            }
+            else
+            {
+                await OverlayMaskBrush.AnimateToAsync(0, 0, MotionTokens.Slow);
+                if (!_overlayMaskVisible)
+                {
+                    Border_OverlayMask.Visibility = Visibility.Collapsed;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Update overlay mask");
+            Border_OverlayMask.Visibility = _overlayMaskVisible ? Visibility.Visible : Visibility.Collapsed;
         }
     }
 

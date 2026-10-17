@@ -4,6 +4,7 @@ using CommunityToolkit.WinUI.Helpers;
 using Microsoft.Extensions.Logging;
 using Microsoft.Graphics.Canvas;
 using Microsoft.Graphics.Canvas.UI.Xaml;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
@@ -162,13 +163,14 @@ public sealed partial class AppBackground : UserControl
     public async Task UpdateBackgroundAsync(GameBackground? background = null)
     {
         string? imageFilePath = null;
+        CancellationToken cancellationToken = default;
         try
         {
             IsUpdateBackgroundRunning = true;
 
             updateBackgroundCts?.Cancel();
             updateBackgroundCts = new();
-            CancellationToken cancellationToken = updateBackgroundCts.Token;
+            cancellationToken = updateBackgroundCts.Token;
 
             if (!CurrentGameKey.IsValid)
             {
@@ -230,6 +232,11 @@ public sealed partial class AppBackground : UserControl
                         continue;
                     }
                 }
+                await BeginSwitchBlurAsync();
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return;
+                }
                 DisposeVideoResource();
                 BackgroundImageSource = null;
                 if (filePath != null)
@@ -284,6 +291,54 @@ public sealed partial class AppBackground : UserControl
         finally
         {
             IsUpdateBackgroundRunning = false;
+            // 被新的更新取代时，由新的那次负责结束模糊
+            if (!cancellationToken.IsCancellationRequested)
+            {
+                EndSwitchBlur();
+            }
+        }
+    }
+
+
+
+    private int _switchBlurVersion;
+
+
+    /// <summary>
+    /// 换背景前先把旧背景模糊，新背景在模糊中淡入，之后再变清晰
+    /// </summary>
+    private async Task BeginSwitchBlurAsync()
+    {
+        if (!MotionSettings.IsBlurEnabled || (BackgroundImageSource is null && PlacehoderImageSource is null))
+        {
+            return;
+        }
+        _switchBlurVersion++;
+        Border_SwitchBlur.Visibility = Visibility.Visible;
+        await SwitchBlurBrush.AnimateToAsync(MotionTokens.BlurMedium, 0, MotionTokens.Fast);
+    }
+
+
+    private async void EndSwitchBlur()
+    {
+        try
+        {
+            if (Border_SwitchBlur.Visibility is not Visibility.Visible)
+            {
+                return;
+            }
+            int version = _switchBlurVersion;
+            // 等 ImageEx 的淡入走完一段再开始变清晰
+            await SwitchBlurBrush.AnimateToAsync(0, 0, MotionTokens.Emphasized, TimeSpan.FromMilliseconds(250));
+            if (version == _switchBlurVersion)
+            {
+                Border_SwitchBlur.Visibility = Visibility.Collapsed;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "End switch blur");
+            Border_SwitchBlur.Visibility = Visibility.Collapsed;
         }
     }
 

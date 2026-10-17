@@ -2,6 +2,7 @@ using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.Logging;
 using Microsoft.UI.Xaml.Controls;
 using Starward.Frameworks;
+using Starward.Helpers;
 using System;
 
 
@@ -42,7 +43,7 @@ public sealed partial class SettingPage : PageBase
             };
             if (type is not null)
             {
-                Frame_Setting.Navigate(type);
+                Frame_Setting.NavigateWithMotion(type);
             }
         }
         catch (Exception ex)

@@ -6,6 +6,7 @@
              xmlns:local="using:Starward.Features.Background"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:sc="using:Starward.Controls"
+             xmlns:sh="using:Starward.Helpers"
              xmlns:swi="using:Scighost.WinUI.ImageEx"
              x:DefaultBindMode="OneWay"
              mc:Ignorable="d">
@@ -27,6 +28,16 @@
                      Source="{x:Bind BackgroundImageSource}"
                      Stretch="UniformToFill"
                      Style="{ThemeResource AppBackgroundImageExStyle}" />
+
+
+        <!--  换背景时先糊再清，盖住新旧图交替和视频切换的硬切  -->
+        <Border x:Name="Border_SwitchBlur"
+                IsHitTestVisible="False"
+                Visibility="Collapsed">
+            <Border.Background>
+                <sh:BackdropBlurBrush x:Name="SwitchBlurBrush" FallbackColor="Transparent" />
+            </Border.Background>
+        </Border>
 
 
 
