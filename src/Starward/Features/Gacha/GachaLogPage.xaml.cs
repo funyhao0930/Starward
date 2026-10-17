@@ -110,10 +110,8 @@ public sealed partial class GachaLogPage : PageBase
             Button_Export_Excel.Visibility = Visibility.Collapsed;
             Button_Import.Visibility = Visibility.Collapsed;
             Button_UIGF4.Visibility = Visibility.Collapsed;
-            // 物品统计面板里的三个列表分别绑定原神、星铁、绝区零的数据模板，
-            // 上面的 Enable*GachaItemStats 只会对这三款置位，
-            // 其他游戏按下去是一个空面板，不如不给按。
-            Button_ItemStatsPane.Visibility = Visibility.Collapsed;
+            // 物品统计面板里另外三个列表套的是原神、星铁、绝区零的卡面素材，其他游戏用通用的格子
+            EnableGenericGachaItemStats = true;
             // 空状态的表情图也只有这三款有素材，留个空框比留张空图好
             Image_Emoji.Visibility = Visibility.Collapsed;
         }
@@ -278,6 +276,54 @@ public sealed partial class GachaLogPage : PageBase
     private void OpenItemStatsPane()
     {
         SplitView_Content.IsPaneOpen = true;
+        // 等窗格里的格子生成好再播
+        DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, AnimateItemStatsPane);
+    }
+
+
+
+    /// <summary>
+    /// 物品格从左上往右下像波浪一样依次浮上来：延迟按 行 + 列 计算，只播看得见的前几行
+    /// </summary>
+    private void AnimateItemStatsPane()
+    {
+        try
+        {
+            GridView? gridView = GridView_GachaItemStats_Genshin ?? GridView_GachaItemStats_StarRail ?? GridView_GachaItemStats_ZZZ ?? GridView_GachaItemStats_Generic;
+            if (gridView is null || gridView.Items.Count == 0)
+            {
+                return;
+            }
+            const double cellWidth = 88;
+            int columns = Math.Max(1, (int)((gridView.ActualWidth - gridView.Padding.Left - gridView.Padding.Right) / cellWidth));
+            int count = Math.Min(gridView.Items.Count, columns * 6);
+            for (int i = 0; i < count; i++)
+            {
+                if (gridView.ContainerFromIndex(i) is UIElement container)
+                {
+                    int row = i / columns, column = i % columns;
+                    var delay = TimeSpan.FromMilliseconds(Math.Min((row + column) * 28, 420));
+                    _ = container.EnterAsync(offsetY: 14, fromScale: 0.86f, delay: delay);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Animate item stats pane");
+        }
+    }
+
+
+
+    private void GachaItemStat_PointerEntered(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+    {
+        (sender as UIElement)?.SpringScaleTo(1.08f);
+    }
+
+
+    private void GachaItemStat_PointerExited(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+    {
+        (sender as UIElement)?.SpringScaleTo(1);
     }
 
 
@@ -292,6 +338,8 @@ public sealed partial class GachaLogPage : PageBase
     public bool EnableStarRailGachaItemStats { get; set => SetProperty(ref field, value); }
 
     public bool EnableZZZGachaItemStats { get; set => SetProperty(ref field, value); }
+
+    public bool EnableGenericGachaItemStats { get; set => SetProperty(ref field, value); }
 
     public List<GachaBanner> GachaBanners { get; set => SetProperty(ref field, value); }
 

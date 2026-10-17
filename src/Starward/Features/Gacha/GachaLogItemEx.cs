@@ -42,6 +42,14 @@ public partial class GachaLogItemEx : GachaLogItem
 
 
     /// <summary>
+    /// 稀有度层级，0 为该游戏的最高稀有度，1 次之，以此类推。
+    /// 终末地最高是 6 星、其他游戏是 5 星，物品统计按层级配色，各游戏才能共用一套颜色。
+    /// 由 <see cref="GachaLogService.GetGachaTypeStats"/> 汇总物品时填入。
+    /// </summary>
+    public int RarityTier { get; set; }
+
+
+    /// <summary>
     /// 占位块上的字：品项名的第一个字。
     /// <para/>
     /// 只是视觉上的锚点，不用于分辨品项——完整的名称就显示在它右边。

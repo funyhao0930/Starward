@@ -414,7 +414,7 @@ internal abstract class GachaLogService
                 }
             }
             groupStats = allItems.GroupBy(x => x.ItemId)
-                                 .Select(x => { var item = x.First(); item.ItemCount = x.Count(); return item; })
+                                 .Select(x => { var item = x.First(); item.ItemCount = x.Count(); item.RarityTier = TopRankType - item.RankType; return item; })
                                  .OrderByDescending(x => x.RankType)
                                  .ThenByDescending(x => x.ItemCount)
                                  .ThenByDescending(x => x.Time)
