@@ -84,6 +84,7 @@ public sealed partial class MainView : UserControl
     private async void MainView_Loaded(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
     {
         DispatcherQueue.TryEnqueue(() => UpdateNavIndicator(animate: false));
+        PlayAppEntrance();
         CheckSystemProxy();
         HotkeyManager.InitializeHotkey(this.XamlRoot.GetWindowHandle());
         _ = CheckUpdateOrShowRecentUpdateContentAsync();
@@ -283,6 +284,81 @@ public sealed partial class MainView : UserControl
         {
             _logger.LogWarning(ex, "Update overlay mask");
             Border_OverlayMask.Visibility = _overlayMaskVisible ? Visibility.Visible : Visibility.Collapsed;
+        }
+    }
+
+
+
+    private bool _appEntrancePlayed;
+
+
+    /// <summary>
+    /// 打开应用时的进场：背景从略大缩回并淡入，接着导航图标由上而下浮出、顶部游戏栏落下，页面内容最后浮上
+    /// </summary>
+    private async void PlayAppEntrance()
+    {
+        if (_appEntrancePlayed)
+        {
+            return;
+        }
+        _appEntrancePlayed = true;
+        if (!MotionSettings.IsEnabled)
+        {
+            return;
+        }
+        try
+        {
+            // Loaded 时窗口还没显示，先藏起来，等窗口真的出现在屏幕上再播，否则进场在看不见的时候就播完了
+            var navItems = new System.Collections.Generic.List<UIElement>();
+            foreach (object item in MainView_NavigationView.MenuItems)
+            {
+                if (item is NavigationViewItem { Visibility: Visibility.Visible } navItem)
+                {
+                    navItems.Add(navItem);
+                }
+            }
+            if (MainView_NavigationView.SettingsItem is UIElement settings)
+            {
+                navItems.Add(settings);
+            }
+            AppBackground.HideUntilEnter();
+            MainView_Frame.HideUntilEnter();
+            GameSelector.HideForEntrance();
+            foreach (UIElement item in navItems)
+            {
+                item.HideUntilEnter();
+            }
+
+            await WaitForWindowVisibleAsync();
+
+            _ = AppBackground.EnterAsync(offsetY: 0, fromScale: 1.06f, duration: TimeSpan.FromMilliseconds(900));
+            _ = navItems.StaggerInAsync(offsetY: 10, delay: TimeSpan.FromMilliseconds(180));
+            GameSelector.PlayEntrance(TimeSpan.FromMilliseconds(260));
+            _ = MainView_Frame.EnterAsync(offsetY: 24, fromScale: 0.98f, delay: TimeSpan.FromMilliseconds(380), duration: MotionTokens.Emphasized);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "App entrance");
+            AppBackground.ResetMotion();
+            MainView_Frame.ResetMotion();
+        }
+    }
+
+
+    /// <summary>
+    /// 等窗口显示出来（最多两秒，启动到托盘时就不等了），再多等一点让第一帧画上去
+    /// </summary>
+    private async Task WaitForWindowVisibleAsync()
+    {
+        nint hwnd = XamlRoot?.GetWindowHandle() ?? 0;
+        for (int i = 0; i < 40 && hwnd != 0; i++)
+        {
+            if (Vanara.PInvoke.User32.IsWindowVisible(hwnd) && !Vanara.PInvoke.User32.IsIconic(hwnd))
+            {
+                await Task.Delay(120);
+                return;
+            }
+            await Task.Delay(50);
         }
     }
 

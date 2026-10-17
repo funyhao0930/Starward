@@ -557,6 +557,48 @@ public sealed partial class GameSelector : UserControl
     }
 
 
+    /// <summary>
+    /// 进场前先藏起来，免得窗口刚出现时先完整闪一帧
+    /// </summary>
+    public void HideForEntrance()
+    {
+        Border_CurrentGameIcon.HideUntilEnter();
+        // 这时列表项可能还没生成，整个列表一起藏。外层 Grid 带主题过渡，会接管 Visual 的透明度，
+        // 所以这里用 XAML 的 Opacity
+        if (MotionSettings.IsEnabled)
+        {
+            ListView_GameIcons.Opacity = 0;
+        }
+    }
+
+
+    /// <summary>
+    /// 打开应用时，当前游戏图标先浮出，旁边的游戏图标由左往右依次落下
+    /// </summary>
+    public void PlayEntrance(TimeSpan delay)
+    {
+        _ = Border_CurrentGameIcon.EnterAsync(offsetY: 0, fromScale: 0.8f, delay: delay);
+        // 图标栏收起时（未固定）看不见，不必播
+        if (GameIconsAreaVisible)
+        {
+            // ListView 会接管列表项容器的透明度，所以动的是容器里的图标本身；
+            // 图标靠 Translation 的 Z 投影子，不能动位移，只淡入加放大。
+            // 先让各图标按延迟藏好，再把整个列表显示出来，同一帧生效不会闪
+            var icons = new List<UIElement>();
+            foreach (FrameworkElement container in GetGameIconContainers())
+            {
+                if (container is ContentControl { ContentTemplateRoot: UIElement icon })
+                {
+                    icons.Add(icon);
+                }
+            }
+            _ = icons.StaggerInAsync(offsetY: 0, fromScale: 0.6f, delay: delay + TimeSpan.FromMilliseconds(60));
+        }
+        ListView_GameIcons.Opacity = 1;
+    }
+
+
+
     private DockMagnifier? _gameIconMagnifier;
 
 
