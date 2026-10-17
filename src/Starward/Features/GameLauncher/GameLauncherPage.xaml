@@ -512,11 +512,9 @@
                                  CurrentGameId="{x:Bind CurrentGameId}"
                                  CurrentGameKey="{x:Bind CurrentGameKey}" />
 
-        <!--  右下角按键，指针滑过时像程序坞一样放大  -->
-        <Grid x:Name="Grid_LauncherButtons"
-              Margin="0,0,40,0"
+        <!--  右下角按键  -->
+        <Grid Margin="0,0,40,0"
               HorizontalAlignment="Right"
-              Background="Transparent"
               VerticalAlignment="Bottom"
               ColumnSpacing="12">
             <!--  预下载按钮出现时，旁边的按钮平滑让位  -->

@@ -62,15 +62,10 @@ public sealed partial class GameLauncherPage : PageBase
         _dispatchTimer = DispatcherQueue.CreateTimer();
         _dispatchTimer.Interval = TimeSpan.FromMilliseconds(100);
         _dispatchTimer.Tick += UpdateGameInstallTaskProgress;
-        // 右下角的预下载、游戏时间、开始游戏：按钮比图标大得多，只轻微放大，往上长、往左推
-        _ = new DockMagnifier(Grid_LauncherButtons, () => [Button_Predownload, Button_PlayTime, Button_StartGame])
-        {
-            MaxScale = 1.1f,
-            RangeInItems = 1.2f,
-            ScaleAnchor = DockMagnifier.Anchor.Bottom,
-            SpreadDirection = DockMagnifier.Spread.Left,
-            VerticalMargin = 6,
-        };
+        // 右下角的预下载、游戏时间、开始游戏：指针移上去时单独轻微放大
+        Button_Predownload.AttachHoverScale();
+        Button_PlayTime.AttachHoverScale();
+        Button_StartGame.AttachHoverScale();
     }
 
 

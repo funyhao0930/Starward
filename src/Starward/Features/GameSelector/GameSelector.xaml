@@ -419,6 +419,7 @@
 
             <!--  游戏图标，指针滑过时像程序坞一样放大；放大的图标会超出列表，所以允许内容画到边界外  -->
             <ListView x:Name="ListView_GameIcons"
+                      Padding="0,0,24,0"
                       AllowDrop="True"
                       ScrollViewer.CanContentRenderOutsideBounds="True"
                       CanReorderItems="{x:Bind s:AppConfig.IsAdmin, Converter={StaticResource BoolReversedConverter}}"

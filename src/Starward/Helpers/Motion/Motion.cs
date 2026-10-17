@@ -3,6 +3,7 @@ using Microsoft.UI.Composition;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Hosting;
+using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media.Animation;
 using System;
 using System.Collections.Generic;
@@ -246,6 +247,19 @@ public static class Motion
         {
             _ = Fail(ex, element, nameof(SpringScaleTo), visible: true);
         }
+    }
+
+
+
+    /// <summary>
+    /// 指针移上去时以中心 spring 放大，移开时缩回
+    /// </summary>
+    public static void AttachHoverScale(this UIElement element, float scale = 1.05f)
+    {
+        element.AddHandler(UIElement.PointerEnteredEvent, new PointerEventHandler((_, _) => element.SpringScaleTo(scale)), true);
+        var restore = new PointerEventHandler((_, _) => element.SpringScaleTo(1));
+        element.AddHandler(UIElement.PointerExitedEvent, restore, true);
+        element.AddHandler(UIElement.PointerCanceledEvent, restore, true);
     }
 
 
