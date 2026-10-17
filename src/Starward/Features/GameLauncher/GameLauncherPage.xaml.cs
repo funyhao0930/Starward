@@ -270,13 +270,35 @@ public sealed partial class GameLauncherPage : PageBase
     /// <summary>
     /// 预下载按钮是否可用
     /// </summary>
+    /// <summary>
+    /// 预下载按钮的显示由这里控制，不用绑定：消失时要先播完退场再折叠。
+    /// 这一排靠右对齐、预下载在最左边，出现或消失时旁边的按钮本来就不会移动
+    /// </summary>
+    private async Task UpdatePredownloadButtonAsync(bool visible)
+    {
+        if (visible)
+        {
+            Button_Predownload.Visibility = Visibility.Visible;
+            await Button_Predownload.EnterAsync(offsetY: 8, fromScale: 0.9f, blur: MotionTokens.BlurSubtle);
+        }
+        else if (Button_Predownload.Visibility is Visibility.Visible)
+        {
+            await Button_Predownload.ExitAsync(toScale: 0.9f);
+            if (!IsPredownloadButtonEnabled)
+            {
+                Button_Predownload.Visibility = Visibility.Collapsed;
+            }
+        }
+    }
+
+
     public bool IsPredownloadButtonEnabled
     {
         get; set
         {
-            if (SetProperty(ref field, value) && value)
+            if (SetProperty(ref field, value))
             {
-                _ = Button_Predownload.EnterAsync(offsetY: 8, fromScale: 0.9f, blur: MotionTokens.BlurSubtle);
+                _ = UpdatePredownloadButtonAsync(value);
             }
         }
     }
