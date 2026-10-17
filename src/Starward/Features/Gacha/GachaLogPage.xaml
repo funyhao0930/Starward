@@ -15,7 +15,148 @@
         <local:RarityToGIBgConverter x:Key="RarityToGIBgConverter" />
         <local:RarityToSRBgConverter x:Key="RarityToSRBgConverter" />
         <local:RarityToZZZIconConverter x:Key="RarityToZZZIconConverter" />
-        <local:RarityTierToBrushConverter x:Key="RarityTierToBrushConverter" />
+        <local:RarityTierToBrushConverter x:Key="KuroRarityBrushConverter" Palette="Kuro" />
+        <local:RarityTierToBrushConverter x:Key="EndfieldRarityBrushConverter" Palette="Endfield" />
+        <local:RarityTierToBrushConverter x:Key="NteRarityBrushConverter" Palette="Nte" />
+
+        <!--  鸣潮：按稀有度层级配金紫蓝的渐层底，有图标显示图标，没有就显示名字的第一个字  -->
+            <DataTemplate x:Key="ItemStatTemplate_Kuro" x:DataType="local:GachaLogItemEx">
+                <Grid Width="80"
+                      Height="98"
+                      Margin="4,2,4,2"
+                      Background="{x:Bind RarityTier, Converter={StaticResource KuroRarityBrushConverter}, ConverterParameter=Background}"
+                      BorderBrush="{x:Bind RarityTier, Converter={StaticResource KuroRarityBrushConverter}, ConverterParameter=Border}"
+                      BorderThickness="1"
+                      CornerRadius="8"
+                      ToolTipService.ToolTip="{x:Bind Name}">
+                    <sc:CachedImage Width="78"
+                                    Height="78"
+                                    VerticalAlignment="Top"
+                                    Source="{x:Bind Icon}"
+                                    Stretch="UniformToFill"
+                                    Visibility="{x:Bind HasIcon}" />
+                    <TextBlock Height="78"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Top"
+                               FontSize="32"
+                               FontWeight="SemiBold"
+                               Foreground="{x:Bind RarityTier, Converter={StaticResource KuroRarityBrushConverter}, ConverterParameter=Foreground}"
+                               IsTextScaleFactorEnabled="False"
+                               Padding="0,18,0,0"
+                               Text="{x:Bind IconPlaceholderText}"
+                               Visibility="{x:Bind HasNoIcon}" />
+                    <Border Height="18"
+                            VerticalAlignment="Bottom"
+                            Background="#A0000000">
+                        <TextBlock HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"
+                                   FontSize="12"
+                                   IsTextScaleFactorEnabled="False">
+                            <Run Text="{x:Bind ItemCount}" />
+                            <Run Text="{x:Bind lang:Lang.SpiralAbyssPage_Times}" />
+                        </TextBlock>
+                    </Border>
+                </Grid>
+            </DataTemplate>
+
+        <!--  终末地：官网的 #191919 黑底、直角，稀有度色只用在左上角标和图下的色带，数字用宽体  -->
+        <DataTemplate x:Key="ItemStatTemplate_Endfield" x:DataType="local:GachaLogItemEx">
+            <Grid Width="80"
+                  Height="98"
+                  Margin="4,2,4,2"
+                  Background="{x:Bind RarityTier, Converter={StaticResource EndfieldRarityBrushConverter}, ConverterParameter=Background}"
+                  BorderBrush="{x:Bind RarityTier, Converter={StaticResource EndfieldRarityBrushConverter}, ConverterParameter=Border}"
+                  BorderThickness="1"
+                  CornerRadius="2"
+                  ToolTipService.ToolTip="{x:Bind Name}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="76" />
+                    <RowDefinition Height="3" />
+                    <RowDefinition />
+                </Grid.RowDefinitions>
+                <sc:CachedImage Source="{x:Bind Icon}"
+                                Stretch="UniformToFill"
+                                Visibility="{x:Bind HasIcon}" />
+                <TextBlock HorizontalAlignment="Center"
+                           VerticalAlignment="Center"
+                           FontFamily="Bahnschrift"
+                           FontSize="30"
+                           FontWeight="SemiBold"
+                           Foreground="{x:Bind RarityTier, Converter={StaticResource EndfieldRarityBrushConverter}, ConverterParameter=Foreground}"
+                           IsTextScaleFactorEnabled="False"
+                           Text="{x:Bind IconPlaceholderText}"
+                           Visibility="{x:Bind HasNoIcon}" />
+                <Polygon HorizontalAlignment="Left"
+                         VerticalAlignment="Top"
+                         Fill="{x:Bind RarityTier, Converter={StaticResource EndfieldRarityBrushConverter}, ConverterParameter=Foreground}"
+                         Points="0,0 14,0 0,14" />
+                <Rectangle Grid.Row="1" Fill="{x:Bind RarityTier, Converter={StaticResource EndfieldRarityBrushConverter}, ConverterParameter=Foreground}" />
+                <TextBlock Grid.Row="2"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"
+                           FontFamily="Bahnschrift"
+                           FontSize="12"
+                           Foreground="#E6E6E6"
+                           IsTextScaleFactorEnabled="False">
+                    <Run Text="{x:Bind ItemCount}" />
+                    <Run Text="{x:Bind lang:Lang.SpiralAbyssPage_Times}" />
+                </TextBlock>
+            </Grid>
+        </DataTemplate>
+
+        <!--  异环：都市霓虹感，大圆角、从稀有度色到深紫的对角渐层，上方一层光泽，次数放在圆角胶囊里  -->
+        <DataTemplate x:Key="ItemStatTemplate_Nte" x:DataType="local:GachaLogItemEx">
+            <Grid Width="80"
+                  Height="98"
+                  Margin="4,2,4,2"
+                  Background="{x:Bind RarityTier, Converter={StaticResource NteRarityBrushConverter}, ConverterParameter=Background}"
+                  BorderBrush="{x:Bind RarityTier, Converter={StaticResource NteRarityBrushConverter}, ConverterParameter=Border}"
+                  BorderThickness="1"
+                  CornerRadius="14"
+                  ToolTipService.ToolTip="{x:Bind Name}">
+                <sc:CachedImage Width="78"
+                                Height="78"
+                                VerticalAlignment="Top"
+                                Source="{x:Bind Icon}"
+                                Stretch="UniformToFill"
+                                Visibility="{x:Bind HasIcon}" />
+                <TextBlock Height="78"
+                           Padding="0,18,0,0"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Top"
+                           FontSize="32"
+                           FontWeight="Bold"
+                           Foreground="{x:Bind RarityTier, Converter={StaticResource NteRarityBrushConverter}, ConverterParameter=Foreground}"
+                           IsTextScaleFactorEnabled="False"
+                           Text="{x:Bind IconPlaceholderText}"
+                           Visibility="{x:Bind HasNoIcon}" />
+                <!--  光泽  -->
+                <Rectangle Height="42"
+                           VerticalAlignment="Top"
+                           IsHitTestVisible="False">
+                    <Rectangle.Fill>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                            <GradientStop Offset="0" Color="#38FFFFFF" />
+                            <GradientStop Offset="1" Color="#00FFFFFF" />
+                        </LinearGradientBrush>
+                    </Rectangle.Fill>
+                </Rectangle>
+                <Border Height="18"
+                        Margin="12,0,12,4"
+                        VerticalAlignment="Bottom"
+                        Background="#40FFFFFF"
+                        CornerRadius="9">
+                    <TextBlock HorizontalAlignment="Center"
+                               VerticalAlignment="Center"
+                               FontSize="12"
+                               FontWeight="SemiBold"
+                               IsTextScaleFactorEnabled="False">
+                        <Run Text="{x:Bind ItemCount}" />
+                        <Run Text="{x:Bind lang:Lang.SpiralAbyssPage_Times}" />
+                    </TextBlock>
+                </Border>
+            </Grid>
+        </DataTemplate>
     </Page.Resources>
 
     <Grid>
@@ -394,9 +535,7 @@
                             <DataTemplate x:DataType="local:GachaLogItemEx">
                                 <Grid Width="80"
                                       Height="97"
-                                      Margin="4,2,4,2"
-                                      PointerEntered="GachaItemStat_PointerEntered"
-                                      PointerExited="GachaItemStat_PointerExited">
+                                      Margin="4,2,4,2">
                                     <sc:CachedImage Source="{x:Bind RankType, Converter={StaticResource RarityToGIBgConverter}}" />
                                     <sc:CachedImage Height="80"
                                                     VerticalAlignment="Top"
@@ -424,9 +563,7 @@
                             <DataTemplate x:DataType="local:GachaLogItemEx">
                                 <Grid Width="80"
                                       Height="93"
-                                      Margin="4,2,4,2"
-                                      PointerEntered="GachaItemStat_PointerEntered"
-                                      PointerExited="GachaItemStat_PointerExited">
+                                      Margin="4,2,4,2">
                                     <sc:CachedImage Source="{x:Bind RankType, Converter={StaticResource RarityToSRBgConverter}}" />
                                     <sc:CachedImage Width="80"
                                                     HorizontalAlignment="Center"
@@ -461,9 +598,7 @@
                                       Height="98"
                                       Margin="4,2,4,2"
                                       Background="Black"
-                                      CornerRadius="8"
-                                      PointerEntered="GachaItemStat_PointerEntered"
-                                      PointerExited="GachaItemStat_PointerExited">
+                                      CornerRadius="8">
                                     <sc:CachedImage Width="80"
                                                     Height="80"
                                                     VerticalAlignment="Top"
@@ -495,54 +630,14 @@
                             </DataTemplate>
                         </GridView.ItemTemplate>
                     </GridView>
-                    <!--  鸣潮、终末地、异环：按稀有度层级配色，有图标显示图标，没有就显示名字的第一个字  -->
+                    <!--  鸣潮、终末地、异环：格子按游戏风格从资源里选，见 GenericItemStatTemplate  -->
                     <GridView Name="GridView_GachaItemStats_Generic"
                               Padding="24,12,24,12"
                               x:Load="{x:Bind EnableGenericGachaItemStats}"
+                              ItemTemplate="{x:Bind GenericItemStatTemplate}"
                               ItemsSource="{x:Bind GachaItemStats}"
                               SelectionMode="None">
-                        <GridView.ItemTemplate>
-                            <DataTemplate x:DataType="local:GachaLogItemEx">
-                                <Grid Width="80"
-                                      Height="98"
-                                      Margin="4,2,4,2"
-                                      Background="{x:Bind RarityTier, Converter={StaticResource RarityTierToBrushConverter}, ConverterParameter=Background}"
-                                      BorderBrush="{x:Bind RarityTier, Converter={StaticResource RarityTierToBrushConverter}, ConverterParameter=Border}"
-                                      BorderThickness="1"
-                                      CornerRadius="8"
-                                      ToolTipService.ToolTip="{x:Bind Name}"
-                                      PointerEntered="GachaItemStat_PointerEntered"
-                                      PointerExited="GachaItemStat_PointerExited">
-                                    <sc:CachedImage Width="78"
-                                                    Height="78"
-                                                    VerticalAlignment="Top"
-                                                    Source="{x:Bind Icon}"
-                                                    Stretch="UniformToFill"
-                                                    Visibility="{x:Bind HasIcon}" />
-                                    <TextBlock Height="78"
-                                               HorizontalAlignment="Center"
-                                               VerticalAlignment="Top"
-                                               FontSize="32"
-                                               FontWeight="SemiBold"
-                                               Foreground="{x:Bind RarityTier, Converter={StaticResource RarityTierToBrushConverter}, ConverterParameter=Foreground}"
-                                               IsTextScaleFactorEnabled="False"
-                                               Padding="0,18,0,0"
-                                               Text="{x:Bind IconPlaceholderText}"
-                                               Visibility="{x:Bind HasNoIcon}" />
-                                    <Border Height="18"
-                                            VerticalAlignment="Bottom"
-                                            Background="#A0000000">
-                                        <TextBlock HorizontalAlignment="Center"
-                                                   VerticalAlignment="Center"
-                                                   FontSize="12"
-                                                   IsTextScaleFactorEnabled="False">
-                                            <Run Text="{x:Bind ItemCount}" />
-                                            <Run Text="{x:Bind lang:Lang.SpiralAbyssPage_Times}" />
-                                        </TextBlock>
-                                    </Border>
-                                </Grid>
-                            </DataTemplate>
-                        </GridView.ItemTemplate>
+
                     </GridView>
                 </Grid>
             </SplitView.Pane>

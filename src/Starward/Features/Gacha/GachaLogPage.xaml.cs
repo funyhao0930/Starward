@@ -11,6 +11,7 @@ using Microsoft.UI.Xaml.Navigation;
 using Starward.Core;
 using Starward.Core.Gacha;
 using Starward.Core.GameRecord;
+using Starward.Core.Games.Gryphline;
 using Starward.Core.Games.HoYo;
 using Starward.Core.Games.Hotta;
 using Starward.Features.Gacha.UIGF;
@@ -110,7 +111,15 @@ public sealed partial class GachaLogPage : PageBase
             Button_Export_Excel.Visibility = Visibility.Collapsed;
             Button_Import.Visibility = Visibility.Collapsed;
             Button_UIGF4.Visibility = Visibility.Collapsed;
-            // 物品统计面板里另外三个列表套的是原神、星铁、绝区零的卡面素材，其他游戏用通用的格子
+            // 物品统计面板里另外三个列表套的是原神、星铁、绝区零的卡面素材，其他游戏用通用的格子，
+            // 格子的样式按游戏风格挑
+            string templateKey = CurrentGameKey.ProviderId switch
+            {
+                GryphlineGameMapping.ProviderId => "ItemStatTemplate_Endfield",
+                HottaGameMapping.ProviderId => "ItemStatTemplate_Nte",
+                _ => "ItemStatTemplate_Kuro",
+            };
+            GenericItemStatTemplate = (DataTemplate)Resources[templateKey];
             EnableGenericGachaItemStats = true;
             // 空状态的表情图也只有这三款有素材，留个空框比留张空图好
             Image_Emoji.Visibility = Visibility.Collapsed;
@@ -315,18 +324,6 @@ public sealed partial class GachaLogPage : PageBase
 
 
 
-    private void GachaItemStat_PointerEntered(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
-    {
-        (sender as UIElement)?.SpringScaleTo(1.08f);
-    }
-
-
-    private void GachaItemStat_PointerExited(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
-    {
-        (sender as UIElement)?.SpringScaleTo(1);
-    }
-
-
 
 
     #region Gacha Stats
@@ -340,6 +337,8 @@ public sealed partial class GachaLogPage : PageBase
     public bool EnableZZZGachaItemStats { get; set => SetProperty(ref field, value); }
 
     public bool EnableGenericGachaItemStats { get; set => SetProperty(ref field, value); }
+
+    public DataTemplate? GenericItemStatTemplate { get; set => SetProperty(ref field, value); }
 
     public List<GachaBanner> GachaBanners { get; set => SetProperty(ref field, value); }
 
