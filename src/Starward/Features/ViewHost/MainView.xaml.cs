@@ -82,6 +82,7 @@ public sealed partial class MainView : UserControl
 
     private async void MainView_Loaded(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
     {
+        DispatcherQueue.TryEnqueue(() => UpdateNavIndicator(animate: false));
         CheckSystemProxy();
         HotkeyManager.InitializeHotkey(this.XamlRoot.GetWindowHandle());
         _ = CheckUpdateOrShowRecentUpdateContentAsync();
@@ -135,6 +136,9 @@ public sealed partial class MainView : UserControl
         NavigationViewItem_HoyolabToolbox.Visibility = CurrentGameFeatureConfig.SupportedPages.Contains(nameof(GameRecordPage)).ToVisibility();
         NavigationViewItem_SelfQuery.Visibility = CurrentGameFeatureConfig.SupportedPages.Contains(nameof(SelfQueryPage)).ToVisibility();
         NavigationViewItem_GenshinBeyondGacha.Visibility = CurrentGameFeatureConfig.SupportedPages.Contains(nameof(GenshinBeyondGachaPage)).ToVisibility();
+
+        // 切换游戏时有些项目会显示或隐藏，选中项的位置可能变了
+        DispatcherQueue.TryEnqueue(() => UpdateNavIndicator(animate: _navIndicatorPlaced));
 
         // 抽卡记录名称，每款游戏叫法都不同
         TextBlock_GachaLog.Text = GachaLogService.GetGachaLogText(CurrentGameKey);
@@ -280,6 +284,115 @@ public sealed partial class MainView : UserControl
             Border_OverlayMask.Visibility = _overlayMaskVisible ? Visibility.Visible : Visibility.Collapsed;
         }
     }
+
+
+
+    #region Navigation Indicator
+
+
+    private bool _navIndicatorPlaced;
+
+
+    private void MainView_NavigationView_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
+    {
+        // 等新的选中项布局好再量位置
+        DispatcherQueue.TryEnqueue(() => UpdateNavIndicator(animate: _navIndicatorPlaced));
+    }
+
+
+    private void MainView_NavigationView_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        // 窗口变高时设置项会跟着往下移，指示条直接跟过去
+        DispatcherQueue.TryEnqueue(() => UpdateNavIndicator(animate: false));
+    }
+
+
+    /// <summary>
+    /// 把自己画的指示条移到选中项内置指示条的位置（内置的已经设为透明，只用它的布局位置）
+    /// </summary>
+    private void UpdateNavIndicator(bool animate)
+    {
+        try
+        {
+            if (MainView_NavigationView.SelectedItem is not FrameworkElement item || item.Visibility is not Visibility.Visible || item.ActualHeight <= 0)
+            {
+                Rect_NavIndicator.Opacity = 0;
+                return;
+            }
+            FrameworkElement target = FindDescendant(item, "SelectionIndicator") is FrameworkElement indicator && indicator.ActualHeight > 0 ? indicator : item;
+            var origin = target.TransformToVisual(this).TransformPoint(new Windows.Foundation.Point(0, 0));
+            float x, y;
+            if (target == item)
+            {
+                x = (float)origin.X + 4;
+                y = (float)(origin.Y + (item.ActualHeight - Rect_NavIndicator.Height) / 2);
+            }
+            else
+            {
+                Rect_NavIndicator.Width = target.ActualWidth;
+                Rect_NavIndicator.Height = target.ActualHeight;
+                x = (float)origin.X;
+                y = (float)origin.Y;
+            }
+
+            var visual = Microsoft.UI.Xaml.Hosting.ElementCompositionPreview.GetElementVisual(Rect_NavIndicator);
+            Microsoft.UI.Xaml.Hosting.ElementCompositionPreview.SetIsTranslationEnabled(Rect_NavIndicator, true);
+            var compositor = visual.Compositor;
+            var to = new System.Numerics.Vector3(x, y, 0);
+            Rect_NavIndicator.Opacity = 1;
+            if (!animate || !MotionSettings.IsEnabled)
+            {
+                visual.StopAnimation("Translation");
+                visual.Properties.InsertVector3("Translation", to);
+                _navIndicatorPlaced = true;
+                return;
+            }
+            visual.Properties.TryGetVector3("Translation", out var from);
+            float distance = Math.Abs(to.Y - from.Y);
+
+            var spring = compositor.CreateSpringVector3Animation();
+            spring.FinalValue = to;
+            spring.DampingRatio = 0.72f;
+            spring.Period = TimeSpan.FromMilliseconds(42);
+            visual.StartAnimation("Translation", spring);
+
+            // 移动途中拉长，距离越远拉得越长，到位后缩回
+            float stretch = 1 + Math.Min(distance / 60f, 1.8f);
+            visual.CenterPoint = new System.Numerics.Vector3((float)Rect_NavIndicator.Width / 2, (float)Rect_NavIndicator.Height / 2, 0);
+            var scale = compositor.CreateVector3KeyFrameAnimation();
+            scale.InsertKeyFrame(0, System.Numerics.Vector3.One);
+            scale.InsertKeyFrame(0.35f, new System.Numerics.Vector3(1, stretch, 1), MotionTokens.Standard(compositor));
+            scale.InsertKeyFrame(1, System.Numerics.Vector3.One, MotionTokens.Decelerate(compositor));
+            scale.Duration = MotionTokens.Slow;
+            visual.StartAnimation(nameof(Microsoft.UI.Composition.Visual.Scale), scale);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Update navigation indicator");
+        }
+    }
+
+
+    private static DependencyObject? FindDescendant(DependencyObject root, string name)
+    {
+        int count = Microsoft.UI.Xaml.Media.VisualTreeHelper.GetChildrenCount(root);
+        for (int i = 0; i < count; i++)
+        {
+            var child = Microsoft.UI.Xaml.Media.VisualTreeHelper.GetChild(root, i);
+            if (child is FrameworkElement fe && fe.Name == name)
+            {
+                return fe;
+            }
+            if (FindDescendant(child, name) is DependencyObject found)
+            {
+                return found;
+            }
+        }
+        return null;
+    }
+
+
+    #endregion
 
 
 

@@ -37,8 +37,12 @@
                         IsBackButtonVisible="Collapsed"
                         IsPaneToggleButtonVisible="False"
                         ItemInvoked="NavigationView_ItemInvoked"
-                        PaneDisplayMode="LeftCompact">
+                        PaneDisplayMode="LeftCompact"
+                        SelectionChanged="MainView_NavigationView_SelectionChanged"
+                        SizeChanged="MainView_NavigationView_SizeChanged">
             <NavigationView.Resources>
+                <!--  内置的选中指示条只在新旧两个位置各动一段，中间是跳过去的；改用下面自己画的 Rect_NavIndicator  -->
+                <SolidColorBrush x:Key="NavigationViewSelectionIndicatorForeground" Color="Transparent" />
                 <SolidColorBrush x:Key="NavigationViewContentBackground" Color="Transparent" />
                 <Thickness x:Key="NavigationViewContentGridBorderThickness">0</Thickness>
                 <!--<Thickness x:Key="NavigationViewContentMargin">0,48,0,0</Thickness>-->
@@ -143,6 +147,19 @@
             <Frame Name="MainView_Frame" Margin="0,48,0,0" />
 
         </NavigationView>
+
+
+        <!--  导航栏选中指示条：以 spring 连续滑到新的项目，途中略微拉长  -->
+        <Rectangle x:Name="Rect_NavIndicator"
+                   Width="3"
+                   Height="16"
+                   HorizontalAlignment="Left"
+                   VerticalAlignment="Top"
+                   Fill="{ThemeResource AccentFillColorDefaultBrush}"
+                   IsHitTestVisible="False"
+                   Opacity="0"
+                   RadiusX="1.5"
+                   RadiusY="1.5" />
 
 
 
