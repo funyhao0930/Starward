@@ -13,6 +13,7 @@ using Starward.Features.ViewHost;
 using Starward.Helpers;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Vanara.PInvoke;
 using Windows.System;
@@ -405,7 +406,9 @@ public sealed partial class GameBannerAndPost : UserControl
             await snapshot.RenderAsync(FlipView_Banner);
             Image_BannerPrevious.Source = snapshot;
             int direction = index > FlipView_Banner.SelectedIndex ? 1 : -1;
+            _programmaticBannerChange = true;
             FlipView_Banner.SelectedIndex = index;
+            _programmaticBannerChange = false;
 
             var oldVisual = Microsoft.UI.Xaml.Hosting.ElementCompositionPreview.GetElementVisual(Border_BannerPrevious);
             var compositor = oldVisual.Compositor;
@@ -421,10 +424,38 @@ public sealed partial class GameBannerAndPost : UserControl
             moveOut.Duration = MotionTokens.Emphasized;
             oldVisual.StartAnimation("Translation", moveOut);
 
-            // 新图：视差地从同方向略远处、略放大落位
+            AnimateBannerIn(index, direction);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Switch banner");
+            FlipView_Banner.SelectedIndex = index;
+        }
+        finally
+        {
+            _programmaticBannerChange = false;
+            _switchingBanner = false;
+        }
+    }
+
+
+    /// <summary>
+    /// 由 <see cref="SwitchBannerAsync"/> 换页时为 true；其他换页（滚轮、键盘、触控板）是 FlipView 自己换的
+    /// </summary>
+    private bool _programmaticBannerChange;
+
+
+    /// <summary>
+    /// 新图：视差地从同方向略远处、略放大落位
+    /// </summary>
+    private void AnimateBannerIn(int index, int direction)
+    {
+        try
+        {
             if (FlipView_Banner.ContainerFromIndex(index) is ContentControl { ContentTemplateRoot: UIElement image })
             {
                 var newVisual = Microsoft.UI.Xaml.Hosting.ElementCompositionPreview.GetElementVisual(image);
+                var compositor = newVisual.Compositor;
                 Microsoft.UI.Xaml.Hosting.ElementCompositionPreview.SetIsTranslationEnabled(image, true);
                 newVisual.CenterPoint = new System.Numerics.Vector3(image.ActualSize.X / 2, image.ActualSize.Y / 2, 0);
                 var moveIn = compositor.CreateVector3KeyFrameAnimation();
@@ -441,12 +472,7 @@ public sealed partial class GameBannerAndPost : UserControl
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Switch banner");
-            FlipView_Banner.SelectedIndex = index;
-        }
-        finally
-        {
-            _switchingBanner = false;
+            _logger.LogWarning(ex, "Animate banner in");
         }
     }
 
@@ -454,6 +480,21 @@ public sealed partial class GameBannerAndPost : UserControl
     private void FlipView_Banner_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         UpdateBannerPips(animate: true);
+        // 滚轮、键盘、触控板换页时旧图已经没了截不到，只让新图视差落位并淡入
+        if (!_programmaticBannerChange && MotionSettings.IsEnabled && Banners is not null
+            && e.RemovedItems.FirstOrDefault() is GameBanner previous && e.AddedItems.FirstOrDefault() is GameBanner current)
+        {
+            int direction = Banners.IndexOf(current) > Banners.IndexOf(previous) ? 1 : -1;
+            int index = FlipView_Banner.SelectedIndex;
+            DispatcherQueue.TryEnqueue(() =>
+            {
+                if (FlipView_Banner.ContainerFromIndex(index) is ContentControl { ContentTemplateRoot: UIElement image })
+                {
+                    _ = image.EnterAsync(offsetY: 0, duration: MotionTokens.Normal);
+                }
+                AnimateBannerIn(index, direction);
+            });
+        }
     }
 
 

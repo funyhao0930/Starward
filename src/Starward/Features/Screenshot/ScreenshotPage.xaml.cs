@@ -383,30 +383,6 @@ public sealed partial class ScreenshotPage : PageBase
     }
 
 
-    /// <summary>
-    /// 缩略图在屏幕上的位置（物理像素），检视窗口从这里展开
-    /// </summary>
-    private Windows.Foundation.Rect? GetThumbnailScreenRect(ScreenshotItem item)
-    {
-        try
-        {
-            if (GridView_Images.ContainerFromItem(item) is not FrameworkElement container)
-            {
-                return null;
-            }
-            var bounds = container.TransformToVisual(null).TransformBounds(new Windows.Foundation.Rect(0, 0, container.ActualWidth, container.ActualHeight));
-            double scale = XamlRoot.RasterizationScale;
-            var origin = new Vanara.PInvoke.POINT(0, 0);
-            Vanara.PInvoke.User32.ClientToScreen(XamlRoot.GetWindowHandle(), ref origin);
-            return new Windows.Foundation.Rect(origin.X + bounds.X * scale, origin.Y + bounds.Y * scale, bounds.Width * scale, bounds.Height * scale);
-        }
-        catch
-        {
-            return null;
-        }
-    }
-
-
     private void GridView_Images_ItemClick(object sender, ItemClickEventArgs e)
     {
         try
@@ -415,7 +391,7 @@ public sealed partial class ScreenshotPage : PageBase
             {
                 if (e.ClickedItem is ScreenshotItem item)
                 {
-                    _ = new ImageViewWindow2().ShowWindowAsync(this.XamlRoot.ContentIslandEnvironment.AppWindowId, item, _screenshotItems, GetThumbnailScreenRect(item));
+                    _ = new ImageViewWindow2().ShowWindowAsync(this.XamlRoot.ContentIslandEnvironment.AppWindowId, item, _screenshotItems);
                 }
             }
         }

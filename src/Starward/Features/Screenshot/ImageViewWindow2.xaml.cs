@@ -913,8 +913,7 @@ public sealed partial class ImageViewWindow2 : Window
     #region Operation
 
 
-    /// <param name="sourceScreenRect">点开的缩略图在屏幕上的位置（物理像素），有的话图片会从那里展开</param>
-    public async Task ShowWindowAsync(Microsoft.UI.WindowId windowId, ScreenshotItem screenshotItem, ObservableCollection<ScreenshotItem>? collection, Rect? sourceScreenRect = null)
+    public async Task ShowWindowAsync(Microsoft.UI.WindowId windowId, ScreenshotItem screenshotItem, ObservableCollection<ScreenshotItem>? collection)
     {
         try
         {
@@ -923,21 +922,10 @@ public sealed partial class ImageViewWindow2 : Window
             SizeInt32 size = parentWindow.Size;
             CurrentScreenshot = screenshotItem;
             ScreenshotCollection = collection;
-            _openedScreenshot = screenshotItem;
-            _sourceScreenRect = MotionSettings.IsEnabled ? sourceScreenRect : null;
-            if (_sourceScreenRect is not null)
-            {
-                // 先藏起来，等图片画好、知道最终位置后再从缩略图展开
-                CanvasSwapChainPanel_Image.HideUntilEnter();
-            }
             AppWindow.MoveAndResize(new RectInt32(point.X, point.Y, size.Width, size.Height));
             User32.ShowWindow(WindowHandle, ShowWindowCommand.SW_SHOWMAXIMIZED);
             await Task.Delay(1);
             await LoadImageAsync(screenshotItem.FilePath);
-            if (_sourceScreenRect is not null)
-            {
-                DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, PlayOpenFromThumbnail);
-            }
         }
         catch (Exception ex)
         {
@@ -1241,7 +1229,11 @@ public sealed partial class ImageViewWindow2 : Window
 
     private void Button_CloseWindow_Click(object sender, RoutedEventArgs e)
     {
-        CloseWithMotion();
+        try
+        {
+            Close();
+        }
+        catch { }
     }
 
 
@@ -1416,91 +1408,10 @@ public sealed partial class ImageViewWindow2 : Window
     #region Motion
 
 
-    private ScreenshotItem? _openedScreenshot;
-
-    private Rect? _sourceScreenRect;
-
     /// <summary>
     /// 下一张图从哪边滑进来：-1 左、1 右、0 不滑
     /// </summary>
     private int _pendingSlide;
-
-    private bool _closing;
-
-
-    /// <summary>
-    /// 来源缩略图在本窗口里的位置（DIP）
-    /// </summary>
-    private Rect? GetSourceRectInWindow()
-    {
-        if (_sourceScreenRect is not Rect screen)
-        {
-            return null;
-        }
-        var origin = new POINT(0, 0);
-        User32.ClientToScreen(WindowHandle, ref origin);
-        double scale = UIScale;
-        return new Rect((screen.X - origin.X) / scale, (screen.Y - origin.Y) / scale, screen.Width / scale, screen.Height / scale);
-    }
-
-
-    /// <summary>
-    /// 把画布的变换摆成「图片正好盖在缩略图上」，返回最终位置；算不出来时返回 null
-    /// </summary>
-    private bool TryGetThumbnailTransform(out Vector3 translation, out float scale)
-    {
-        translation = Vector3.Zero;
-        scale = 1;
-        if (GetSourceRectInWindow() is not Rect source || CanvasSwapChainPanel_Image.ActualWidth <= 0 || CanvasSwapChainPanel_Image.ActualHeight <= 0)
-        {
-            return false;
-        }
-        Rect final = CanvasSwapChainPanel_Image.TransformToVisual(RootGrid).TransformBounds(new Rect(0, 0, CanvasSwapChainPanel_Image.ActualWidth, CanvasSwapChainPanel_Image.ActualHeight));
-        // 缩略图是裁切填满的，取较大的比例，图片才会刚好盖满缩略图
-        scale = (float)Math.Max(source.Width / final.Width, source.Height / final.Height);
-        translation = new Vector3((float)(source.X + source.Width / 2 - (final.X + final.Width / 2)), (float)(source.Y + source.Height / 2 - (final.Y + final.Height / 2)), 0);
-        return true;
-    }
-
-
-    /// <summary>
-    /// 从截图页的缩略图位置展开到全尺寸
-    /// </summary>
-    private void PlayOpenFromThumbnail()
-    {
-        try
-        {
-            var visual = Microsoft.UI.Xaml.Hosting.ElementCompositionPreview.GetElementVisual(CanvasSwapChainPanel_Image);
-            if (!TryGetThumbnailTransform(out Vector3 translation, out float scale))
-            {
-                _ = CanvasSwapChainPanel_Image.EnterAsync(offsetY: 0, fromScale: 0.94f);
-                return;
-            }
-            var compositor = visual.Compositor;
-            Microsoft.UI.Xaml.Hosting.ElementCompositionPreview.SetIsTranslationEnabled(CanvasSwapChainPanel_Image, true);
-            visual.CenterPoint = new Vector3((float)CanvasSwapChainPanel_Image.ActualWidth / 2, (float)CanvasSwapChainPanel_Image.ActualHeight / 2, 0);
-            visual.Properties.InsertVector3("Translation", translation);
-            visual.Scale = new Vector3(scale, scale, 1);
-            visual.Opacity = 1;
-
-            var move = compositor.CreateSpringVector3Animation();
-            move.FinalValue = Vector3.Zero;
-            move.DampingRatio = 0.86f;
-            move.Period = TimeSpan.FromMilliseconds(55);
-            visual.StartAnimation("Translation", move);
-
-            var grow = compositor.CreateSpringVector3Animation();
-            grow.FinalValue = Vector3.One;
-            grow.DampingRatio = 0.86f;
-            grow.Period = TimeSpan.FromMilliseconds(55);
-            visual.StartAnimation(nameof(Microsoft.UI.Composition.Visual.Scale), grow);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Open from thumbnail");
-            CanvasSwapChainPanel_Image.ResetMotion();
-        }
-    }
 
 
     /// <summary>
@@ -1540,63 +1451,6 @@ public sealed partial class ImageViewWindow2 : Window
     }
 
 
-    /// <summary>
-    /// 还是打开时那张图就缩回缩略图的位置，换过图就缩小淡出，播完再关窗口
-    /// </summary>
-    private async void CloseWithMotion()
-    {
-        if (_closing)
-        {
-            return;
-        }
-        _closing = true;
-        try
-        {
-            if (MotionSettings.IsEnabled && CanvasSwapChainPanel_Image.Visibility is Visibility.Visible)
-            {
-                var visual = Microsoft.UI.Xaml.Hosting.ElementCompositionPreview.GetElementVisual(CanvasSwapChainPanel_Image);
-                var compositor = visual.Compositor;
-                var batch = compositor.CreateScopedBatch(Microsoft.UI.Composition.CompositionBatchTypes.Animation);
-                Microsoft.UI.Xaml.Hosting.ElementCompositionPreview.SetIsTranslationEnabled(CanvasSwapChainPanel_Image, true);
-                visual.CenterPoint = new Vector3((float)CanvasSwapChainPanel_Image.ActualWidth / 2, (float)CanvasSwapChainPanel_Image.ActualHeight / 2, 0);
-                Vector3 translation = Vector3.Zero;
-                float scale = 1;
-                bool backToThumbnail = CurrentScreenshot == _openedScreenshot && ScrollViewer_Image.ZoomFactor <= 1.01 && TryGetThumbnailTransform(out translation, out scale);
-                if (!backToThumbnail)
-                {
-                    translation = Vector3.Zero;
-                    scale = 0.9f;
-                }
-                TimeSpan duration = TimeSpan.FromMilliseconds(backToThumbnail ? 260 : 180);
-                var move = compositor.CreateVector3KeyFrameAnimation();
-                move.InsertKeyFrame(1, translation, MotionTokens.Standard(compositor));
-                move.Duration = duration;
-                visual.StartAnimation("Translation", move);
-                var shrink = compositor.CreateVector3KeyFrameAnimation();
-                shrink.InsertKeyFrame(1, new Vector3(scale, scale, 1), MotionTokens.Standard(compositor));
-                shrink.Duration = duration;
-                visual.StartAnimation(nameof(Microsoft.UI.Composition.Visual.Scale), shrink);
-                var fade = compositor.CreateScalarKeyFrameAnimation();
-                fade.InsertKeyFrame(0.6f, backToThumbnail ? 1 : 0.4f);
-                fade.InsertKeyFrame(1, 0);
-                fade.Duration = duration;
-                visual.StartAnimation(nameof(Microsoft.UI.Composition.Visual.Opacity), fade);
-                batch.End();
-                await batch.AsTask();
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Close with motion");
-        }
-        try
-        {
-            Close();
-        }
-        catch { }
-    }
-
-
     #endregion
 
 
@@ -1608,7 +1462,7 @@ public sealed partial class ImageViewWindow2 : Window
     {
         if (e.Key is VirtualKey.Escape)
         {
-            CloseWithMotion();
+            Close();
         }
         else if (e.Key is VirtualKey.Left or VirtualKey.Up)
         {

@@ -485,7 +485,7 @@ public sealed partial class GameRecordPage : PageBase
         {
             return;
         }
-        frame.NavigateWithStagger(page, parameter ?? CurrentRole, countUp: true);
+        frame.NavigateWithMotion(page, parameter ?? CurrentRole);
     }
 
 
