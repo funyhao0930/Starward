@@ -190,15 +190,41 @@ public sealed partial class GameBannerAndPost : UserControl
                 {
                     _bannerTimer.Stop();
                 }
-                this.Opacity = 1;
+                _showVersion++;
+                if (this.Opacity != 1)
+                {
+                    // 从隐藏到显示：整块由糊变清、从下方浮上来，资讯列表稍晚一点跟上
+                    this.Opacity = 1;
+                    _ = this.EnterAsync(offsetY: 16, fromScale: 0.98f, blur: MotionTokens.BlurMedium);
+                    if (hasBanners && hasPosts)
+                    {
+                        _ = Border_Post.EnterAsync(offsetY: 8, delay: TimeSpan.FromMilliseconds(60));
+                    }
+                }
                 this.IsHitTestVisible = true;
             }
             else
             {
                 _bannerTimer.Stop();
-                this.Opacity = 0;
                 this.IsHitTestVisible = false;
+                if (this.Opacity != 0)
+                {
+                    _ = HideAsync(++_showVersion);
+                }
             }
+        }
+    }
+
+
+    private int _showVersion;
+
+
+    private async Task HideAsync(int version)
+    {
+        await this.ExitAsync(offsetY: 8);
+        if (version == _showVersion)
+        {
+            this.Opacity = 0;
         }
     }
 

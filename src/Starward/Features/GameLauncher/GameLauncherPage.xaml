@@ -517,6 +517,12 @@
               HorizontalAlignment="Right"
               VerticalAlignment="Bottom"
               ColumnSpacing="12">
+            <!--  预下载按钮出现时，旁边的按钮平滑让位  -->
+            <Grid.ChildrenTransitions>
+                <TransitionCollection>
+                    <RepositionThemeTransition />
+                </TransitionCollection>
+            </Grid.ChildrenTransitions>
             <Grid.Resources>
                 <cu:AttachedDropShadow x:Key="TextShadow"
                                        BlurRadius="8"

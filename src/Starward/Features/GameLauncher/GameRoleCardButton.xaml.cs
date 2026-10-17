@@ -160,7 +160,7 @@ public sealed partial class GameRoleCardButton : UserControl
                 // 已经登录的游戏一定有东西可显示（卡片或原因），先把按钮亮出来，卡片里转圈。
                 // 这类游戏要走网络才查得到角色，终末地的账号服务偶尔要十几秒才回应，
                 // 等查完才显示的话，玩家看到的就是按钮不见了。
-                this.Visibility = Visibility.Visible;
+                ShowButton();
             }
             IsLoading = true;
             IReadOnlyList<GameRoleCardRole> roles;
@@ -184,7 +184,7 @@ public sealed partial class GameRoleCardButton : UserControl
                 Stats = null;
                 ErrorMessage = ex.Message;
                 OnPropertyChanged(nameof(CanSwitchRole));
-                this.Visibility = Visibility.Visible;
+                ShowButton();
                 return;
             }
             token.ThrowIfCancellationRequested();
@@ -203,7 +203,7 @@ public sealed partial class GameRoleCardButton : UserControl
             OnPropertyChanged(nameof(CanSwitchRole));
             string? lastKey = AppConfig.GetValue<string>(null, SelectionConfigKey);
             SelectedRole = roles.FirstOrDefault(x => x.SelectionKey == lastKey) ?? roles[0];
-            this.Visibility = Visibility.Visible;
+            ShowButton();
             await QueryCardAsync(provider, SelectedRole, token);
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested)
@@ -263,7 +263,22 @@ public sealed partial class GameRoleCardButton : UserControl
         ErrorMessage = message ?? "";
         NeedsLogin = true;
         OnPropertyChanged(nameof(CanSwitchRole));
+        ShowButton();
+    }
+
+
+
+    /// <summary>
+    /// 从隐藏变为显示时轻微放大、由糊变清地出现，已经显示时什么都不做
+    /// </summary>
+    private void ShowButton()
+    {
+        if (this.Visibility is Visibility.Visible)
+        {
+            return;
+        }
         this.Visibility = Visibility.Visible;
+        _ = this.EnterAsync(offsetY: 8, fromScale: 0.9f, blur: MotionTokens.BlurSubtle);
     }
 
 

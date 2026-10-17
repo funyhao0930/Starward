@@ -259,7 +259,16 @@ public sealed partial class GameLauncherPage : PageBase
     /// <summary>
     /// 预下载按钮是否可用
     /// </summary>
-    public bool IsPredownloadButtonEnabled { get; set => SetProperty(ref field, value); }
+    public bool IsPredownloadButtonEnabled
+    {
+        get; set
+        {
+            if (SetProperty(ref field, value) && value)
+            {
+                _ = Button_Predownload.EnterAsync(offsetY: 8, fromScale: 0.9f, blur: MotionTokens.BlurSubtle);
+            }
+        }
+    }
 
     /// <summary>
     /// 预下载是否完成

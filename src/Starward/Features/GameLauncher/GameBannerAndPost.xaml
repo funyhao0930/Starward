@@ -13,9 +13,6 @@
              IsHitTestVisible="False"
              Opacity="0"
              mc:Ignorable="d">
-    <UserControl.OpacityTransition>
-        <ScalarTransition />
-    </UserControl.OpacityTransition>
 
     <Grid x:Name="Grid_BannerAndPost"
           Width="380"
