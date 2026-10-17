@@ -2,6 +2,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Shapes;
+using Starward.Helpers;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -84,6 +85,11 @@ public sealed class CalendarHeatmap : Grid
         set
         {
             _days = value;
+            if (value is { Count: > 0 } && MotionSettings.IsEnabled)
+            {
+                _revealPending = true;
+                _plate.HideUntilEnter();
+            }
             if (HasLayoutWidth())
             {
                 Rebuild();
@@ -166,7 +172,18 @@ public sealed class CalendarHeatmap : Grid
             _rebuildPending = false;
             Rebuild();
         }
+        if (_revealPending && !_rebuildPending && _plate.ActualWidth > 0)
+        {
+            _revealPending = false;
+            _ = _plate.RevealFromLeftAsync();
+        }
     }
+
+
+    /// <summary>
+    /// 新数据的方块要等布局出宽度后才能扫出来
+    /// </summary>
+    private bool _revealPending;
 
 
     private bool CanPlaceOverlays()

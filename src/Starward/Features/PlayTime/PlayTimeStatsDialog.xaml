@@ -82,7 +82,7 @@
         <StackPanel Grid.Row="1" Margin="24,12,24,24">
 
             <!--  Stat Cards  -->
-            <ItemsRepeater ItemsSource="{x:Bind StatCards}">
+            <ItemsRepeater ElementPrepared="ItemsRepeater_StatCards_ElementPrepared" ItemsSource="{x:Bind StatCards}">
                 <ItemsRepeater.Layout>
                     <UniformGridLayout x:Name="UniformGridLayout_StatCards"
                                        ItemsStretch="Fill"

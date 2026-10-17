@@ -6,6 +6,7 @@ using Microsoft.UI.Xaml.Controls;
 using Starward.Core;
 using Starward.Core.HoYoPlay;
 using Starward.Features.Database;
+using Starward.Helpers;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -144,7 +145,23 @@ public sealed partial class PlayTimeStatsDialog : ContentDialog
     /// <summary>
     /// 统计卡片数据项
     /// </summary>
-    public List<StatCardItem> StatCards { get; set => SetProperty(ref field, value); }
+    public List<StatCardItem> StatCards { get; set { if (SetProperty(ref field, value)) _statCardsSetAt = Environment.TickCount64; } }
+
+
+    /// <summary>
+    /// 卡片数据换上的时间，之后一小段时间内生成的卡片才播进场，改窗口大小时重新生成的不播
+    /// </summary>
+    private long _statCardsSetAt;
+
+
+    private void ItemsRepeater_StatCards_ElementPrepared(ItemsRepeater sender, ItemsRepeaterElementPreparedEventArgs args)
+    {
+        if (Environment.TickCount64 - _statCardsSetAt < 1000)
+        {
+            TimeSpan delay = MotionTokens.StaggerStep * Math.Min(args.Index, MotionTokens.StaggerMax);
+            _ = args.Element.EnterAsync(offsetY: 12, fromScale: 0.96f, delay: delay);
+        }
+    }
 
 
 

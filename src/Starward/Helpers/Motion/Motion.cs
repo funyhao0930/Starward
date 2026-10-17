@@ -222,6 +222,104 @@ public static class Motion
 
 
     /// <summary>
+    /// 从底边往上长出来，柱状图用。柱子刚建好时还没布局，所以由调用方传入高度
+    /// </summary>
+    public static Task GrowFromBottomAsync(this UIElement element, double width, double height, TimeSpan delay = default)
+    {
+        try
+        {
+            Visual visual = ElementCompositionPreview.GetElementVisual(element);
+            if (!MotionSettings.IsEnabled)
+            {
+                visual.StopAnimation(nameof(Visual.Scale));
+                visual.Scale = Vector3.One;
+                return Task.CompletedTask;
+            }
+            Compositor compositor = visual.Compositor;
+            visual.CenterPoint = new Vector3((float)width / 2, (float)height, 0);
+            CompositionScopedBatch batch = compositor.CreateScopedBatch(CompositionBatchTypes.Animation);
+            Vector3KeyFrameAnimation scale = compositor.CreateVector3KeyFrameAnimation();
+            scale.InsertKeyFrame(0, new Vector3(1, 0, 1));
+            scale.InsertKeyFrame(1, Vector3.One, MotionTokens.Decelerate(compositor));
+            scale.Duration = MotionTokens.Emphasized;
+            scale.DelayTime = delay;
+            scale.DelayBehavior = AnimationDelayBehavior.SetInitialValueBeforeDelay;
+            visual.StartAnimation(nameof(Visual.Scale), scale);
+            batch.End();
+            return batch.AsTask();
+        }
+        catch (Exception ex)
+        {
+            return Fail(ex, element, nameof(GrowFromBottomAsync), visible: true);
+        }
+    }
+
+
+
+    /// <summary>
+    /// 从左往右扫出来，用裁剪实现，内容本身不缩放。元素要已经布局好（有宽度）
+    /// </summary>
+    public static Task RevealFromLeftAsync(this UIElement element, TimeSpan? duration = null)
+    {
+        try
+        {
+            Visual visual = ElementCompositionPreview.GetElementVisual(element);
+            float width = element.ActualSize.X;
+            visual.StopAnimation(nameof(Visual.Opacity));
+            visual.Opacity = 1;
+            if (!MotionSettings.IsEnabled || width <= 0)
+            {
+                visual.Clip = null;
+                return Task.CompletedTask;
+            }
+            Compositor compositor = visual.Compositor;
+            InsetClip clip = compositor.CreateInsetClip(0, 0, width, 0);
+            visual.Clip = clip;
+            CompositionScopedBatch batch = compositor.CreateScopedBatch(CompositionBatchTypes.Animation);
+            ScalarKeyFrameAnimation inset = compositor.CreateScalarKeyFrameAnimation();
+            inset.InsertKeyFrame(0, width);
+            inset.InsertKeyFrame(1, 0, MotionTokens.Decelerate(compositor));
+            inset.Duration = duration ?? TimeSpan.FromMilliseconds(700);
+            clip.StartAnimation(nameof(InsetClip.RightInset), inset);
+            batch.End();
+            batch.Completed += (_, _) =>
+            {
+                if (visual.Clip == clip)
+                {
+                    visual.Clip = null;
+                }
+            };
+            return batch.AsTask();
+        }
+        catch (Exception ex)
+        {
+            ElementCompositionPreview.GetElementVisual(element).Clip = null;
+            return Fail(ex, element, nameof(RevealFromLeftAsync), visible: true);
+        }
+    }
+
+
+
+    /// <summary>
+    /// 立即把 Visual 设为透明，等布局好之后再用进场动画显示，避免先闪一帧完整内容
+    /// </summary>
+    public static void HideUntilEnter(this UIElement element)
+    {
+        if (MotionSettings.IsEnabled)
+        {
+            try
+            {
+                Visual visual = ElementCompositionPreview.GetElementVisual(element);
+                visual.StopAnimation(nameof(Visual.Opacity));
+                visual.Opacity = 0;
+            }
+            catch { }
+        }
+    }
+
+
+
+    /// <summary>
     /// 用 spring 缩放到目标值，按压回馈用
     /// </summary>
     public static void SpringScaleTo(this UIElement element, float scale)

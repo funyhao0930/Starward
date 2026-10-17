@@ -2,6 +2,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Shapes;
+using Starward.Helpers;
 using System;
 using System.Collections.Generic;
 using Windows.Foundation;
@@ -176,6 +177,12 @@ public sealed class BarChart : Grid
             };
             bar.SetValue(Grid.ColumnProperty, index);
             barsHost.Children.Add(bar);
+            if (bar.Height > 0)
+            {
+                // 从左到右依次长出来，整组控制在半秒内
+                var delay = TimeSpan.FromMilliseconds(Math.Min(index * 18, 300));
+                _ = bar.GrowFromBottomAsync(barWidth, bar.Height, delay);
+            }
             if (!string.IsNullOrEmpty(item.Tooltip))
             {
                 // 透明的命中区域：宽度与柱体相同、高度覆盖整个绘图区。
