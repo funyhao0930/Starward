@@ -335,9 +335,10 @@ public static class Motion
         }
         double totalMs = (duration ?? TimeSpan.FromMilliseconds(800)).TotalMilliseconds;
         long start = Environment.TickCount64 + (long)delay.TotalMilliseconds;
+        string lastSet = final;
         void Update(double progress)
         {
-            textBlock.Text = _numberRegex.Replace(final, m =>
+            lastSet = _numberRegex.Replace(final, m =>
             {
                 string text = m.Value;
                 bool grouped = text.Contains(',');
@@ -351,6 +352,7 @@ public static class Motion
                 string format = grouped ? $"N{decimals}" : $"F{decimals}";
                 return current.ToString(format, System.Globalization.CultureInfo.InvariantCulture);
             });
+            textBlock.Text = lastSet;
         }
         Update(0);
         EventHandler<object>? handler = null;
@@ -359,6 +361,11 @@ public static class Motion
             try
             {
                 // 文字被别处改掉（数据刷新）就停，不要盖回旧值
+                if (textBlock.Text != lastSet)
+                {
+                    Microsoft.UI.Xaml.Media.CompositionTarget.Rendering -= handler;
+                    return;
+                }
                 double t = Math.Clamp((Environment.TickCount64 - start) / totalMs, 0, 1);
                 double eased = 1 - Math.Pow(1 - t, 3);
                 if (t >= 1)

@@ -124,6 +124,7 @@
                                       Background="#40000000"
                                       CornerRadius="8"
                                       PointerEntered="Grid_GameBizDisplay_PointerEntered"
+                                      PointerExited="Grid_GameBizDisplay_PointerExited"
                                       Tapped="Grid_GameBizDisplay_Tapped">
                                     <!--  背景图  -->
                                     <sc:CachedImage HorizontalAlignment="Center"

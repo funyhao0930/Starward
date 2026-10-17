@@ -822,8 +822,16 @@ public sealed partial class GameSelector : UserControl
     /// </summary>
     /// <param name="sender"></param>
     /// <param name="e"></param>
+    private void Grid_GameBizDisplay_PointerExited(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+    {
+        (sender as UIElement)?.SpringScaleTo(1);
+    }
+
+
     private void Grid_GameBizDisplay_PointerEntered(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
     {
+        // 游戏卡片可以点，移上去轻轻浮起；Logo 和图标名称的交叉淡化仍由模板里的 Storyboard 做
+        (sender as UIElement)?.SpringScaleTo(1.05f);
         if (sender is FrameworkElement ele && _isGameBizDisplayPressed)
         {
             FlyoutBase.GetAttachedFlyout(ele)?.ShowAt(ele, new FlyoutShowOptions

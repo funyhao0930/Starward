@@ -71,6 +71,7 @@ public sealed partial class GameSettingPage : PageBase
 
     protected override async void OnLoaded()
     {
+        this.StaggerContent();
         InitializeResolutionItem();
         await InitializeGameSettingAsync();
     }
