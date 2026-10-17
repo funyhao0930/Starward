@@ -16,9 +16,11 @@
             CornerRadius="22"
             Shadow="{StaticResource ThemeShadow}"
             Translation="0,0,16">
+        <!--  按钮自己也要圆角：外层放大时 Border 的圆角裁切会失效，方角的悬停底色会露出来  -->
         <Button HorizontalAlignment="Stretch"
                 VerticalAlignment="Stretch"
                 BorderThickness="0"
+                CornerRadius="22"
                 Command="{x:Bind OpenStatsDialogCommand}">
             <StackPanel Margin="4,2,4,0"
                         Orientation="Horizontal"

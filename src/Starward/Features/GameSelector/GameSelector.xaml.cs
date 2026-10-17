@@ -567,8 +567,8 @@ public sealed partial class GameSelector : UserControl
     {
         _gameIconMagnifier = new DockMagnifier(ListView_GameIcons, GetGameIconContainers)
         {
-            MaxScale = 1.25f,
-            RangeInItems = 2f,
+            MaxScale = 1.15f,
+            RangeInItems = 1.8f,
             ScaleAnchor = DockMagnifier.Anchor.Top,
             // ListViewItem 上方有 8 的 Padding，以图标的上边为准往下长
             AnchorInset = 8,
