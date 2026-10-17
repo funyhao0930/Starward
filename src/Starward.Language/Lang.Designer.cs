@@ -6838,6 +6838,15 @@ namespace Starward.Language {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Interface animations.
+        /// </summary>
+        public static string SettingPage_InterfaceAnimation {
+            get {
+                return ResourceManager.GetString("SettingPage_InterfaceAnimation", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Join Preview Release Channel 的本地化字符串。
         /// </summary>
         public static string SettingPage_JoinPreviewReleaseChannel {

@@ -192,6 +192,18 @@ public sealed partial class GeneralSetting : PageBase
     } = AppConfig.EnableGameAccountSwitcher;
 
 
+    public bool EnableUIAnimation
+    {
+        get; set
+        {
+            if (SetProperty(ref field, value))
+            {
+                AppConfig.EnableUIAnimation = value;
+            }
+        }
+    } = AppConfig.EnableUIAnimation;
+
+
 
     #endregion
 

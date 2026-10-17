@@ -2962,4 +2962,7 @@
   <data name="GryphlineLoginWindow_Hint" xml:space="preserve">
     <value>在下方的官方頁面登入，登入完成後視窗會自動關閉。密碼只在官方頁面輸入，Starward 只保存登入憑證，並以目前 Windows 使用者的身分加密存放。</value>
   </data>
+  <data name="SettingPage_InterfaceAnimation" xml:space="preserve">
+    <value>介面動畫</value>
+  </data>
 </root>

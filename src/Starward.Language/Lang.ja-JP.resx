@@ -2926,4 +2926,7 @@
   <data name="GryphlineLoginWindow_Hint" xml:space="preserve">
     <value>下の公式ページでログインしてください。ログインが完了するとこのウィンドウは自動で閉じます。パスワードは公式ページでのみ入力され、Starward はログイン用トークンだけを現在の Windows ユーザーで暗号化して保存します。</value>
   </data>
+  <data name="SettingPage_InterfaceAnimation" xml:space="preserve">
+    <value>インターフェースのアニメーション</value>
+  </data>
 </root>

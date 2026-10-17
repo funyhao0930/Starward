@@ -2963,4 +2963,7 @@ You are welcome to submit the exported data to the following repository:</value>
   <data name="GryphlineLoginWindow_Hint" xml:space="preserve">
     <value>Sign in on the page below. This window closes by itself once you are signed in. Your password is entered on the official page only; Starward keeps just the sign-in token, encrypted for this Windows user.</value>
   </data>
+  <data name="SettingPage_InterfaceAnimation" xml:space="preserve">
+    <value>Interface animations</value>
+  </data>
 </root>

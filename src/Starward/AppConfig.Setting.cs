@@ -36,6 +36,15 @@ public static partial class AppConfig
         set => SetValue(value);
     }
 
+    /// <summary>
+    /// 介面动画，关闭后进场、转场和模糊过渡都直接跳到终点
+    /// </summary>
+    public static bool EnableUIAnimation
+    {
+        get => GetValue(true);
+        set => SetValue(value);
+    }
+
     public static bool IgnoreRunningGame
     {
         get => GetValue<bool>();
