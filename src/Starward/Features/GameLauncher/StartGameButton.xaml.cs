@@ -159,17 +159,25 @@ public sealed partial class StartGameButton : UserControl
                 return;
             }
             _finishCelebrated = true;
-            _ = Grid_ProgressRing.ExitAsync(toScale: 0.6f);
-            Icon_InstallFinished.Visibility = Visibility.Visible;
-            _ = Icon_InstallFinished.EnterAsync(offsetY: 0, fromScale: 0.4f, duration: MotionTokens.Slow);
+            // 进度环换成同样的圆圈，接着收线变成勾
+            Grid_ProgressRing.Opacity = 0;
+            CheckMorph.Play(Border_FinishCheck, GetBrushColor("AccentFillColorDefaultBrush"), GetBrushColor("TextFillColorPrimaryBrush"));
             FlashAccentAsync();
         }
         else if (_finishCelebrated)
         {
             _finishCelebrated = false;
-            Grid_ProgressRing.ResetMotion();
-            Icon_InstallFinished.Visibility = Visibility.Collapsed;
+            Grid_ProgressRing.Opacity = 1;
+            CheckMorph.Reset(Border_FinishCheck);
         }
+    }
+
+
+    private static Windows.UI.Color GetBrushColor(string key)
+    {
+        return Application.Current.Resources.TryGetValue(key, out object? value) && value is SolidColorBrush brush
+            ? brush.Color
+            : Microsoft.UI.Colors.White;
     }
 
 
@@ -303,6 +311,7 @@ public sealed partial class StartGameButton : UserControl
         (false, GameInstallState.Paused) => Lang.DownloadGamePage_Paused,
         (false, GameInstallState.Error) => Lang.Common_Error,
         (false, GameInstallState.Queueing) => Lang.StartGameButton_InQueue,
+        (false, GameInstallState.Finish) => Lang.DownloadGamePage_Finished,
         _ => ""
     };
 

@@ -205,13 +205,13 @@
                         <ColumnDefinition />
                     </Grid.ColumnDefinitions>
 
-                    <!--  进度圈；下载完成时换成一个勾  -->
-                    <FontIcon x:Name="Icon_InstallFinished"
-                              Margin="10,0,0,0"
-                              HorizontalAlignment="Left"
-                              FontSize="20"
-                              Glyph="&#xE73E;"
-                              Visibility="Collapsed" />
+                    <!--  进度圈；下载完成时在同一位置由圆圈变形成勾（CheckMorph）  -->
+                    <Border x:Name="Border_FinishCheck"
+                            Width="28"
+                            Height="28"
+                            Margin="10,0,0,0"
+                            HorizontalAlignment="Left"
+                            IsHitTestVisible="False" />
                     <Grid x:Name="Grid_ProgressRing"
                           Margin="10,0,0,0"
                           HorizontalAlignment="Left">
