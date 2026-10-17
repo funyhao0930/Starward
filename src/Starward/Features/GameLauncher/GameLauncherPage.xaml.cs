@@ -66,7 +66,14 @@ public sealed partial class GameLauncherPage : PageBase
         Button_Predownload.AttachHoverScale();
         Button_PlayTime.AttachHoverScale();
         Button_StartGame.AttachHoverScale();
+        InitializeMotionPreview();
     }
+
+
+    /// <summary>
+    /// Debug 版的动画预览快捷键，见 GameLauncherPage.MotionPreview.cs
+    /// </summary>
+    partial void InitializeMotionPreview();
 
 
 
