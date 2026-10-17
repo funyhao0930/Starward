@@ -25,7 +25,13 @@ public static class IconMotion
     /// <summary>
     /// 一个姿势：旋转角度、上下位移、缩放
     /// </summary>
-    public readonly record struct Pose(float Rotation = 0, float OffsetX = 0, float OffsetY = 0, float Scale = 1);
+    public readonly record struct Pose(float Rotation = 0, float OffsetX = 0, float OffsetY = 0, float Scale = 1)
+    {
+        /// <summary>
+        /// 静止的姿势。不能用 default，那会把缩放也设成 0，图标就缩没了
+        /// </summary>
+        public static readonly Pose Rest = new(Rotation: 0);
+    }
 
 
     /// <summary>
@@ -53,19 +59,19 @@ public static class IconMotion
         item.AddHandler(UIElement.PointerExitedEvent, new PointerEventHandler((_, _) =>
         {
             pointerOver = false;
-            To(icon, default);
+            To(icon, Pose.Rest);
         }), true);
         item.AddHandler(UIElement.PointerCanceledEvent, new PointerEventHandler((_, _) =>
         {
             pointerOver = false;
-            To(icon, default);
+            To(icon, Pose.Rest);
         }), true);
         item.AddHandler(UIElement.PointerPressedEvent, new PointerEventHandler((_, _) => To(icon, style.Pressed)), true);
         item.AddHandler(UIElement.PointerReleasedEvent, new PointerEventHandler((_, _) =>
         {
-            To(icon, pointerOver ? style.Hover : default);
+            To(icon, pointerOver ? style.Hover : Pose.Rest);
             // 一次性动作会盖掉姿势，做完再摆回当下该有的姿势
-            Play(icon, style.Invoke, () => To(icon, pointerOver ? style.Hover : default));
+            Play(icon, style.Invoke, () => To(icon, pointerOver ? style.Hover : Pose.Rest));
         }), true);
     }
 
