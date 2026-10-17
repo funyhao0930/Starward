@@ -164,6 +164,34 @@ public static class Motion
 
 
     /// <summary>
+    /// 从左边长出来，进度条用
+    /// </summary>
+    public static Task GrowFromLeftAsync(this UIElement element, TimeSpan delay = default)
+    {
+        Visual visual = ElementCompositionPreview.GetElementVisual(element);
+        if (!MotionSettings.IsEnabled)
+        {
+            visual.StopAnimation(nameof(Visual.Scale));
+            visual.Scale = Vector3.One;
+            return Task.CompletedTask;
+        }
+        Compositor compositor = visual.Compositor;
+        visual.CenterPoint = new Vector3(0, element.ActualSize.Y / 2, 0);
+        CompositionScopedBatch batch = compositor.CreateScopedBatch(CompositionBatchTypes.Animation);
+        Vector3KeyFrameAnimation scale = compositor.CreateVector3KeyFrameAnimation();
+        scale.InsertKeyFrame(0, new Vector3(0, 1, 1));
+        scale.InsertKeyFrame(1, Vector3.One, MotionTokens.Decelerate(compositor));
+        scale.Duration = MotionTokens.Emphasized;
+        scale.DelayTime = delay;
+        scale.DelayBehavior = AnimationDelayBehavior.SetInitialValueBeforeDelay;
+        visual.StartAnimation(nameof(Visual.Scale), scale);
+        batch.End();
+        return batch.AsTask();
+    }
+
+
+
+    /// <summary>
     /// 用 spring 缩放到目标值，按压回馈用
     /// </summary>
     public static void SpringScaleTo(this UIElement element, float scale)

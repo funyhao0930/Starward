@@ -186,7 +186,8 @@
                                         Height="24"
                                         Margin="-4,0,-4,0"
                                         VerticalAlignment="Center"
-                                        Background="{x:Bind Converter={StaticResource GachaPityProgressBackgroundBrushConverter}}" />
+                                        Background="{x:Bind Converter={StaticResource GachaPityProgressBackgroundBrushConverter}}"
+                                        Loaded="PityBar_Loaded" />
                                 <sc:CachedImage Width="28"
                                                 Height="28"
                                                 HorizontalAlignment="Left"

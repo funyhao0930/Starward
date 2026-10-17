@@ -221,7 +221,7 @@ public sealed partial class GachaLogPage : PageBase
             }
             if (UidList.Count == 0)
             {
-                StackPanel_Emoji.Visibility = Visibility.Visible;
+                ShowEmptyState();
             }
         }
         catch (Exception ex)
@@ -389,7 +389,7 @@ public sealed partial class GachaLogPage : PageBase
                 gachaTypeStats = null;
                 DisplayGachaTypeStatsCollection = [];
                 GachaItemStats = null;
-                StackPanel_Emoji.Visibility = Visibility.Visible;
+                ShowEmptyState();
             }
             else
             {
@@ -413,6 +413,7 @@ public sealed partial class GachaLogPage : PageBase
         }
         DisplayGachaTypeStatsCollection ??= [];
         DisplayGachaTypeStatsCollection.Clear();
+        _statsCardsRebuiltAt = Environment.TickCount64;
         var list = ListView_GachaBanners.SelectedItems.Cast<GachaBanner>().ToList();
         if (list.Count == 0)
         {
@@ -473,6 +474,56 @@ public sealed partial class GachaLogPage : PageBase
     private void GachaStatsCard_Loaded(object sender, RoutedEventArgs e)
     {
         UpdateGachaStatsCardLayout();
+        AnimateStatsCardEnter(sender);
+    }
+
+
+
+    /// <summary>
+    /// 卡片重建的时间，重建后一小段时间内载入的卡片才播进场，滚动或改窗口大小造成的重新载入不播
+    /// </summary>
+    private long _statsCardsRebuiltAt;
+
+
+    /// <summary>
+    /// 切换 UID 或卡池后，统计卡片从左到右依次由糊变清、从下方浮上
+    /// </summary>
+    private void AnimateStatsCardEnter(object sender)
+    {
+        try
+        {
+            if (Environment.TickCount64 - _statsCardsRebuiltAt > 1000)
+            {
+                return;
+            }
+            // 卡片自己带了 Translation 做阴影，动画放在外层容器上，免得把阴影的 Z 值冲掉
+            if (sender is FrameworkElement card && VisualTreeHelper.GetParent(card) is ContentPresenter presenter)
+            {
+                int index = ItemsControl_GachaStats?.IndexFromContainer(presenter) ?? -1;
+                if (index < 0)
+                {
+                    index = ItemsControl_ZZZGachaStats?.IndexFromContainer(presenter) ?? 0;
+                }
+                TimeSpan delay = MotionTokens.StaggerStep * 2 * Math.Clamp(index, 0, MotionTokens.StaggerMax);
+                _ = presenter.EnterAsync(offsetY: 24, blur: MotionTokens.BlurSubtle, delay: delay);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Animate stats card");
+        }
+    }
+
+
+
+    private void ShowEmptyState()
+    {
+        if (StackPanel_Emoji.Visibility is Visibility.Visible)
+        {
+            return;
+        }
+        StackPanel_Emoji.Visibility = Visibility.Visible;
+        _ = StackPanel_Emoji.EnterAsync(offsetY: 12, fromScale: 0.96f, blur: MotionTokens.BlurSubtle);
     }
 
 
