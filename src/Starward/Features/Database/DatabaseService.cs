@@ -266,6 +266,7 @@ internal static class DatabaseService
         Sql_v26,
         Sql_v27,
         Sql_v28,
+        Sql_v29,
     ];
 
 
@@ -1263,6 +1264,21 @@ internal static class DatabaseService
         );
 
         PRAGMA USER_VERSION = 28;
+        COMMIT TRANSACTION;
+        """;
+
+    /// <summary>
+    /// 异环物品另存稀有度与英文名，给 nte-exporter 对照表跟不上的新物品兜底。
+    /// 清空旧表，让下次打开抽卡页时按新结构重取一次。
+    /// </summary>
+    private const string Sql_v29 = """
+        BEGIN TRANSACTION;
+
+        ALTER TABLE NteGachaInfo ADD COLUMN RankType INTEGER NOT NULL DEFAULT 0;
+        ALTER TABLE NteGachaInfo ADD COLUMN Name TEXT;
+        DELETE FROM NteGachaInfo;
+
+        PRAGMA USER_VERSION = 29;
         COMMIT TRANSACTION;
         """;
 

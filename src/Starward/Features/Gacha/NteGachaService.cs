@@ -39,6 +39,8 @@ internal class NteGachaService : GachaLogService
 
     protected override string? GachaIconTableName => "NteGachaInfo";
 
+    protected override string GachaIconColumns => "ItemId, Key, Icon, RankType, Name";
+
 
     private readonly HottaGachaClient _hottaClient;
 
@@ -51,7 +53,8 @@ internal class NteGachaService : GachaLogService
 
 
     /// <summary>
-    /// 导出文件不带图，图示来自社群的资源仓库 NTE_Assets，见 <see cref="HottaGachaClient.GetGachaIconsAsync"/>
+    /// 导出文件不带图，图示来自社群的资源仓库 NTE_Assets，见 <see cref="HottaGachaClient.GetGachaIconsAsync"/>。
+    /// 同一张表还存了稀有度与英文名，由 <see cref="FillMissingInfo"/> 补给导出文件里缺的记录。
     /// </summary>
     public override Task<bool> UpdateGachaIconsAsync(CancellationToken cancellationToken = default)
     {
@@ -151,6 +154,8 @@ internal class NteGachaService : GachaLogService
     {
         using var dapper = DatabaseService.CreateConnection();
         var list = dapper.Query<GachaLogItemEx>($"SELECT * FROM {GachaTableName} WHERE Uid = @uid ORDER BY Id;", new { uid }).ToList();
+        // 必须在算保底之前：缺稀有度的 S 角色不补上，就不会被当成出货
+        FillMissingInfo(list);
         foreach (GachaLogItemEx item in list)
         {
             // 导出文件里只有英文名，界面是中文时换成中文；查不到就保持原样
@@ -188,6 +193,39 @@ internal class NteGachaService : GachaLogService
         }
         FillGachaIcons(list);
         return list;
+    }
+
+
+    /// <summary>
+    /// nte-exporter 的对照表跟不上新版本时，新物品导出来没有名字（存进库里是物品 ID）、
+    /// 稀有度是 null（存成 0）。这里用 NTE_Assets 的数据补上。
+    /// <para/>
+    /// 只补缺的，导出文件写了的一律不动；补在读取时而不是导入时，
+    /// 这样已经导入的旧记录也会跟着对照表更新，不必重新导入。
+    /// </summary>
+    private static void FillMissingInfo(List<GachaLogItemEx> list)
+    {
+        if (!list.Any(x => x.RankType is 0 || x.Name == x.RewardId))
+        {
+            return;
+        }
+        using var dapper = DatabaseService.CreateConnection();
+        var infos = dapper.Query<(int ItemId, int RankType, string? Name)>("SELECT ItemId, RankType, Name FROM NteGachaInfo;").ToDictionary(x => x.ItemId);
+        foreach (GachaLogItemEx item in list)
+        {
+            if (!infos.TryGetValue(item.ItemId, out var info))
+            {
+                continue;
+            }
+            if (item.RankType is 0)
+            {
+                item.RankType = info.RankType;
+            }
+            if (item.Name == item.RewardId && !string.IsNullOrWhiteSpace(info.Name))
+            {
+                item.Name = info.Name;
+            }
+        }
     }
 
 

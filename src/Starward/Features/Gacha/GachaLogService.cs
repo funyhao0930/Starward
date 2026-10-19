@@ -99,6 +99,12 @@ internal abstract class GachaLogService
 
 
     /// <summary>
+    /// 对照表要写入的列，名字与 <see cref="GachaItemIcon"/>（或其子类）的属性一一对应
+    /// </summary>
+    protected virtual string GachaIconColumns => "ItemId, Key, Icon";
+
+
+    /// <summary>
     /// 更新物品图示对照表，返回记录能显示的图示有没有变。变了的话界面要重画一次，
     /// 否则第一次打开时的空白图示要等到下次打开才会出现。
     /// 页面在 <see cref="UpdateGachaInfoAsync"/> 之后紧接着调用它。
@@ -113,7 +119,7 @@ internal abstract class GachaLogService
     /// 各游戏共用的更新流程：数据源的版本没变就什么都不做，变了才整表替换。
     /// </summary>
     /// <param name="fetch">传入已知版本（对照表为空时是 null），版本相同时返回的列表为 null</param>
-    protected async Task<bool> UpdateGachaIconsAsync(Func<string?, CancellationToken, Task<(string Version, List<GachaItemIcon>? Icons)>> fetch, CancellationToken cancellationToken)
+    protected async Task<bool> UpdateGachaIconsAsync<TIcon>(Func<string?, CancellationToken, Task<(string Version, List<TIcon>? Icons)>> fetch, CancellationToken cancellationToken) where TIcon : GachaItemIcon
     {
         string table = GachaIconTableName ?? throw new InvalidOperationException($"{GetType().Name} has no gacha icon table.");
         string versionKey = $"{table}Version";
@@ -121,14 +127,15 @@ internal abstract class GachaLogService
         string? knownVersion = dapper.QueryFirstOrDefault<int>($"SELECT COUNT(*) FROM {table};") > 0
             ? DatabaseService.GetValue<string>(versionKey, out _)
             : null;
-        (string version, List<GachaItemIcon>? icons) = await fetch(knownVersion, cancellationToken);
+        (string version, List<TIcon>? icons) = await fetch(knownVersion, cancellationToken);
         if (icons is null)
         {
             return false;
         }
+        string values = string.Join(", ", GachaIconColumns.Split(',').Select(x => $"@{x.Trim()}"));
         using var t = dapper.BeginTransaction();
         dapper.Execute($"DELETE FROM {table};", transaction: t);
-        dapper.Execute($"INSERT OR REPLACE INTO {table} (ItemId, Key, Icon) VALUES (@ItemId, @Key, @Icon);", icons, t);
+        dapper.Execute($"INSERT OR REPLACE INTO {table} ({GachaIconColumns}) VALUES ({values});", icons, t);
         t.Commit();
         DatabaseService.SetValue(versionKey, version);
         return true;
@@ -148,7 +155,7 @@ internal abstract class GachaLogService
         var icons = dapper.Query<(int ItemId, string Icon)>($"SELECT ItemId, Icon FROM {table};").ToDictionary(x => x.ItemId, x => x.Icon);
         foreach (var item in list)
         {
-            if (icons.TryGetValue(item.ItemId, out string? icon))
+            if (icons.TryGetValue(item.ItemId, out string? icon) && !string.IsNullOrEmpty(icon))
             {
                 item.Icon = icon;
             }

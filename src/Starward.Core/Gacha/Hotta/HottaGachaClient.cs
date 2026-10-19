@@ -339,7 +339,20 @@ public class HottaGachaClient : GachaLogClient
 
 
     /// <summary>
-    /// 取所有干员、弧盘与道具的图示。
+    /// 物品品质换成 Starward 的星数档位，与 nte-exporter 生成对照表时的换法相同
+    /// （拿真实导出验证过，855 条带稀有度的记录全部对得上）。橙以外的品质不在抽卡里出现，给 0。
+    /// </summary>
+    public static int QualityToRankType(string? quality) => quality switch
+    {
+        "EItemQuality::ITEM_QUALITY_ORANGE" => 5,
+        "EItemQuality::ITEM_QUALITY_PURPLE" => 4,
+        "EItemQuality::ITEM_QUALITY_BLUE" => 3,
+        _ => 0,
+    };
+
+
+    /// <summary>
+    /// 取所有干员、弧盘与道具的图示，顺带取它们的稀有度与英文名。
     /// <para/>
     /// 版本是仓库 main 分支的最新提交：与 <paramref name="knownVersion"/> 相同时不下载，返回的列表为 null。
     /// 图片 URL 经 jsDelivr 并钉在这个提交上，内容不会在底下变掉。
@@ -349,9 +362,15 @@ public class HottaGachaClient : GachaLogClient
     /// 约有两成路径只差在大小写（<c>Item_100</c> 与 <c>item_100</c>），
     /// 因此另外取一次仓库的文件树，按不分大小写的方式找出真正的路径。
     /// <para/>
+    /// 稀有度与名字是给 nte-exporter 跟不上新版本时兜底的：它的对照表也是从这个仓库生成的，
+    /// 但要等作者重跑，新角色在那之前导出来是空名字、<c>reward_rank: null</c>。
+    /// 没有稀有度的 S 角色不会被算成出货，保底就会数出 119 这种不可能的数字。
+    /// 中文文本在仓库里是乱码（编码坏掉，已无法还原），所以只取英文。
+    /// <para/>
     /// 记录里存的 ItemId 是 reward_id 散列后的整数，这里对每个 ID 做同样的散列。
+    /// 没有图示但有稀有度或名字的物品也收进来，图示留空串。
     /// </summary>
-    public async Task<(string Version, List<GachaItemIcon>? Icons)> GetGachaIconsAsync(string? knownVersion, CancellationToken cancellationToken = default)
+    public async Task<(string Version, List<HottaGachaItemInfo>? Icons)> GetGachaIconsAsync(string? knownVersion, CancellationToken cancellationToken = default)
     {
         string sha;
         using (var request = CreateGitHubRequest($"https://api.github.com/repos/{NTE_ASSETS_REPO}/commits/main", "application/vnd.github.sha"))
@@ -370,7 +389,7 @@ public class HottaGachaClient : GachaLogClient
         }
 
         Dictionary<string, string> files = await GetRepositoryImagesAsync(sha, cancellationToken);
-        var icons = new Dictionary<int, GachaItemIcon>();
+        var icons = new Dictionary<int, (string Key, string Icon, int RankType, (string Table, string Key)? Name)>();
         foreach ((string path, string[] fields) in IconTables)
         {
             await using Stream stream = new IdleTimeoutStream(await _httpClient.GetStreamAsync($"https://cdn.jsdelivr.net/gh/{NTE_ASSETS_REPO}@{sha}/{path}", cancellationToken));
@@ -378,36 +397,139 @@ public class HottaGachaClient : GachaLogClient
             foreach (JsonProperty row in EnumerateRows(document.RootElement))
             {
                 int itemId = GachaSyntheticId.ToItemId(row.Name);
-                if (itemId == 0 || icons.ContainsKey(itemId))
+                if (itemId == 0 || icons.ContainsKey(itemId) || row.Value.ValueKind != JsonValueKind.Object)
                 {
                     continue;
                 }
+                string icon = "";
                 foreach (string field in fields)
                 {
                     if (ToRepositoryPath(row.Value, field) is string key && files.TryGetValue(key, out string? file))
                     {
-                        string url = $"https://cdn.jsdelivr.net/gh/{NTE_ASSETS_REPO}@{sha}/{string.Join('/', file.Split('/').Select(Uri.EscapeDataString))}";
-                        icons[itemId] = new GachaItemIcon(itemId, row.Name, url);
+                        icon = $"https://cdn.jsdelivr.net/gh/{NTE_ASSETS_REPO}@{sha}/{string.Join('/', file.Split('/').Select(Uri.EscapeDataString))}";
                         break;
                     }
                 }
+                string? quality = row.Value.TryGetProperty("ItemQuality", out JsonElement value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
+                icons[itemId] = (row.Name, icon, QualityToRankType(quality), ToTextReference(row.Value));
             }
         }
-        if (icons.Count == 0)
+        if (!icons.Values.Any(x => x.Icon.Length > 0))
         {
             throw new FormatException("NTE_Assets tables have no item icon.");
         }
-        return (sha, icons.Values.ToList());
+
+        Dictionary<string, Dictionary<string, string>> names = await GetEnglishTextsAsync(sha, icons.Values.Where(x => x.Name is not null).Select(x => x.Name!.Value), cancellationToken);
+        var result = new List<HottaGachaItemInfo>(icons.Count);
+        foreach ((int itemId, (string key, string icon, int rankType, (string Table, string Key)? name)) in icons)
+        {
+            string? text = name is var (table, textKey) && names.TryGetValue(table, out var entries) && entries.TryGetValue(textKey, out string? found) ? found : null;
+            if (icon.Length > 0 || rankType > 0 || text is not null)
+            {
+                result.Add(new HottaGachaItemInfo(itemId, key, icon, rankType, text));
+            }
+        }
+        return (sha, result);
     }
 
 
     /// <summary>
-    /// 仓库里所有 PNG 的路径，键不分大小写，值是真正的大小写
+    /// 行里 <c>ItemName</c> 指向的文本：表名取 <c>TableId</c> 最后一段
+    /// （<c>/Game/Text/ST_Player.ST_Player</c> → <c>ST_Player</c>），与本地化文件里的命名空间对应
+    /// </summary>
+    private static (string Table, string Key)? ToTextReference(JsonElement row)
+    {
+        if (!row.TryGetProperty("ItemName", out JsonElement name) || name.ValueKind != JsonValueKind.Object
+            || !name.TryGetProperty("Key", out JsonElement key) || key.GetString() is not string textKey || textKey.Length == 0)
+        {
+            return null;
+        }
+        string table = name.TryGetProperty("TableId", out JsonElement tableId) && tableId.GetString() is string id ? id : "";
+        table = table[(table.LastIndexOf('/') + 1)..];
+        int dot = table.IndexOf('.');
+        return (dot >= 0 ? table[..dot] : table, textKey);
+    }
+
+
+    /// <summary>
+    /// 从英文本地化文件里挑出需要的那几条。
+    /// <para/>
+    /// 文件约 10MB（压缩后 3MB），超过 jsDelivr 的单文件上限会被 403，
+    /// 所以这一份改走 raw.githubusercontent.com，同样钉在这个提交上。
+    /// 文件按命名空间分组，同一个键可能出现在好几个命名空间，以 <c>TableId</c> 指定的为准；
+    /// 指定的命名空间里没有、而全文件只有一处时才用那一处。空白的文本当作没有。
+    /// </summary>
+    private async Task<Dictionary<string, Dictionary<string, string>>> GetEnglishTextsAsync(string sha, IEnumerable<(string Table, string Key)> wanted, CancellationToken cancellationToken)
+    {
+        var wantedKeys = wanted.Select(x => x.Key).ToHashSet(StringComparer.Ordinal);
+        var exact = new Dictionary<string, Dictionary<string, string>>(StringComparer.Ordinal);
+        var anywhere = new Dictionary<string, List<string>>(StringComparer.Ordinal);
+        await using (Stream stream = new IdleTimeoutStream(await _httpClient.GetStreamAsync($"https://raw.githubusercontent.com/{NTE_ASSETS_REPO}/{sha}/Localization/en/game.json", cancellationToken)))
+        using (JsonDocument document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken))
+        {
+            foreach (JsonProperty space in document.RootElement.EnumerateObject())
+            {
+                if (space.Value.ValueKind != JsonValueKind.Object)
+                {
+                    continue;
+                }
+                foreach (JsonProperty entry in space.Value.EnumerateObject())
+                {
+                    if (wantedKeys.Contains(entry.Name) && entry.Value.GetString() is string text && !string.IsNullOrWhiteSpace(text))
+                    {
+                        if (!exact.TryGetValue(space.Name, out var entries))
+                        {
+                            exact[space.Name] = entries = new(StringComparer.Ordinal);
+                        }
+                        entries[entry.Name] = text.Trim();
+                        if (!anywhere.TryGetValue(entry.Name, out var list))
+                        {
+                            anywhere[entry.Name] = list = [];
+                        }
+                        list.Add(text.Trim());
+                    }
+                }
+            }
+        }
+        var result = new Dictionary<string, Dictionary<string, string>>(StringComparer.Ordinal);
+        foreach ((string table, string key) in wanted)
+        {
+            string? text = exact.TryGetValue(table, out var entries) && entries.TryGetValue(key, out string? found) ? found
+                         : anywhere.TryGetValue(key, out var list) && list.Count is 1 ? list[0]
+                         : null;
+            if (text is not null)
+            {
+                if (!result.TryGetValue(table, out var target))
+                {
+                    result[table] = target = new(StringComparer.Ordinal);
+                }
+                target[key] = text;
+            }
+        }
+        return result;
+    }
+
+
+    /// <summary>
+    /// 仓库里所有 PNG 的路径，键不分大小写，值是真正的大小写。
+    /// <para/>
+    /// 这棵树有三万多项，GitHub 现算时常常先回 500，同一个请求隔一下再发就是 200，所以重试几次。
     /// </summary>
     private async Task<Dictionary<string, string>> GetRepositoryImagesAsync(string sha, CancellationToken cancellationToken)
     {
-        using var request = CreateGitHubRequest($"https://api.github.com/repos/{NTE_ASSETS_REPO}/git/trees/{sha}?recursive=1", "application/vnd.github+json");
-        using HttpResponseMessage response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+        HttpResponseMessage response;
+        for (int attempt = 1; ; attempt++)
+        {
+            using var request = CreateGitHubRequest($"https://api.github.com/repos/{NTE_ASSETS_REPO}/git/trees/{sha}?recursive=1", "application/vnd.github+json");
+            response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+            if ((int)response.StatusCode < 500 || attempt >= 3)
+            {
+                break;
+            }
+            response.Dispose();
+            await Task.Delay(TimeSpan.FromSeconds(attempt * 2), cancellationToken);
+        }
+        using var _ = response;
         response.EnsureSuccessStatusCode();
         await using Stream stream = new IdleTimeoutStream(await response.Content.ReadAsStreamAsync(cancellationToken));
         using JsonDocument tree = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);

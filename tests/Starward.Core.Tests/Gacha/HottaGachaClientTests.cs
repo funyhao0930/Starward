@@ -493,6 +493,37 @@ public class HottaGachaClientTests
 
 
     /// <summary>
+    /// nte-exporter 對照表跟不上時，新角色導出來是空名字與 <c>reward_rank: null</c>：
+    /// 名字退回物品 ID、稀有度是 0，等著讀取時用 NTE_Assets 補。
+    /// 補稀有度靠物品品質，換法要與工具一致：橙 S、紫 A、藍 B。
+    /// </summary>
+    [Fact]
+    public void ParseExport_NewCharacterWithoutMappingKeepsIdAndUnknownRank()
+    {
+        const string json = """
+            {
+              "format": "nte-history-export",
+              "format_version": 1,
+              "user_uid": "218011323084",
+              "records": [
+                {"uid": "a", "pool_group_id": "Lottery_LimitedCharacter", "timestamp": "2026-10-20 00:27:39", "timestamp_group_ordinal": 4,
+                 "roll_result": 0, "result_type": "points_gift", "reward_type": "character", "reward_id": "1042", "reward_name": "", "reward_rank": null, "quantity": 1}
+              ]
+            }
+            """;
+        HottaGachaItem item = Assert.Single(HottaGachaClient.ParseExport(json).Items);
+        Assert.Equal("1042", item.Name);
+        Assert.Equal(0, item.RankType);
+        Assert.Equal("黑羽", HottaGachaNames.Localize(item.RewardId, "Blackbird", new CultureInfo("zh-TW")));
+        Assert.Equal(5, HottaGachaClient.QualityToRankType("EItemQuality::ITEM_QUALITY_ORANGE"));
+        Assert.Equal(4, HottaGachaClient.QualityToRankType("EItemQuality::ITEM_QUALITY_PURPLE"));
+        Assert.Equal(3, HottaGachaClient.QualityToRankType("EItemQuality::ITEM_QUALITY_BLUE"));
+        Assert.Equal(0, HottaGachaClient.QualityToRankType("EItemQuality::ITEM_QUALITY_GREEN"));
+        Assert.Equal(0, HottaGachaClient.QualityToRankType(null));
+    }
+
+
+    /// <summary>
     /// 遊戲只記「有給東西」的那次投擲，一次十連在記錄裡是 11~13 條，
     /// 直接數條數會少算；單抽則只有 1 條。
     /// </summary>
