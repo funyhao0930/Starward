@@ -98,15 +98,13 @@ public readonly record struct HottaGachaType(int Value) : IGachaType
     /// <summary>
     /// 这一行算不算某一档稀有度的「出货」。
     /// <para/>
-    /// 游戏自己就把两档分开写：
-    /// <list type="bullet">
-    /// <item>「90次掷骰必得S级<b>角色</b>」——最高档只认角色，
-    /// 棋盘上掉的 S 级骰子道具不是出货；</item>
-    /// <item>「10次掷骰必额外获得1个A级<b>道具</b>」——这里的道具是泛指奖励，
-    /// 实测 31 组每组都至少有一个 A 级奖励，但有 7 组一个 A 级 item 都没有，
-    /// 所以下面几档照单全收，不分类型。</item>
-    /// </list>
-    /// 弧盘奇迹盒与神秘盒子本来就每行都是奖励本身，两档都全收。
+    /// 统计只看角色与弧盘：棋盘上掉的骰子、碎片之类的道具与外观，
+    /// 稀有度再高也不是玩家抽卡要的东西，算进去只会把四星、三星的数字灌水。
+    /// 这是用户的取舍，不是游戏的规则——游戏的「10次掷骰必额外获得1个A级道具」
+    /// 泛指奖励（实测 31 组里有 7 组的 A 级只有道具），所以四星那档的间隔可能超过 10。
+    /// <para/>
+    /// 最高档在棋盘上更严：「90次掷骰必得S级<b>角色</b>」，只认角色，S 级弧盘也不算。
+    /// 神秘盒子没有角色与弧盘以外的分档依据，同样只数这两类。
     /// </summary>
     public static bool CountsForRank(int gachaType, string? rewardType, bool topRank)
     {
@@ -114,8 +112,14 @@ public readonly record struct HottaGachaType(int Value) : IGachaType
         {
             return rewardType is "character";
         }
-        return true;
+        return IsCharacterOrArc(rewardType);
     }
+
+
+    /// <summary>
+    /// 角色或弧盘，统计里只收这两类
+    /// </summary>
+    public static bool IsCharacterOrArc(string? rewardType) => rewardType is "character" or "arc";
 
 
     public string ToLocalization() => Value switch

@@ -298,7 +298,9 @@ internal class NteGachaService : GachaLogService
             });
             statsList.Add(stats);
         }
-        List<GachaLogItemEx> groupStats = allItems.GroupBy(x => x.ItemId)
+        // 物品统计同样只列角色与弧盘，骰子、碎片、外观不进来
+        List<GachaLogItemEx> groupStats = allItems.Where(x => HottaGachaType.IsCharacterOrArc(x.ItemType))
+                                                  .GroupBy(x => x.ItemId)
                                                   .Select(x => { GachaLogItemEx item = x.First(); item.ItemCount = x.Count(); item.RarityTier = TopRankType - item.RankType; return item; })
                                                   .OrderByDescending(x => x.RankType)
                                                   .ThenByDescending(x => x.ItemCount)
