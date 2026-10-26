@@ -787,6 +787,10 @@
             <local:GameAuthLoginButton Width="40"
                                        Height="40"
                                        CurrentGameId="{x:Bind CurrentGameId}" />
+            <!--  MaaEnd，只在终末地显示  -->
+            <local:MaaEndButton Width="40"
+                                Height="40"
+                                CurrentGameKey="{x:Bind CurrentGameKey}" />
         </StackPanel>
 
     </Grid>

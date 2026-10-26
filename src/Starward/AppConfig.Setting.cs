@@ -402,6 +402,15 @@ public static partial class AppConfig
         set => SetValue(value);
     }
 
+    /// <summary>
+    /// 终末地启动页侧栏 MaaEnd 按钮要启动的 MaaEnd.exe
+    /// </summary>
+    public static string? MaaEndPath
+    {
+        get => GetValue<string>();
+        set => SetValue(value);
+    }
+
 
     #endregion
 

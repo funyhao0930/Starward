@@ -2966,4 +2966,19 @@ You are welcome to submit the exported data to the following repository:</value>
   <data name="SettingPage_InterfaceAnimation" xml:space="preserve">
     <value>Interface animations</value>
   </data>
+  <data name="MaaEndButton_ChoosePath" xml:space="preserve">
+    <value>Choose MaaEnd.exe location</value>
+  </data>
+  <data name="MaaEndButton_OpenFolder" xml:space="preserve">
+    <value>Open MaaEnd folder</value>
+  </data>
+  <data name="MaaEndButton_LaunchFailed" xml:space="preserve">
+    <value>Failed to launch MaaEnd</value>
+  </data>
+  <data name="MaaEndButton_Start" xml:space="preserve">
+    <value>Launch</value>
+  </data>
+  <data name="MaaEndButton_ChangePath" xml:space="preserve">
+    <value>Change location</value>
+  </data>
 </root>

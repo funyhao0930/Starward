@@ -8506,5 +8506,50 @@ namespace Starward.Language {
                 return ResourceManager.GetString("NteGachaService_SomeRecordsCouldNotBeRead", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   查找类似 Choose MaaEnd.exe location 的本地化字符串。
+        /// </summary>
+        public static string MaaEndButton_ChoosePath {
+            get {
+                return ResourceManager.GetString("MaaEndButton_ChoosePath", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 Open MaaEnd folder 的本地化字符串。
+        /// </summary>
+        public static string MaaEndButton_OpenFolder {
+            get {
+                return ResourceManager.GetString("MaaEndButton_OpenFolder", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 Failed to launch MaaEnd 的本地化字符串。
+        /// </summary>
+        public static string MaaEndButton_LaunchFailed {
+            get {
+                return ResourceManager.GetString("MaaEndButton_LaunchFailed", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 Launch 的本地化字符串。
+        /// </summary>
+        public static string MaaEndButton_Start {
+            get {
+                return ResourceManager.GetString("MaaEndButton_Start", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   查找类似 Change location 的本地化字符串。
+        /// </summary>
+        public static string MaaEndButton_ChangePath {
+            get {
+                return ResourceManager.GetString("MaaEndButton_ChangePath", resourceCulture);
+            }
+        }
     }
 }

@@ -2966,4 +2966,19 @@
   <data name="SettingPage_InterfaceAnimation" xml:space="preserve">
     <value>介面動畫</value>
   </data>
+  <data name="MaaEndButton_ChoosePath" xml:space="preserve">
+    <value>選擇 MaaEnd.exe 位置</value>
+  </data>
+  <data name="MaaEndButton_OpenFolder" xml:space="preserve">
+    <value>開啟 MaaEnd 資料夾</value>
+  </data>
+  <data name="MaaEndButton_LaunchFailed" xml:space="preserve">
+    <value>無法啟動 MaaEnd</value>
+  </data>
+  <data name="MaaEndButton_Start" xml:space="preserve">
+    <value>啟動</value>
+  </data>
+  <data name="MaaEndButton_ChangePath" xml:space="preserve">
+    <value>更換位置</value>
+  </data>
 </root>
