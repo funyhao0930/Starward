@@ -8,7 +8,10 @@ public class GryphlineGachaResponse
     [JsonPropertyName("code")]
     public int Code { get; set; }
 
-    [JsonPropertyName("message")]
+    /// <summary>
+    /// 出错时的说明，例如 token 过期时的 <c>{"code":40100,"msg":"Token is invalid"}</c>
+    /// </summary>
+    [JsonPropertyName("msg")]
     public string? Message { get; set; }
 
     [JsonPropertyName("data")]

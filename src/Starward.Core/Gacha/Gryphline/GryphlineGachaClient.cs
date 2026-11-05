@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
@@ -77,7 +78,7 @@ public class GryphlineGachaClient : GachaLogClient
         }
         try
         {
-            return FindRecordUrl(Encoding.UTF8.GetString(ReadFileWithSharing(file)));
+            return FindRecordUrl(ReadFileWithSharing(file));
         }
         catch (IOException)
         {
@@ -88,6 +89,8 @@ public class GryphlineGachaClient : GachaLogClient
 
     /// <summary>
     /// 缓存里会留下多次访问的痕迹，从最新的往回找第一个参数齐全的。
+    /// <para/>
+    /// 只适用于已经按时间排好的文本；读缓存文件请用 <see cref="FindRecordUrl(byte[])"/>。
     /// </summary>
     public static string? FindRecordUrl(string text)
     {
@@ -98,6 +101,85 @@ public class GryphlineGachaClient : GachaLogClient
             if (TryParseRecordUrl(candidate, out _))
             {
                 return candidate;
+            }
+        }
+        return null;
+    }
+
+
+    /// <summary>
+    /// 从启动器缓存文件里取最近一次打开寻访页时的 URL。
+    /// <para/>
+    /// <c>data_1</c> 是 Chromium blockfile 缓存，条目按空闲块分配，
+    /// 文件里的先后与访问时间无关：实测最靠后的往往是几个月前、早已
+    /// 失效（40100 Token is invalid）的 token。因此按每个条目自带的
+    /// 创建时间挑最新的；读不出时间的才退回文件里最靠后的一个。
+    /// </summary>
+    public static string? FindRecordUrl(byte[] cache)
+    {
+        // Latin1 一个字节对应一个字符，匹配位置就是文件里的偏移；URL 本身全是 ASCII
+        string text = Encoding.Latin1.GetString(cache);
+        string? best = null;
+        long bestTime = long.MinValue;
+        foreach (Match match in RecordUrlRegex.Matches(text))
+        {
+            string candidate = match.Value.TrimEnd('\\', '}', ']');
+            if (!TryParseRecordUrl(candidate, out _))
+            {
+                continue;
+            }
+            long time = FindCacheEntryCreationTime(cache, match.Index, match.Index + match.Length) ?? long.MinValue;
+            if (best is null || time >= bestTime)
+            {
+                best = candidate;
+                bestTime = time;
+            }
+        }
+        return best;
+    }
+
+
+    private const uint BLOCKFILE_MAGIC = 0xC104CAC3;
+
+    private const int BLOCKFILE_HEADER_SIZE = 8192;
+
+    private const int BLOCKFILE_ENTRY_BLOCK_SIZE = 256;
+
+    /// <summary>
+    /// EntryStore 里 key 的起点；key 最长可以跨 4 个块
+    /// </summary>
+    private const int ENTRY_KEY_OFFSET = 96;
+
+    private const int ENTRY_MAX_BLOCKS = 4;
+
+
+    /// <summary>
+    /// 找出包住 [<paramref name="start"/>, <paramref name="end"/>) 这段 key 的缓存条目，返回它的创建时间
+    /// （自 1601 年起的 UTC 微秒）。不是 blockfile 条目、或 key 对不上时返回 null。
+    /// <para/>
+    /// EntryStore 的布局：+24 creation_time(uint64)、+32 key_len(int32)、+96 key。
+    /// </summary>
+    internal static long? FindCacheEntryCreationTime(byte[] cache, int start, int end)
+    {
+        if (cache.Length < BLOCKFILE_HEADER_SIZE
+            || BinaryPrimitives.ReadUInt32LittleEndian(cache) != BLOCKFILE_MAGIC
+            || BinaryPrimitives.ReadInt32LittleEndian(cache.AsSpan(12)) != BLOCKFILE_ENTRY_BLOCK_SIZE
+            || start < BLOCKFILE_HEADER_SIZE + ENTRY_KEY_OFFSET)
+        {
+            return null;
+        }
+        int block = BLOCKFILE_HEADER_SIZE + (start - BLOCKFILE_HEADER_SIZE) / BLOCKFILE_ENTRY_BLOCK_SIZE * BLOCKFILE_ENTRY_BLOCK_SIZE;
+        for (int i = 0; i < ENTRY_MAX_BLOCKS && block >= BLOCKFILE_HEADER_SIZE; i++, block -= BLOCKFILE_ENTRY_BLOCK_SIZE)
+        {
+            int keyStart = block + ENTRY_KEY_OFFSET;
+            int keyLength = BinaryPrimitives.ReadInt32LittleEndian(cache.AsSpan(block + 32));
+            if (keyStart <= start
+                && keyLength > 0
+                && keyLength <= ENTRY_MAX_BLOCKS * BLOCKFILE_ENTRY_BLOCK_SIZE - ENTRY_KEY_OFFSET
+                && end <= keyStart + keyLength
+                && keyStart + keyLength <= cache.Length)
+            {
+                return (long)BinaryPrimitives.ReadUInt64LittleEndian(cache.AsSpan(block + 24));
             }
         }
         return null;
