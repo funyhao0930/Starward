@@ -170,4 +170,15 @@ public class KuroGachaClientTests
         Assert.Empty(KuroGachaClient.GetLogFileCandidates("  "));
     }
 
+
+    [Fact]
+    public void FixResourceUrl_MovesEncoreImagesOffTheApiPath()
+    {
+        // /api/resource/ 现在只回网站的 HTML，图片在 /resource/
+        Assert.Equal("https://api-v2.encore.moe/resource/Data/Game/Aki/UI/UIResources/Common/Image/IconRoleHead256/T_IconRoleHead256_1_UI.webp",
+            KuroGachaClient.FixResourceUrl("https://api-v2.encore.moe/api/resource/Data/Game/Aki/UI/UIResources/Common/Image/IconRoleHead256/T_IconRoleHead256_1_UI.webp"));
+        Assert.Equal("https://api-v2.encore.moe/resource/a.webp", KuroGachaClient.FixResourceUrl("https://api-v2.encore.moe/resource/a.webp"));
+        Assert.Equal("https://example.com/api/resource/a.webp", KuroGachaClient.FixResourceUrl("https://example.com/api/resource/a.webp"));
+    }
+
 }

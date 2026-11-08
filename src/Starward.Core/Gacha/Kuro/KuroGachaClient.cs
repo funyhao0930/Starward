@@ -441,9 +441,22 @@ public class KuroGachaClient : GachaLogClient
                 && item.TryGetProperty(iconName, out JsonElement icon) && icon.GetString() is string url
                 && url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
             {
-                icons.Add(new GachaItemIcon(itemId, itemId.ToString(CultureInfo.InvariantCulture), url));
+                icons.Add(new GachaItemIcon(itemId, itemId.ToString(CultureInfo.InvariantCulture), FixResourceUrl(url)));
             }
         }
+    }
+
+
+    /// <summary>
+    /// 2026-11-08 起 encore.moe 的 <c>/api/resource/…</c> 只回网站前端的 HTML（状态码仍是 200），
+    /// 图片改由 <c>/resource/…</c> 提供，但列表接口给的还是旧路径，这里改写成新的。
+    /// 新路径已经是 <c>/resource/</c> 时不受影响。
+    /// </summary>
+    internal static string FixResourceUrl(string url)
+    {
+        const string OldPath = ".encore.moe/api/resource/";
+        int index = url.IndexOf(OldPath, StringComparison.OrdinalIgnoreCase);
+        return index < 0 ? url : string.Concat(url.AsSpan(0, index), ".encore.moe/resource/", url.AsSpan(index + OldPath.Length));
     }
 
 
