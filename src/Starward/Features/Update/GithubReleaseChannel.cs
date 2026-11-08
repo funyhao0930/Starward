@@ -40,7 +40,7 @@ internal static class GithubReleaseChannel
         {
             throw new InvalidOperationException($"No release found in {ReleaseClient.GithubRepository}.");
         }
-        return await client.GetGithubReleaseInfoDetailAsync(latest.Release, arch, type, cancellationToken);
+        return ReleaseClient.GetGithubReleaseInfoDetail(latest.Release, arch, type);
     }
 
 

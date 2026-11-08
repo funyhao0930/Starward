@@ -145,10 +145,10 @@ public class ReleaseClient
 
 
     /// <summary>
-    /// 把 GitHub Release 轉成更新資訊：可攜版取 7z、安裝版取安裝程式，雜湊從同一版的 SHA256SUMS.txt 讀。
+    /// 把 GitHub Release 轉成更新資訊：可攜版取 7z、安裝版取安裝程式，雜湊用 GitHub 附在檔案上的 digest。
     /// 沒有逐檔 manifest，<see cref="ReleaseInfoDetail.ManifestUrl"/> 為 null，更新時整包下載。
     /// </summary>
-    public async Task<ReleaseInfoDetail> GetGithubReleaseInfoDetailAsync(GithubRelease release, Architecture arch, InstallType type, CancellationToken cancellationToken = default)
+    public static ReleaseInfoDetail GetGithubReleaseInfoDetail(GithubRelease release, Architecture arch, InstallType type)
     {
         string version = release.TagName;
         string packageName = type is InstallType.Setup
@@ -156,25 +156,12 @@ public class ReleaseClient
             : $"Starward_Portable_{version}_{arch.ToString().ToLower()}.7z";
         GithubAsset package = release.Assets?.FirstOrDefault(x => string.Equals(x.Name, packageName, StringComparison.OrdinalIgnoreCase))
             ?? throw new PlatformNotSupportedException($"Release {version} has no package '{packageName}'.");
-        GithubAsset sums = release.Assets?.FirstOrDefault(x => string.Equals(x.Name, "SHA256SUMS.txt", StringComparison.OrdinalIgnoreCase))
-            ?? throw new InvalidDataException($"Release {version} has no SHA256SUMS.txt.");
-
-        string sumsText = await _httpClient.GetStringAsync(sums.BrowserDownloadUrl, cancellationToken);
-        string? hash = null;
-        foreach (string line in sumsText.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        const string DigestPrefix = "sha256:";
+        if (package.Digest is not { } digest || !digest.StartsWith(DigestPrefix, StringComparison.OrdinalIgnoreCase) || digest.Length != DigestPrefix.Length + 64)
         {
-            // sha256sum 的格式：<hash>  <檔名>，二進位模式檔名前會多一個 *
-            string[] parts = line.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-            if (parts.Length == 2 && string.Equals(parts[1].TrimStart('*'), packageName, StringComparison.OrdinalIgnoreCase))
-            {
-                hash = parts[0].ToLowerInvariant();
-                break;
-            }
+            throw new InvalidDataException($"Package '{packageName}' of release {version} has no sha256 digest.");
         }
-        if (string.IsNullOrWhiteSpace(hash))
-        {
-            throw new InvalidDataException($"SHA256SUMS.txt of release {version} has no entry for '{packageName}'.");
-        }
+        string hash = digest[DigestPrefix.Length..].ToLowerInvariant();
 
         return new ReleaseInfoDetail
         {

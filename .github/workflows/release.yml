@@ -103,12 +103,6 @@ jobs:
         name: package_${{ env.Version }}_arm64
         path: package
 
-    - name: Create Checksums
-      run: |
-        cd package
-        sha256sum * > SHA256SUMS.txt
-        cat SHA256SUMS.txt
-
     - name: Checkout Release Notes
       uses: actions/checkout@v6
       with:
@@ -133,7 +127,7 @@ jobs:
         | \`Starward_Portable_${Version}_x64.7z\` | 免安裝版，Intel／AMD 處理器 |
         | \`Starward_Portable_${Version}_arm64.7z\` | 免安裝版，ARM64 處理器 |
 
-        本建置的自動更新只看這個倉庫的 Release，不會被上游版本覆蓋。自動更新需要 \`SHA256SUMS.txt\` 與上面的檔名，請勿改名。
+        本建置的自動更新只看這個倉庫的 Release，不會被上游版本覆蓋。自動更新靠上面的檔名找檔案，並用 GitHub 附在檔案上的 sha256 驗證，請勿改名。
         EOF
         } > body.md
         cat body.md

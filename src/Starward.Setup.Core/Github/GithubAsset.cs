@@ -32,6 +32,12 @@ public class GithubAsset
     [JsonPropertyName("size")]
     public int Size { get; set; }
 
+    /// <summary>
+    /// GitHub 上傳時算好的雜湊，格式為 <c>sha256:&lt;hex&gt;</c>。
+    /// </summary>
+    [JsonPropertyName("digest")]
+    public string? Digest { get; set; }
+
     [JsonPropertyName("download_count")]
     public int DownloadCount { get; set; }
 
