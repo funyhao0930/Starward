@@ -515,6 +515,13 @@ public class HottaGachaClientTests
         Assert.Equal("1042", item.Name);
         Assert.Equal(0, item.RankType);
         Assert.Equal("黑羽", HottaGachaNames.Localize(item.RewardId, "Blackbird", new CultureInfo("zh-TW")));
+        // 遊戲自己的中文優先，手寫表只在那邊缺字時兜底，英文介面一律不換
+        Assert.Equal("明音凜", HottaGachaNames.Localize("1057", "Akane Rin", "明音凜", "明音凛", new CultureInfo("zh-TW")));
+        Assert.Equal("明音凛", HottaGachaNames.Localize("1057", "Akane Rin", "明音凜", "明音凛", new CultureInfo("zh-CN")));
+        Assert.Equal("Akane Rin", HottaGachaNames.Localize("1057", "Akane Rin", "明音凜", "明音凛", new CultureInfo("en-US")));
+        Assert.Equal("法帝婭", HottaGachaNames.Localize("1039", "Fadia", "法帝婭", "法帝娅", new CultureInfo("zh-TW")));
+        Assert.Equal("靈可", HottaGachaNames.Localize("1072", "Linko", null, "灵可", new CultureInfo("zh-TW")));
+        Assert.Equal("Akane Rin", HottaGachaNames.Localize("1057", "Akane Rin", null, null, new CultureInfo("zh-TW")));
         Assert.Equal(5, HottaGachaClient.QualityToRankType("EItemQuality::ITEM_QUALITY_ORANGE"));
         Assert.Equal(4, HottaGachaClient.QualityToRankType("EItemQuality::ITEM_QUALITY_PURPLE"));
         Assert.Equal(3, HottaGachaClient.QualityToRankType("EItemQuality::ITEM_QUALITY_BLUE"));

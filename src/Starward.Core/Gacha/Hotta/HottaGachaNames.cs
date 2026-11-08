@@ -5,7 +5,10 @@ namespace Starward.Core.Gacha.Hotta;
 /// <summary>
 /// 异环奖励的中文名。
 /// <para/>
-/// nte-exporter 的对照表只有英文，游戏自己的中文文本锁在加密的 pak 里取不到，
+/// 现在中文名主要取自 NTE_Assets 里游戏自己的本地化文本（见 <see cref="HottaGachaItemInfo"/>），
+/// 这份手写表只在那边缺字、或图示数据还没下载时兜底。
+/// <para/>
+/// 当初 nte-exporter 的对照表只有英文，以为游戏的中文文本取不到，
 /// 所以这份表是照社区资料整理的：角色来自台服攻略站的中英对照，
 /// 弧盘来自 BWIKI 的弧盘图鉴（简体），按稀有度与英文表一一对上后转成繁体；
 /// 其中八个名字另有台服来源独立佐证，转换无误。
@@ -108,21 +111,38 @@ public static class HottaGachaNames
     /// </summary>
     public static string Localize(string? rewardId, string fallback, CultureInfo? culture = null)
     {
+        return Localize(rewardId, fallback, null, null, culture);
+    }
+
+
+    /// <summary>
+    /// 同上，但优先用游戏自己的中文文本（<paramref name="traditional"/>、<paramref name="simplified"/>，
+    /// 来自 NTE_Assets 的本地化文件）；那边缺字时才查这份手写的表，再查不到就原样返回。
+    /// <para/>
+    /// 游戏文本与手写表有出入时以游戏为准，例如「法帝婭」不是「法蒂婭」、「小心頭頂」不是「當心頭頂」。
+    /// </summary>
+    public static string Localize(string? rewardId, string fallback, string? traditional, string? simplified, CultureInfo? culture = null)
+    {
+        culture ??= CultureInfo.CurrentUICulture;
+        string tag = culture.Name;
+        if (!tag.StartsWith("zh", StringComparison.OrdinalIgnoreCase))
+        {
+            return fallback;
+        }
+        // zh-Hans / zh-CN / zh-SG 用简体，其余中文（zh-TW、zh-HK、zh-Hant）用繁体
+        bool useSimplified = tag.Contains("Hans", StringComparison.OrdinalIgnoreCase)
+                          || tag.EndsWith("-CN", StringComparison.OrdinalIgnoreCase)
+                          || tag.EndsWith("-SG", StringComparison.OrdinalIgnoreCase);
+        string? official = useSimplified ? simplified : traditional;
+        if (!string.IsNullOrWhiteSpace(official))
+        {
+            return official;
+        }
         if (string.IsNullOrEmpty(rewardId) || !_names.TryGetValue(rewardId, out LocalizedName name))
         {
             return fallback;
         }
-        culture ??= CultureInfo.CurrentUICulture;
-        string tag = culture.Name;
-        if (tag.StartsWith("zh", StringComparison.OrdinalIgnoreCase))
-        {
-            // zh-Hans / zh-CN / zh-SG 用简体，其余中文（zh-TW、zh-HK、zh-Hant）用繁体
-            bool simplified = tag.Contains("Hans", StringComparison.OrdinalIgnoreCase)
-                           || tag.EndsWith("-CN", StringComparison.OrdinalIgnoreCase)
-                           || tag.EndsWith("-SG", StringComparison.OrdinalIgnoreCase);
-            return simplified ? name.Simplified : name.Traditional;
-        }
-        return fallback;
+        return useSimplified ? name.Simplified : name.Traditional;
     }
 
 

@@ -267,6 +267,7 @@ internal static class DatabaseService
         Sql_v27,
         Sql_v28,
         Sql_v29,
+        Sql_v30,
     ];
 
 
@@ -1279,6 +1280,20 @@ internal static class DatabaseService
         DELETE FROM NteGachaInfo;
 
         PRAGMA USER_VERSION = 29;
+        COMMIT TRANSACTION;
+        """;
+
+    /// <summary>
+    /// 异环物品另存游戏自己的繁、简中文名。清空旧表，让下次打开抽卡页时重取一次。
+    /// </summary>
+    private const string Sql_v30 = """
+        BEGIN TRANSACTION;
+
+        ALTER TABLE NteGachaInfo ADD COLUMN NameHant TEXT;
+        ALTER TABLE NteGachaInfo ADD COLUMN NameHans TEXT;
+        DELETE FROM NteGachaInfo;
+
+        PRAGMA USER_VERSION = 30;
         COMMIT TRANSACTION;
         """;
 

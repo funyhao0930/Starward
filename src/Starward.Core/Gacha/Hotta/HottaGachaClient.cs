@@ -352,7 +352,7 @@ public class HottaGachaClient : GachaLogClient
 
 
     /// <summary>
-    /// 取所有干员、弧盘与道具的图示，顺带取它们的稀有度与英文名。
+    /// 取所有干员、弧盘与道具的图示，顺带取它们的稀有度与英、繁、简三种名字。
     /// <para/>
     /// 版本是仓库 main 分支的最新提交：与 <paramref name="knownVersion"/> 相同时不下载，返回的列表为 null。
     /// 图片 URL 经 jsDelivr 并钉在这个提交上，内容不会在底下变掉。
@@ -365,7 +365,7 @@ public class HottaGachaClient : GachaLogClient
     /// 稀有度与名字是给 nte-exporter 跟不上新版本时兜底的：它的对照表也是从这个仓库生成的，
     /// 但要等作者重跑，新角色在那之前导出来是空名字、<c>reward_rank: null</c>。
     /// 没有稀有度的 S 角色不会被算成出货，保底就会数出 119 这种不可能的数字。
-    /// 中文文本在仓库里是乱码（编码坏掉，已无法还原），所以只取英文。
+    /// 中文名同样取自游戏自己的文本，比手写的对照表准，也不必每出一个新角色就改程序。
     /// <para/>
     /// 记录里存的 ItemId 是 reward_id 散列后的整数，这里对每个 ID 做同样的散列。
     /// 没有图示但有稀有度或名字的物品也收进来，图示留空串。
@@ -419,14 +419,24 @@ public class HottaGachaClient : GachaLogClient
             throw new FormatException("NTE_Assets tables have no item icon.");
         }
 
-        Dictionary<string, Dictionary<string, string>> names = await GetEnglishTextsAsync(sha, icons.Values.Where(x => x.Name is not null).Select(x => x.Name!.Value), cancellationToken);
+        var wanted = icons.Values.Where(x => x.Name is not null).Select(x => x.Name!.Value).ToList();
+        // 一份约 10MB，依次取而不是并行，免得三份同时摊在内存里
+        Dictionary<(string, string), string> english = await GetTextsAsync(sha, "en", wanted, cancellationToken);
+        Dictionary<(string, string), string> traditional = await GetTextsAsync(sha, "zh-Hant", wanted, cancellationToken);
+        Dictionary<(string, string), string> simplified = await GetTextsAsync(sha, "zh-Hans", wanted, cancellationToken);
         var result = new List<HottaGachaItemInfo>(icons.Count);
         foreach ((int itemId, (string key, string icon, int rankType, (string Table, string Key)? name)) in icons)
         {
-            string? text = name is var (table, textKey) && names.TryGetValue(table, out var entries) && entries.TryGetValue(textKey, out string? found) ? found : null;
-            if (icon.Length > 0 || rankType > 0 || text is not null)
+            string? en = null, hant = null, hans = null;
+            if (name is (string, string) reference)
             {
-                result.Add(new HottaGachaItemInfo(itemId, key, icon, rankType, text));
+                english.TryGetValue(reference, out en);
+                traditional.TryGetValue(reference, out hant);
+                simplified.TryGetValue(reference, out hans);
+            }
+            if (icon.Length > 0 || rankType > 0 || en is not null || hant is not null || hans is not null)
+            {
+                result.Add(new HottaGachaItemInfo(itemId, key, icon, rankType, en, hant, hans));
             }
         }
         return (sha, result);
@@ -452,19 +462,20 @@ public class HottaGachaClient : GachaLogClient
 
 
     /// <summary>
-    /// 从英文本地化文件里挑出需要的那几条。
+    /// 从某个语言的本地化文件里挑出需要的那几条。
     /// <para/>
     /// 文件约 10MB（压缩后 3MB），超过 jsDelivr 的单文件上限会被 403，
-    /// 所以这一份改走 raw.githubusercontent.com，同样钉在这个提交上。
+    /// 所以这几份改走 raw.githubusercontent.com，同样钉在这个提交上。
+    /// 中文那两份是正常的 UTF-8，在控制台看到乱码是控制台代码页的问题，不是文件坏了。
     /// 文件按命名空间分组，同一个键可能出现在好几个命名空间，以 <c>TableId</c> 指定的为准；
     /// 指定的命名空间里没有、而全文件只有一处时才用那一处。空白的文本当作没有。
     /// </summary>
-    private async Task<Dictionary<string, Dictionary<string, string>>> GetEnglishTextsAsync(string sha, IEnumerable<(string Table, string Key)> wanted, CancellationToken cancellationToken)
+    private async Task<Dictionary<(string Table, string Key), string>> GetTextsAsync(string sha, string language, List<(string Table, string Key)> wanted, CancellationToken cancellationToken)
     {
         var wantedKeys = wanted.Select(x => x.Key).ToHashSet(StringComparer.Ordinal);
         var exact = new Dictionary<string, Dictionary<string, string>>(StringComparer.Ordinal);
         var anywhere = new Dictionary<string, List<string>>(StringComparer.Ordinal);
-        await using (Stream stream = new IdleTimeoutStream(await _httpClient.GetStreamAsync($"https://raw.githubusercontent.com/{NTE_ASSETS_REPO}/{sha}/Localization/en/game.json", cancellationToken)))
+        await using (Stream stream = new IdleTimeoutStream(await _httpClient.GetStreamAsync($"https://raw.githubusercontent.com/{NTE_ASSETS_REPO}/{sha}/Localization/{language}/game.json", cancellationToken)))
         using (JsonDocument document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken))
         {
             foreach (JsonProperty space in document.RootElement.EnumerateObject())
@@ -491,7 +502,7 @@ public class HottaGachaClient : GachaLogClient
                 }
             }
         }
-        var result = new Dictionary<string, Dictionary<string, string>>(StringComparer.Ordinal);
+        var result = new Dictionary<(string Table, string Key), string>();
         foreach ((string table, string key) in wanted)
         {
             string? text = exact.TryGetValue(table, out var entries) && entries.TryGetValue(key, out string? found) ? found
@@ -499,11 +510,7 @@ public class HottaGachaClient : GachaLogClient
                          : null;
             if (text is not null)
             {
-                if (!result.TryGetValue(table, out var target))
-                {
-                    result[table] = target = new(StringComparer.Ordinal);
-                }
-                target[key] = text;
+                result[(table, key)] = text;
             }
         }
         return result;

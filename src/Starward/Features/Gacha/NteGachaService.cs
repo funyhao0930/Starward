@@ -39,7 +39,7 @@ internal class NteGachaService : GachaLogService
 
     protected override string? GachaIconTableName => "NteGachaInfo";
 
-    protected override string GachaIconColumns => "ItemId, Key, Icon, RankType, Name";
+    protected override string GachaIconColumns => "ItemId, Key, Icon, RankType, Name, NameHant, NameHans";
 
 
     private readonly HottaGachaClient _hottaClient;
@@ -54,7 +54,7 @@ internal class NteGachaService : GachaLogService
 
     /// <summary>
     /// 导出文件不带图，图示来自社群的资源仓库 NTE_Assets，见 <see cref="HottaGachaClient.GetGachaIconsAsync"/>。
-    /// 同一张表还存了稀有度与英文名，由 <see cref="FillMissingInfo"/> 补给导出文件里缺的记录。
+    /// 同一张表还存了稀有度与英、繁、简三种名字，由 <see cref="FillInfo"/> 补给记录。
     /// </summary>
     public override Task<bool> UpdateGachaIconsAsync(CancellationToken cancellationToken = default)
     {
@@ -155,12 +155,7 @@ internal class NteGachaService : GachaLogService
         using var dapper = DatabaseService.CreateConnection();
         var list = dapper.Query<GachaLogItemEx>($"SELECT * FROM {GachaTableName} WHERE Uid = @uid ORDER BY Id;", new { uid }).ToList();
         // 必须在算保底之前：缺稀有度的 S 角色不补上，就不会被当成出货
-        FillMissingInfo(list);
-        foreach (GachaLogItemEx item in list)
-        {
-            // 导出文件里只有英文名，界面是中文时换成中文；查不到就保持原样
-            item.Name = HottaGachaNames.Localize(item.RewardId, item.Name);
-        }
+        FillInfo(list);
         foreach (IGachaType type in QueryGachaTypes)
         {
             List<GachaLogItemEx> pool = GetGachaLogItemsByQueryType(list, type);
@@ -197,26 +192,27 @@ internal class NteGachaService : GachaLogService
 
 
     /// <summary>
-    /// nte-exporter 的对照表跟不上新版本时，新物品导出来没有名字（存进库里是物品 ID）、
-    /// 稀有度是 null（存成 0）。这里用 NTE_Assets 的数据补上。
+    /// 用 NTE_Assets 的数据补稀有度与名字。
     /// <para/>
-    /// 只补缺的，导出文件写了的一律不动；补在读取时而不是导入时，
-    /// 这样已经导入的旧记录也会跟着对照表更新，不必重新导入。
+    /// nte-exporter 的对照表跟不上新版本时，新物品导出来没有名字（存进库里是物品 ID）、
+    /// 稀有度是 null（存成 0），这两样只补缺的，导出文件写了的一律不动。
+    /// 界面是中文时，名字换成游戏自己的中文文本，那边缺字才退回手写的对照表，
+    /// 见 <see cref="HottaGachaNames.Localize(string?, string, string?, string?, System.Globalization.CultureInfo?)"/>。
+    /// <para/>
+    /// 补在读取时而不是导入时，这样已经导入的旧记录也会跟着对照表更新，不必重新导入。
     /// </summary>
-    private static void FillMissingInfo(List<GachaLogItemEx> list)
+    private static void FillInfo(List<GachaLogItemEx> list)
     {
-        if (!list.Any(x => x.RankType is 0 || x.Name == x.RewardId))
+        if (list.Count is 0)
         {
             return;
         }
         using var dapper = DatabaseService.CreateConnection();
-        var infos = dapper.Query<(int ItemId, int RankType, string? Name)>("SELECT ItemId, RankType, Name FROM NteGachaInfo;").ToDictionary(x => x.ItemId);
+        var infos = dapper.Query<(int ItemId, int RankType, string? Name, string? NameHant, string? NameHans)>("SELECT ItemId, RankType, Name, NameHant, NameHans FROM NteGachaInfo;")
+                          .ToDictionary(x => x.ItemId);
         foreach (GachaLogItemEx item in list)
         {
-            if (!infos.TryGetValue(item.ItemId, out var info))
-            {
-                continue;
-            }
+            infos.TryGetValue(item.ItemId, out var info);
             if (item.RankType is 0)
             {
                 item.RankType = info.RankType;
@@ -225,6 +221,7 @@ internal class NteGachaService : GachaLogService
             {
                 item.Name = info.Name;
             }
+            item.Name = HottaGachaNames.Localize(item.RewardId, item.Name, info.NameHant, info.NameHans);
         }
     }
 
