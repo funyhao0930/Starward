@@ -104,6 +104,19 @@ public sealed partial class PulsoIcon : FontIcon
         DependencyProperty.Register(nameof(StrokeWidth), typeof(double), typeof(PulsoIcon), new PropertyMetadata(1.5d, (d, _) => ((PulsoIcon)d).ApplyStrokeWidth()));
 
 
+    /// <summary>
+    /// 实心样式：闭合的形状填满，线条维持原样。用来表示「已固定」这类开启的状态
+    /// </summary>
+    public bool IsFilled
+    {
+        get => (bool)GetValue(IsFilledProperty);
+        set => SetValue(IsFilledProperty, value);
+    }
+
+    public static readonly DependencyProperty IsFilledProperty =
+        DependencyProperty.Register(nameof(IsFilled), typeof(bool), typeof(PulsoIcon), new PropertyMetadata(false, (d, _) => ((PulsoIcon)d).Rebuild()));
+
+
 
     #region 布局
 
@@ -180,7 +193,7 @@ public sealed partial class PulsoIcon : FontIcon
                 CompositionSpriteShape shape = _compositor.CreateSpriteShape(geometry);
                 CompositionColorBrush brush = _compositor.CreateColorBrush();
                 shape.StrokeBrush = brush;
-                if (node.Filled)
+                if (node.Filled || (IsFilled && node.Closed))
                 {
                     shape.FillBrush = brush;
                 }

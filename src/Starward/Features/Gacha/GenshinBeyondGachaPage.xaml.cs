@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
+using Starward.Controls;
 using Starward.Core;
 using Starward.Core.Gacha.Genshin;
 using Starward.Features.GameLauncher;
@@ -358,9 +359,11 @@ public sealed partial class GenshinBeyondGachaPage : PageBase
             if (!string.IsNullOrWhiteSpace(url))
             {
                 ClipboardHelper.SetText(url);
-                FontIcon_CopyUrl.Glyph = "\uE8FB"; // accept
+                // 复制成功：换成勾勾并画一次，一秒后换回复制图标
+                FontIcon_CopyUrl.Kind = PulsoIconKind.Check;
+                FontIcon_CopyUrl.Play();
                 await Task.Delay(1000);
-                FontIcon_CopyUrl.Glyph = "\uE8C8";  // copy
+                FontIcon_CopyUrl.Kind = PulsoIconKind.Copy;
             }
         }
         catch (Exception ex)

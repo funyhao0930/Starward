@@ -189,9 +189,9 @@
                     Command="{x:Bind ImportGachaLogFromFilesCommand}"
                     Visibility="Collapsed">
                 <StackPanel Orientation="Horizontal" Spacing="8">
-                    <FontIcon Margin="0,2,0,0"
+                    <sc:PulsoIcon Margin="0,2,0,0"
                               FontSize="14"
-                              Glyph="&#xEA52;" />
+                              Kind="Import" />
                     <!--  导入记录  -->
                     <TextBlock Text="{x:Bind lang:Lang.GachaLogPage_ImportRecords}" />
                 </StackPanel>
@@ -253,9 +253,9 @@
             <!--  Setting  -->
             <Button>
                 <StackPanel Orientation="Horizontal" Spacing="8">
-                    <FontIcon Margin="0,2,0,0"
+                    <sc:PulsoIcon Margin="0,2,0,0"
                               FontSize="14"
-                              Glyph="&#xE713;" />
+                              Kind="Settings" />
                     <!--  设置  -->
                     <TextBlock Text="{x:Bind lang:Lang.Common_Setting}" />
                 </StackPanel>
@@ -271,9 +271,9 @@
                                 <!--  复制 URL  -->
                                 <Button Margin="0,8,0,0" Command="{x:Bind CopyUrlCommand}">
                                     <StackPanel Orientation="Horizontal" Spacing="8">
-                                        <FontIcon Name="FontIcon_CopyUrl"
+                                        <sc:PulsoIcon x:Name="FontIcon_CopyUrl"
                                                   FontSize="16"
-                                                  Glyph="&#xE8C8;" />
+                                                  Kind="Copy" />
                                         <TextBlock Text="{x:Bind lang:Lang.GachaLogPage_CopyURL}" />
                                     </StackPanel>
                                 </Button>
@@ -289,7 +289,7 @@
                                            TextWrapping="Wrap" />
                                 <Button Command="{x:Bind DeleteGachaCacheFolderCommand}">
                                     <StackPanel Orientation="Horizontal" Spacing="8">
-                                        <FontIcon FontSize="16" Glyph="&#xEA99;" />
+                                        <sc:PulsoIcon FontSize="16" Kind="BrushCleaning" />
                                         <!--  删除缓存文件夹  -->
                                         <TextBlock Text="{x:Bind lang:Lang.GachaLogPage_DeleteCacheFolder}" />
                                     </StackPanel>
@@ -303,7 +303,7 @@
                                     <Button Padding="1"
                                             VerticalAlignment="Bottom"
                                             Style="{ThemeResource DateTimePickerFlyoutButtonStyle}">
-                                        <FontIcon FontSize="12" Glyph="&#xE9CE;" />
+                                        <sc:PulsoIcon FontSize="12" Kind="CircleQuestionMark" />
                                         <Button.Flyout>
                                             <Flyout>
                                                 <TextBlock Text="{x:Bind lang:Lang.GachaLogPage_GachaLanguageDesc}" />
@@ -321,9 +321,9 @@
                                             HorizontalAlignment="Stretch"
                                             Command="{x:Bind ChangeGachaItemNameCommand}">
                                         <StackPanel Orientation="Horizontal" Spacing="8">
-                                            <FontIcon Margin="0,2,0,0"
+                                            <sc:PulsoIcon Margin="0,2,0,0"
                                                       FontSize="16"
-                                                      Glyph="&#xE8FB;" />
+                                                      Kind="Check" />
                                             <TextBlock Text="{x:Bind lang:Lang.Common_Apply}" />
                                         </StackPanel>
                                     </Button>
@@ -346,7 +346,7 @@
                                                 <Button Padding="1"
                                                         VerticalAlignment="Bottom"
                                                         Style="{ThemeResource DateTimePickerFlyoutButtonStyle}">
-                                                    <FontIcon FontSize="12" Glyph="&#xE9CE;" />
+                                                    <sc:PulsoIcon FontSize="12" Kind="CircleQuestionMark" />
                                                     <Button.Flyout>
                                                         <Flyout>
                                                             <TextBlock>
@@ -383,9 +383,9 @@
                                                     HorizontalAlignment="Stretch"
                                                     Command="{x:Bind ImportGachaLogCommand}">
                                                 <StackPanel Orientation="Horizontal" Spacing="8">
-                                                    <FontIcon Margin="0,2,0,0"
+                                                    <sc:PulsoIcon Margin="0,2,0,0"
                                                               FontSize="16"
-                                                              Glyph="&#xEA52;" />
+                                                              Kind="Import" />
                                                     <TextBlock Text="{x:Bind LegacyImportText}" />
                                                 </StackPanel>
                                             </Button>
@@ -422,9 +422,9 @@
                             <!--  删除记录  -->
                             <Button HorizontalAlignment="Stretch">
                                 <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <FontIcon FontSize="14"
+                                    <sc:PulsoIcon FontSize="14"
                                               Foreground="{ThemeResource SystemFillColorCriticalBrush}"
-                                              Glyph="&#xE74D;" />
+                                              Kind="Trash" />
                                     <TextBlock Foreground="{ThemeResource SystemFillColorCriticalBrush}" Text="{x:Bind lang:Lang.GachaLogPage_DeleteRecords}" />
                                 </StackPanel>
                                 <Button.Flyout>
@@ -450,9 +450,9 @@
                     CornerRadius="14,0,0,14"
                     IsEnabled="{x:Bind GachaItemStats, Converter={StaticResource ObjectToBoolConverter}}"
                     Style="{ThemeResource AccentButtonStyle}">
-                <FontIcon Margin="6,2,4,0"
+                <sc:PulsoIcon Margin="6,2,4,0"
                           FontSize="18"
-                          Glyph="&#xE8A0;" />
+                          Kind="PanelRightOpen" />
             </Button>
         </StackPanel>
 

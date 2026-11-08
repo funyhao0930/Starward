@@ -47,11 +47,10 @@
                     CornerRadius="8"
                     Style="{ThemeResource DateTimePickerFlyoutButtonStyle}">
                 <Grid>
-                    <FontIcon HorizontalAlignment="Center"
+                    <sc:PulsoIcon HorizontalAlignment="Center"
                               VerticalAlignment="Center"
                               FontSize="20"
-                              Glyph="&#xE8A9;"
-                              IsTextScaleFactorEnabled="False" />
+                              Kind="LayoutGrid" />
                     <!--  游戏图标  -->
                     <sc:CachedImage Width="40"
                                     Height="40"
@@ -241,12 +240,10 @@
                                                                         Click="Button_PinGameBiz_Click"
                                                                         Style="{ThemeResource DateTimePickerFlyoutButtonStyle}">
                                                                     <Grid>
-                                                                        <FontIcon FontSize="16"
-                                                                                  Glyph="&#xE718;"
-                                                                                  IsTextScaleFactorEnabled="False" />
-                                                                        <FontIcon FontSize="16"
-                                                                                  Glyph="&#xE841;"
-                                                                                  IsTextScaleFactorEnabled="False"
+                                                                        <sc:PulsoIcon FontSize="16"
+                                                                                  Kind="Pin" />
+                                                                        <sc:PulsoIcon FontSize="16"
+                                                                                  Kind="Pin" IsFilled="True"
                                                                                   Visibility="{x:Bind IsPinned}" />
                                                                     </Grid>
                                                                 </Button>
@@ -335,9 +332,9 @@
                                                 Command="{x:Bind AutoSearchInstalledGamesCommand}"
                                                 Style="{ThemeResource DateTimePickerFlyoutButtonStyle}"
                                                 ToolTipService.ToolTip="{x:Bind lang:Lang.GameBizSelector_AutoSearch}">
-                                            <FontIcon FontSize="14"
+                                            <sc:PulsoIcon FontSize="14"
                                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                                      Glyph="&#xE721;" />
+                                                      Kind="Search" />
                                         </Button>
                                     </StackPanel>
                                 </Grid>
@@ -553,16 +550,14 @@
                         Command="{x:Bind PinCommand}"
                         Style="{ThemeResource DateTimePickerFlyoutButtonStyle}">
                     <Grid>
-                        <FontIcon HorizontalAlignment="Center"
+                        <sc:PulsoIcon HorizontalAlignment="Center"
                                   VerticalAlignment="Center"
                                   FontSize="16"
                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                  Glyph="&#xE718;"
-                                  IsTextScaleFactorEnabled="False" />
-                        <FontIcon FontSize="16"
+                                  Kind="Pin" />
+                        <sc:PulsoIcon FontSize="16"
                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                  Glyph="&#xE841;"
-                                  IsTextScaleFactorEnabled="False"
+                                  Kind="Pin" IsFilled="True"
                                   Visibility="{x:Bind IsPinned}" />
                     </Grid>
                 </Button>

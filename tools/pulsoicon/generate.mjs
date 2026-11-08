@@ -15,6 +15,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { CUSTOM_ICONS } from "./custom-icons.mjs";
+import { applyOverrides } from "./overrides.mjs";
 
 const ICONS = [
   // 刷新按钮
@@ -26,6 +27,39 @@ const ICONS = [
   "sparkles",
   "toolbox",
   "scroll-text",
+  // 唤取记录页、游戏选择器
+  "settings",
+  "panel-right-open",
+  "search",
+  // 设置页导航
+  "info",
+  "sliders-horizontal",
+  "cloud-download",
+  "folder-cog",
+  "keyboard",
+  "gamepad",
+  "flask-conical",
+  // 设置页内容
+  "circle-fading-arrow-up",
+  "link",
+  "activity",
+  "folder-input",
+  "x",
+  "external-link",
+  "database-backup",
+  "trash",
+  "folder-open",
+  "brush-cleaning",
+  "circle-check",
+  "delete",
+  "undo-2",
+  // 主窗口、游戏选择器的固定、唤取记录的其他设置
+  "layout-grid",
+  "pin",
+  "copy",
+  "circle-question-mark",
+  "check",
+  "import",
 ];
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -120,7 +154,7 @@ const dataLines = [];
 const sources = [];
 for (const key of ICONS) {
   const mod = await import(pathToFileURL(resolve(coreDir, "dist/icons", `${key}.js`)).href);
-  sources.push(Object.values(mod)[0]);
+  sources.push(applyOverrides(Object.values(mod)[0]));
 }
 sources.push(...CUSTOM_ICONS);
 
@@ -128,9 +162,12 @@ for (const icon of sources) {
   const name = icon.name;
   enumLines.push(`    ${name},`);
   const nodes = icon.nodes.map(([tag, attrs, m]) => {
-    const ops = toOps(toPathData(tag, attrs), m ? undefined : attrs.transform);
+    const pathData = toPathData(tag, attrs);
+    const ops = toOps(pathData, m ? undefined : attrs.transform);
     const filled = attrs.fill !== undefined && attrs.fill !== "none";
-    return `            new([${ops.map((o) => (Number.isInteger(o) && o >= 0 && o <= 3 ? `${o}f` : f(o))).join(", ")}], ${filled ? "true" : "false"}, ${motion(m)}),`;
+    // 有闭合的子路径（z）才算闭合形状，PulsoIcon.IsFilled 只填满这种
+    const closed = /z/i.test(pathData);
+    return `            new([${ops.map((o) => (Number.isInteger(o) && o >= 0 && o <= 3 ? `${o}f` : f(o))).join(", ")}], ${filled}, ${closed}, ${motion(m)}),`;
   });
   dataLines.push(`        [PulsoIconKind.${name}] = new(${motion(icon.svg)},\n        [\n${nodes.join("\n")}\n        ]),`);
 }

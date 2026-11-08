@@ -5,6 +5,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Animation;
 using NuGet.Versioning;
+using Starward.Controls;
 using Starward.Core;
 using Starward.Core.Games;
 using Starward.Core.HoYoPlay;
@@ -84,6 +85,7 @@ public sealed partial class MainView : UserControl
     private async void MainView_Loaded(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
     {
         DispatcherQueue.TryEnqueue(() => UpdateNavIndicator(animate: false));
+        InitializeSettingsItemIcon();
         PlayAppEntrance();
         CheckSystemProxy();
         HotkeyManager.InitializeHotkey(this.XamlRoot.GetWindowHandle());
@@ -383,6 +385,21 @@ public sealed partial class MainView : UserControl
         })
         {
             IconMotion.Attach(item, style);
+        }
+    }
+
+
+
+    /// <summary>
+    /// 左下角设置项是 NavigationView 自带的，图标是内置的 AnimatedIcon 齿轮，
+    /// 换成和唤取记录「设置」按钮相同的 PulsoIcon 齿轮，并补上和其他导航项一样的按下收缩
+    /// </summary>
+    private void InitializeSettingsItemIcon()
+    {
+        if (MainView_NavigationView.SettingsItem is NavigationViewItem settingsItem && settingsItem.Icon is not PulsoIcon)
+        {
+            settingsItem.Icon = new PulsoIcon { Kind = PulsoIconKind.Settings };
+            IconMotion.Attach(settingsItem, new IconMotion.Style(IconMotion.Pose.Rest, new IconMotion.Pose(Scale: 0.86f), null));
         }
     }
 

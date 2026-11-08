@@ -2,6 +2,7 @@
 <sf:PageBase x:Class="Starward.Features.Setting.GamepadControlSetting"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:sc="using:Starward.Controls"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:lang="using:Starward.Language"
              xmlns:local="using:Starward.Features.Setting"
@@ -132,10 +133,10 @@
                          PlaceholderText="{x:Bind lang:Lang.GamepadControlSetting_EnterKeyText}"
                          Text="{x:Bind GamepadGuideButtonKeyText, Mode=TwoWay}"
                          Visibility="{x:Bind GamepadGuideButtonModeIsKeyboard}" />
-                <FontIcon VerticalAlignment="Center"
+                <sc:PulsoIcon VerticalAlignment="Center"
                           FontSize="16"
                           Foreground="{ThemeResource SystemFillColorSuccessBrush}"
-                          Glyph="&#xE930;"
+                          Kind="CircleCheck"
                           Visibility="{x:Bind GamepadGuideButtonKeyTextEditSuccess}" />
                 <TextBlock VerticalAlignment="Center"
                            Foreground="{ThemeResource SystemFillColorCautionBrush}"
@@ -163,10 +164,10 @@
                          PlaceholderText="{x:Bind lang:Lang.GamepadControlSetting_EnterKeyText}"
                          Text="{x:Bind GamepadShareButtonKeyText, Mode=TwoWay}"
                          Visibility="{x:Bind GamepadShareButtonModeIsKeyboard}" />
-                <FontIcon VerticalAlignment="Center"
+                <sc:PulsoIcon VerticalAlignment="Center"
                           FontSize="16"
                           Foreground="{ThemeResource SystemFillColorSuccessBrush}"
-                          Glyph="&#xE930;"
+                          Kind="CircleCheck"
                           Visibility="{x:Bind GamepadShareButtonKeyTextEditSuccess}" />
                 <TextBlock VerticalAlignment="Center"
                            Foreground="{ThemeResource SystemFillColorCautionBrush}"

@@ -2,6 +2,7 @@
 <UserControl x:Class="Starward.Features.Setting.HotkeyInput"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:sc="using:Starward.Controls"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:lang="using:Starward.Language"
              xmlns:local="using:Starward.Features.Setting"
@@ -76,11 +77,10 @@
                 Click="Button_DeleteHotkey_Click"
                 Style="{ThemeResource DateTimePickerFlyoutButtonStyle}"
                 Visibility="Collapsed">
-            <FontIcon Margin="0,2,0,0"
+            <sc:PulsoIcon Margin="0,2,0,0"
                       FontSize="16"
                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                      Glyph="&#xEA39;"
-                      IsTextScaleFactorEnabled="False" />
+                      Kind="Delete" />
         </Button>
 
         <Button x:Name="Button_Success"
@@ -91,11 +91,10 @@
                 IsEnabled="False"
                 Style="{ThemeResource DateTimePickerFlyoutButtonStyle}"
                 Visibility="Collapsed">
-            <FontIcon Margin="0,2,0,0"
+            <sc:PulsoIcon Margin="0,2,0,0"
                       FontSize="16"
                       Foreground="{ThemeResource SystemFillColorSuccessBrush}"
-                      Glyph="&#xE930;"
-                      IsTextScaleFactorEnabled="False" />
+                      Kind="CircleCheck" />
         </Button>
 
         <Button x:Name="Button_CancelEdit"
@@ -105,11 +104,10 @@
                 VerticalAlignment="Center"
                 Style="{ThemeResource DateTimePickerFlyoutButtonStyle}"
                 Visibility="Collapsed">
-            <FontIcon Margin="0,2,0,0"
+            <sc:PulsoIcon Margin="0,2,0,0"
                       FontSize="16"
                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                      Glyph="&#xE845;"
-                      IsTextScaleFactorEnabled="False" />
+                      Kind="Undo2" />
         </Button>
 
     </Grid>

@@ -2,6 +2,7 @@
 <sf:PageBase x:Class="Starward.Features.Setting.AdvancedSetting"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:sc="using:Starward.Controls"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:lang="using:Starward.Language"
              xmlns:local="using:Starward.Features.Setting"
@@ -34,7 +35,7 @@
                     CornerRadius="8,20,20,8"
                     Style="{ThemeResource AccentButtonStyle}">
                 <StackPanel Orientation="Horizontal" Spacing="8">
-                    <FontIcon Glyph="&#xE76E;" />
+                    <sc:PulsoIcon Kind="Link" />
                     <TextBlock Text="{x:Bind lang:Lang.SettingPage_TestURLProtocol}" />
                 </StackPanel>
             </Button>
@@ -66,9 +67,9 @@
                             Orientation="Horizontal"
                             Spacing="8"
                             Visibility="Collapsed">
-                    <FontIcon FontSize="16"
+                    <sc:PulsoIcon FontSize="16"
                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                              Glyph="&#xE9D9;" />
+                              Kind="Activity" />
                     <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="{x:Bind lang:Lang.SettingPage_RPCServiceIsNotRunning}" />
                     <AppBarSeparator Padding="0" />
                     <Button Padding="0"
@@ -82,9 +83,9 @@
                             Orientation="Horizontal"
                             Spacing="8"
                             Visibility="Collapsed">
-                    <FontIcon FontSize="16"
+                    <sc:PulsoIcon FontSize="16"
                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                              Glyph="&#xE9D9;" />
+                              Kind="Activity" />
                     <TextBlock Foreground="{ThemeResource SystemFillColorSuccessBrush}" Text="{x:Bind lang:Lang.SettingPage_RPCServiceIsRunning}" />
                     <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" IsTextSelectionEnabled="True">
                         <Run Text="Starward.exe" />
@@ -102,9 +103,9 @@
                             Orientation="Horizontal"
                             Spacing="8"
                             Visibility="Collapsed">
-                    <FontIcon FontSize="16"
+                    <sc:PulsoIcon FontSize="16"
                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                              Glyph="&#xE9D9;" />
+                              Kind="Activity" />
                     <TextBlock Foreground="{ThemeResource SystemFillColorCautionBrush}" Text="{x:Bind lang:Lang.SettingPage_CannotConnectRPCService}" />
                     <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" IsTextSelectionEnabled="True">
                         <Run Text="Starward.exe" />

@@ -2,6 +2,7 @@
 <sf:PageBase x:Class="Starward.Features.Setting.SettingPage"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:sc="using:Starward.Controls"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:lang="using:Starward.Language"
              xmlns:local="using:Starward.Features.Setting"
@@ -43,49 +44,49 @@
                                     IsSelected="True"
                                     Tag="AboutSetting">
                     <NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xE946;" />
+                        <sc:PulsoIcon Kind="Info" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <!--  通用  -->
                 <NavigationViewItem Content="{x:Bind lang:Lang.SettingPage_General}" Tag="GeneralSetting">
                     <NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xE81E;" />
+                        <sc:PulsoIcon Kind="SlidersHorizontal" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <!--  下载  -->
                 <NavigationViewItem Content="{x:Bind lang:Lang.SettingPage_Download}" Tag="DownloadSetting">
                     <NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xEBD3;" />
+                        <sc:PulsoIcon Kind="CloudDownload" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <!--  文件管理  -->
                 <NavigationViewItem Content="{x:Bind lang:Lang.SettingPage_FileManagement}" Tag="FileManageSetting">
                     <NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xE8F1;" />
+                        <sc:PulsoIcon Kind="FolderCog" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <!--  截图  -->
                 <NavigationViewItem Content="{x:Bind lang:Lang.MainPage_GameScreenshot}" Tag="ScreenshotSetting">
                     <NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xE91B;" />
+                        <sc:PulsoIcon Kind="Images" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <!--  快捷键  -->
                 <NavigationViewItem Content="{x:Bind lang:Lang.SettingPage_KeyboardShortcuts}" Tag="HotkeySetting">
                     <NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xEDA7;" />
+                        <sc:PulsoIcon Kind="Keyboard" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <!--  手柄增强  -->
                 <NavigationViewItem Content="{x:Bind lang:Lang.SettingPage_ControllerEnhancement}" Tag="GamepadControlSetting">
                     <NavigationViewItem.Icon>
-                        <FontIcon FontFamily="{ThemeResource XboxFluent2}" Glyph="&#xE9CD;" />
+                        <sc:PulsoIcon Kind="Gamepad" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <!--  高级  -->
                 <NavigationViewItem Content="{x:Bind lang:Lang.SettingPage_Advanced}" Tag="AdvancedSetting">
                     <NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xEA86;" />
+                        <sc:PulsoIcon Kind="FlaskConical" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
 
@@ -94,7 +95,7 @@
                 <!--  工具箱  -->
                 <NavigationViewItem Content="{x:Bind lang:Lang.SettingPage_Toolbox}" Tag="ToolboxSetting">
                     <NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xEC7A;" />
+                        <sc:PulsoIcon Kind="Toolbox" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
             </NavigationView.MenuItems>

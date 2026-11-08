@@ -2,6 +2,7 @@
 <sf:PageBase x:Class="Starward.Features.Setting.DownloadSetting"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:sc="using:Starward.Controls"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:lang="using:Starward.Language"
              xmlns:local="using:Starward.Features.Setting"
@@ -29,7 +30,7 @@
                         CornerRadius="8,20,20,8"
                         Style="{ThemeResource AccentButtonStyle}">
                     <StackPanel Orientation="Horizontal" Spacing="8">
-                        <FontIcon Glyph="&#xE8DE;" />
+                        <sc:PulsoIcon Kind="FolderInput" />
                         <TextBlock Text="{x:Bind lang:Lang.LauncherPage_Locate}" />
                     </StackPanel>
                 </Button>
@@ -58,10 +59,10 @@
                             BorderThickness="0"
                             Command="{x:Bind DeleteDefaultInstallPathCommand}"
                             CornerRadius="0">
-                        <FontIcon Margin="0,2,2,0"
+                        <sc:PulsoIcon Margin="0,2,2,0"
                                   FontSize="16"
                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                  Glyph="&#xE711;" />
+                                  Kind="X" />
                     </Button>
                 </Grid>
             </StackPanel>

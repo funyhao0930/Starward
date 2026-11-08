@@ -22,9 +22,9 @@ internal sealed record PulsoMotion(PulsoRecipe Recipe, float D, float X, float Y
 
 
 /// <summary>
-/// 一个形状：路径操作码（0 M x y、1 L x y、2 C x1 y1 x2 y2 x y、3 Z）、是否填色、动作
+/// 一个形状：路径操作码（0 M x y、1 L x y、2 C x1 y1 x2 y2 x y、3 Z）、是否填色、是否闭合（PulsoIcon.IsFilled 只填满闭合的形状）、动作
 /// </summary>
-internal sealed record PulsoNode(float[] Ops, bool Filled, PulsoMotion? Motion);
+internal sealed record PulsoNode(float[] Ops, bool Filled, bool Closed, PulsoMotion? Motion);
 
 
 /// <summary>
