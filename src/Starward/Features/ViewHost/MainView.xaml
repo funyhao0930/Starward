@@ -8,6 +8,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:sfb="using:Starward.Features.Background"
              xmlns:sfg="using:Starward.Features.GameSelector"
+             xmlns:sc="using:Starward.Controls"
              xmlns:sh="using:Starward.Helpers"
              x:DefaultBindMode="OneWay"
              mc:Ignorable="d">
@@ -60,7 +61,7 @@
                                     Tag="GameLauncherPage"
                                     ToolTipService.ToolTip="{x:Bind lang:Lang.MainPage_Launcer}">
                     <NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xE80F;" />
+                        <sc:PulsoIcon Kind="House" />
                     </NavigationViewItem.Icon>
                     <NavigationViewItem.Content>
                         <Border Height="40">
@@ -73,7 +74,7 @@
                                     Tag="GameSettingPage"
                                     ToolTipService.ToolTip="{x:Bind lang:Lang.LauncherPage_GameSetting}">
                     <NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xE7FC;" />
+                        <sc:PulsoIcon Kind="Gamepad2" />
                     </NavigationViewItem.Icon>
                     <NavigationViewItem.Content>
                         <Border Height="40">
@@ -86,7 +87,7 @@
                                     Tag="ScreenshotPage"
                                     ToolTipService.ToolTip="{x:Bind lang:Lang.MainPage_GameScreenshot}">
                     <NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xE91B;" />
+                        <sc:PulsoIcon Kind="Images" />
                     </NavigationViewItem.Icon>
                     <NavigationViewItem.Content>
                         <Border Height="40">
@@ -97,7 +98,7 @@
                 <!--  抽卡记录  -->
                 <NavigationViewItem Name="NavigationViewItem_GachaLog" Tag="GachaLogPage">
                     <NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xF4A5;" />
+                        <sc:PulsoIcon Kind="Sparkles" />
                     </NavigationViewItem.Icon>
                     <NavigationViewItem.Content>
                         <Border Height="40">
@@ -108,7 +109,7 @@
                 <!--  工具箱  -->
                 <NavigationViewItem Name="NavigationViewItem_HoyolabToolbox" Tag="GameRecordPage">
                     <NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xF133;" />
+                        <sc:PulsoIcon Kind="Toolbox" />
                     </NavigationViewItem.Icon>
                     <NavigationViewItem.Content>
                         <Border Height="40">
@@ -121,7 +122,7 @@
                                     Tag="SelfQueryPage"
                                     ToolTipService.ToolTip="{x:Bind lang:Lang.SelfQueryPage_AccountRecords}">
                     <NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xE8C7;" />
+                        <sc:PulsoIcon Kind="ScrollText" />
                     </NavigationViewItem.Icon>
                     <NavigationViewItem.Content>
                         <Border Height="40">
@@ -134,7 +135,7 @@
                                     Tag="GenshinBeyondGachaPage"
                                     ToolTipService.ToolTip="{x:Bind lang:Lang.GenshinBeyondGachaPage_MiliastraWonderlandOde}">
                     <NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xE776;" />
+                        <sc:PulsoIcon Kind="MiliastraBoard" />
                     </NavigationViewItem.Icon>
                     <NavigationViewItem.Content>
                         <Border Height="40">

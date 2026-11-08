@@ -154,7 +154,7 @@
                                             Command="{x:Bind RefreshGameRoleInfoCommand}"
                                             Style="{ThemeResource DateTimePickerFlyoutButtonStyle}">
                                         <StackPanel Orientation="Horizontal" Spacing="12">
-                                            <FontIcon FontSize="16" Glyph="&#xE72C;" />
+                                            <sc:PulsoIcon FontSize="16" Kind="RefreshCw" />
                                             <TextBlock VerticalAlignment="Center" Text="{x:Bind lang:Lang.HoyolabToolboxPage_RefreshInfo}" />
                                         </StackPanel>
                                     </Button>

@@ -2,6 +2,7 @@
 <UserControl x:Class="Starward.Features.GameLauncher.GameRoleCardButton"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:sc="using:Starward.Controls"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:lang="using:Starward.Language"
              xmlns:local="using:Starward.Features.GameLauncher"
@@ -96,10 +97,9 @@
                                     Style="{ThemeResource DateTimePickerFlyoutButtonStyle}"
                                     ToolTipService.ToolTip="{x:Bind lang:Lang.Common_Refresh}"
                                     Visibility="{x:Bind IsLoading, Converter={StaticResource BoolToVisibilityReversedConverter}}">
-                                <FontIcon FontSize="14"
+                                <sc:PulsoIcon FontSize="14"
                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                          Glyph="&#xE72C;"
-                                          IsTextScaleFactorEnabled="False" />
+                                          Kind="RefreshCw" />
                             </Button>
                             <ProgressRing Width="16"
                                           Height="16"

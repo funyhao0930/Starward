@@ -63,8 +63,8 @@
                         <ProgressRing Width="16"
                                       Height="16"
                                       IsActive="{x:Bind InitializeDataCommand.IsRunning}" />
-                        <FontIcon FontSize="16"
-                                  Glyph="&#xE72C;"
+                        <sc:PulsoIcon FontSize="16"
+                                  Kind="RefreshCw"
                                   Visibility="{x:Bind InitializeDataCommand.IsRunning, Converter={StaticResource BoolToVisibilityReversedConverter}}" />
                     </Grid>
                     <TextBlock Text="{x:Bind lang:Lang.Common_Refresh}" />

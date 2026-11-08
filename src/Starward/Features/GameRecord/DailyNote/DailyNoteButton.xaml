@@ -58,9 +58,9 @@
                             Command="{x:Bind RefreshDailyNoteCommand}"
                             CornerRadius="4"
                             Style="{ThemeResource DateTimePickerFlyoutButtonStyle}">
-                        <FontIcon FontSize="14"
+                        <sc:PulsoIcon FontSize="14"
                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                  Glyph="&#xE72C;" />
+                                  Kind="RefreshCw" />
                     </Button>
 
                     <!--  角色信息  -->

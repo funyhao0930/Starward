@@ -1,0 +1,13 @@
+{
+  "name": "starward-pulsoicon-generator",
+  "private": true,
+  "type": "module",
+  "description": "Converts selected PulsoIcon icons into C# data for Starward's PulsoIcon control.",
+  "scripts": {
+    "generate": "node generate.mjs"
+  },
+  "dependencies": {
+    "pulsoicon-core": "6.1.0",
+    "svgpath": "2.6.0"
+  }
+}

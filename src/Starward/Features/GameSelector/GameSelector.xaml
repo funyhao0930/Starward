@@ -322,9 +322,9 @@
                                                 Command="{x:Bind InitializeInstalledGamesCommand}"
                                                 Style="{ThemeResource DateTimePickerFlyoutButtonStyle}"
                                                 ToolTipService.ToolTip="{x:Bind lang:Lang.Common_Refresh}">
-                                            <FontIcon FontSize="14"
+                                            <sc:PulsoIcon FontSize="14"
                                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                                      Glyph="&#xE72C;" />
+                                                      Kind="RefreshCw" />
                                         </Button>
                                         <!--  自动查找  -->
                                         <Button x:Name="Button_AutoSearch"

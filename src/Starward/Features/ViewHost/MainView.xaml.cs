@@ -365,25 +365,25 @@ public sealed partial class MainView : UserControl
 
 
     /// <summary>
-    /// 导航图标仿照设置齿轮做小动作：移上去摆姿势、按下收一下、点下去做一次和图标形状相关的动作
+    /// 导航图标是 PulsoIcon，指针移上去时各个部件自己会动（房子的门长出来、手柄十字键转动、星星闪烁……），
+    /// 这里只补一个按下时整颗图标收一下的手感，不再整颗摆姿势，免得和部件的动作叠在一起
     /// </summary>
     private void InitializeNavigationIconMotion()
     {
-        var pressed = new IconMotion.Pose(Scale: 0.86f);
-        // 主页：抬起，点下去弹跳一下
-        IconMotion.Attach(NavigationViewItem_Launcher, new(new(OffsetY: -2, Scale: 1.08f), pressed, IconMotion.Jump(5)));
-        // 游戏设置（手柄）：侧倾，点下去左右摇晃
-        IconMotion.Attach(NavigationViewItem_GameSetting, new(new(Rotation: -12, Scale: 1.06f), pressed, IconMotion.Wiggle(-16, 14, -8, 4)));
-        // 截图：倾斜放大，点下去晃一下
-        IconMotion.Attach(NavigationViewItem_Screenshot, new(new(Rotation: -8, Scale: 1.1f), pressed, IconMotion.Wiggle(10, -6)));
-        // 抽卡（星星）：旋转放大，点下去转半圈加脉动
-        IconMotion.Attach(NavigationViewItem_GachaLog, new(new(Rotation: 18, Scale: 1.12f), pressed, IconMotion.SpinPulse(180)));
-        // 工具箱：抬起侧倾，点下去摇晃
-        IconMotion.Attach(NavigationViewItem_HoyolabToolbox, new(new(Rotation: -10, OffsetY: -2), pressed, IconMotion.Wiggle(-14, 12, -6)));
-        // 自助查询（卡片）：右移，点下去滑出再回来
-        IconMotion.Attach(NavigationViewItem_SelfQuery, new(new(OffsetX: 2, Scale: 1.06f), pressed, IconMotion.Slide(5)));
-        // 千星奇域（人形）：抬起，点下去连跳两下
-        IconMotion.Attach(NavigationViewItem_GenshinBeyondGacha, new(new(OffsetY: -2, Scale: 1.06f), pressed, IconMotion.Jump(5, 2)));
+        var style = new IconMotion.Style(IconMotion.Pose.Rest, new IconMotion.Pose(Scale: 0.86f), null);
+        foreach (NavigationViewItem item in new[]
+        {
+            NavigationViewItem_Launcher,
+            NavigationViewItem_GameSetting,
+            NavigationViewItem_Screenshot,
+            NavigationViewItem_GachaLog,
+            NavigationViewItem_HoyolabToolbox,
+            NavigationViewItem_SelfQuery,
+            NavigationViewItem_GenshinBeyondGacha,
+        })
+        {
+            IconMotion.Attach(item, style);
+        }
     }
 
 

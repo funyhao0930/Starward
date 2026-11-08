@@ -66,7 +66,7 @@
                 <StackPanel Margin="4,0,4,0"
                             Orientation="Horizontal"
                             Spacing="8">
-                    <FontIcon FontSize="16" Glyph="&#xE72C;" />
+                    <sc:PulsoIcon FontSize="16" Kind="RefreshCw" />
                     <TextBlock Text="{x:Bind lang:Lang.Common_Refresh}" />
                 </StackPanel>
             </Button>
