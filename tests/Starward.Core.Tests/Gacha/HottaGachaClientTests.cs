@@ -1,6 +1,7 @@
 using Starward.Core.Gacha;
 using Starward.Core.Gacha.Hotta;
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
@@ -435,6 +436,118 @@ public class HottaGachaClientTests
         Assert.Equal(3, export.Items.Count);
         Assert.Equal(3, export.Items.Select(x => x.Id).Distinct().Count());
         Assert.Equal(export.Items.OrderBy(x => x.Id).Select(x => x.Id), export.Items.Select(x => x.Id));
+    }
+
+
+
+    /// <summary>
+    /// 一份常驻棋盘的导出：同一秒里的一次投掷，记录从新到旧。
+    /// <paramref name="withOrdinal"/> 为 false 时整组不写 ordinal（全当 0、撞号），解析时退回按位置数，
+    /// 也就是同一抽的另一套 ID。<paramref name="newest"/> 只取最新的几条，模拟抓到一半的那一组。
+    /// </summary>
+    private static string StandardBoardGroup(bool withOrdinal, int newest = 3, string time = "2026-06-04 21:35:47")
+    {
+        string[] rewards = ["fork_Prokaryon", "1054", "fork_dustbin"];
+        var records = rewards.Take(newest).Select((reward, ordinal) => $$"""
+            { "pool_group_id": "Lottery_Permanent", "timestamp": "{{time}}", {{(withOrdinal ? $"\"timestamp_group_ordinal\": {ordinal}," : "")}}
+              "result_type": "dice", "reward_type": "arc", "reward_id": "{{reward}}", "reward_rank": "B" }
+            """);
+        return $$"""
+            { "format": "nte-history-export", "user_uid": "218011323084", "records": [ {{string.Join(',', records)}} ] }
+            """;
+    }
+
+
+    /// <summary>
+    /// 撞号只退那一秒：别的秒照样按 ordinal 算，ID 与没有撞号的导出一致。
+    /// 之前是整份文件一起退，一处撞号就让整个卡池换了一套 ID，与先前导入的对不上。
+    /// </summary>
+    [Fact]
+    public void ParseExport_FallsBackOnlyInTheSecondThatCollides()
+    {
+        string clean = StandardBoardGroup(true, time: "2026-06-04 21:35:47");
+        string colliding = StandardBoardGroup(false, time: "2026-06-04 21:37:02");
+        string both = clean.Replace("] }", "," + colliding[(colliding.IndexOf('[') + 1)..]);
+
+        var alone = HottaGachaClient.ParseExport(clean);
+        var mixed = HottaGachaClient.ParseExport(both);
+
+        Assert.Equal(6, mixed.Items.Count);
+        Assert.Equal(6, mixed.Items.Select(x => x.Id).Distinct().Count());
+        Assert.All(alone.Items, x => Assert.Contains(x.Id, mixed.Items.Select(y => y.Id)));
+    }
+
+
+    private static List<(long Id, int GachaType, DateTime Time)> Stored(IEnumerable<HottaGachaItem> items)
+    {
+        return items.Select(x => (x.Id, x.GachaType, x.Time)).ToList();
+    }
+
+
+    /// <summary>
+    /// 真实遇到的情况：常驻池先导入过一份按位置数的，后来又导入一份按 ordinal 算的，
+    /// 同一抽存成两份，统计页同一时间出现两只同样的 S 角色。现在整组换成新的那份。
+    /// </summary>
+    [Fact]
+    public void ReconcileGroups_ReplacesAGroupStoredUnderTheOtherIdScheme()
+    {
+        var positional = HottaGachaClient.ParseExport(StandardBoardGroup(false)).Items;
+        var ordinal = HottaGachaClient.ParseExport(StandardBoardGroup(true)).Items;
+        Assert.Empty(positional.Select(x => x.Id).Intersect(ordinal.Select(x => x.Id)));
+
+        var (delete, insert) = HottaGachaClient.ReconcileGroups(Stored(positional), [ordinal]);
+
+        Assert.Equal(positional.Select(x => x.Id).Order(), delete.Order());
+        Assert.Equal(ordinal.Select(x => x.Id).Order(), insert.Select(x => x.Id).Order());
+    }
+
+
+    /// <summary>
+    /// 新的那份只抓到这一抽的一部分时，库里完整的那组不能被换掉
+    /// </summary>
+    [Fact]
+    public void ReconcileGroups_KeepsTheFullerGroupWhenTheNewOneIsPartial()
+    {
+        var positional = HottaGachaClient.ParseExport(StandardBoardGroup(false)).Items;
+        var partial = HottaGachaClient.ParseExport(StandardBoardGroup(true, newest: 2)).Items;
+
+        var (delete, insert) = HottaGachaClient.ReconcileGroups(Stored(positional), [partial]);
+
+        Assert.Empty(delete);
+        Assert.Empty(insert);
+    }
+
+
+    /// <summary>
+    /// 同一套算法只是抓得深浅不同，照常插入，什么都不删
+    /// </summary>
+    [Fact]
+    public void ReconcileGroups_InsertsADeeperCaptureOfTheSameScheme()
+    {
+        var partial = HottaGachaClient.ParseExport(StandardBoardGroup(true, newest: 2)).Items;
+        var full = HottaGachaClient.ParseExport(StandardBoardGroup(true)).Items;
+        Assert.Subset(full.Select(x => x.Id).ToHashSet(), partial.Select(x => x.Id).ToHashSet());
+
+        var (delete, insert) = HottaGachaClient.ReconcileGroups(Stored(partial), [full]);
+
+        Assert.Empty(delete);
+        Assert.Equal(3, insert.Count);
+    }
+
+
+    /// <summary>
+    /// 一次选了同一个卡池的两份导出，两套 ID 在同一批里撞上，也只留一份
+    /// </summary>
+    [Fact]
+    public void ReconcileGroups_DeduplicatesTwoFilesOfTheSameBatch()
+    {
+        var positional = HottaGachaClient.ParseExport(StandardBoardGroup(false)).Items;
+        var ordinal = HottaGachaClient.ParseExport(StandardBoardGroup(true)).Items;
+
+        var (delete, insert) = HottaGachaClient.ReconcileGroups([], [positional, ordinal]);
+
+        Assert.Empty(delete);
+        Assert.Equal(ordinal.Select(x => x.Id).Order(), insert.Select(x => x.Id).Order());
     }
 
 

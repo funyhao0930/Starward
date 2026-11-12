@@ -268,6 +268,7 @@ internal static class DatabaseService
         Sql_v28,
         Sql_v29,
         Sql_v30,
+        Sql_v31,
     ];
 
 
@@ -1294,6 +1295,39 @@ internal static class DatabaseService
         DELETE FROM NteGachaInfo;
 
         PRAGMA USER_VERSION = 30;
+        COMMIT TRANSACTION;
+        """;
+
+    /// <summary>
+    /// 清掉异环记录里同一抽存了两份的情况。
+    /// <para/>
+    /// ID 的个位往上第 5、6 位是同一秒内的序号：按组内 ordinal 算的落在 99 往下（实际 86 以上），
+    /// 撞号退回按位置数的落在 0 往上（实际不超过 13），同一组里两种同时出现，
+    /// 就是同一抽被两次导入用两套算法各存了一份。保留条数多的那套，一样多时留按 ordinal 算的，
+    /// 与 <c>HottaGachaClient.ReconcileGroups</c> 之后的导入行为一致。
+    /// </summary>
+    private const string Sql_v31 = """
+        BEGIN TRANSACTION;
+
+        CREATE TEMP TABLE NteMixedGroup AS
+        SELECT Uid, GachaType, Time,
+               SUM((Id / 10000) % 100 < 50)  AS Low,
+               SUM((Id / 10000) % 100 >= 50) AS High
+        FROM NteGachaItem
+        GROUP BY Uid, GachaType, Time
+        HAVING Low > 0 AND High > 0;
+
+        DELETE FROM NteGachaItem
+        WHERE EXISTS
+        (
+            SELECT 1 FROM NteMixedGroup g
+            WHERE g.Uid = NteGachaItem.Uid AND g.GachaType = NteGachaItem.GachaType AND g.Time = NteGachaItem.Time
+              AND ((NteGachaItem.Id / 10000) % 100 < 50) = (g.High >= g.Low)
+        );
+
+        DROP TABLE NteMixedGroup;
+
+        PRAGMA USER_VERSION = 31;
         COMMIT TRANSACTION;
         """;
 

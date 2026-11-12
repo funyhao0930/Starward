@@ -348,13 +348,16 @@ internal class NteGachaService : GachaLogService
     {
         using var dapper = DatabaseService.CreateConnection();
         using var t = dapper.BeginTransaction();
-        int affect = dapper.Execute("""
-            INSERT OR REPLACE INTO NteGachaItem (Uid, Id, Name, Time, ItemId, ItemType, RankType, GachaType, Count, Lang, ResultType, RewardId)
-            VALUES (@Uid, @Id, @Name, @Time, @ItemId, @ItemType, @RankType, @GachaType, @Count, @Lang, @ResultType, @RewardId);
-            """, items.OfType<HottaGachaItem>().ToList(), t);
+        int affect = dapper.Execute(InsertSql, items.OfType<HottaGachaItem>().ToList(), t);
         t.Commit();
         return affect;
     }
+
+
+    private const string InsertSql = """
+        INSERT OR REPLACE INTO NteGachaItem (Uid, Id, Name, Time, ItemId, ItemType, RankType, GachaType, Count, Lang, ResultType, RewardId)
+        VALUES (@Uid, @Id, @Name, @Time, @ItemId, @ItemType, @RankType, @GachaType, @Count, @Lang, @ResultType, @RewardId);
+        """;
 
 
 
@@ -396,15 +399,15 @@ internal class NteGachaService : GachaLogService
             throw new ArgumentException(Lang.NteGachaService_TheExportFileDoesNotContainAUid);
         }
 
-        var items = new List<GachaLogItem>();
+        int total = 0;
         var warnings = new List<string>();
         foreach ((string name, HottaGachaClient.HottaGachaExport export) in exports)
         {
             foreach (HottaGachaItem item in export.Items)
             {
                 item.Uid = uid;
-                items.Add(item);
             }
+            total += export.Items.Count;
             warnings.AddRange(export.Warnings.Select(x => $"{name}: {x}"));
             if (export.DroppedCount > 0)
             {
@@ -412,16 +415,27 @@ internal class NteGachaService : GachaLogService
                 warnings.Add($"{name}: {string.Format(Lang.NteGachaService_SomeRecordsCouldNotBeRead, export.DroppedCount)}");
             }
         }
-        if (items.Count is 0)
+        if (total is 0)
         {
             throw new ArgumentException(Lang.NteGachaService_TheExportFileContainsNoGachaRecords);
         }
         using var dapper = DatabaseService.CreateConnection();
-        int oldCount = dapper.QueryFirstOrDefault<int>($"SELECT COUNT(*) FROM {GachaTableName} WHERE Uid = @Uid;", new { Uid = uid });
-        InsertGachaLogItems(items);
+        var existing = dapper.Query<HottaGachaItem>($"SELECT Id, GachaType, Time FROM {GachaTableName} WHERE Uid = @Uid;", new { Uid = uid })
+                             .Select(x => (x.Id, x.GachaType, x.Time))
+                             .ToList();
+        // 同一抽在不同导出里可能算出两套 ID，直接插入会把它存成两份，先逐组对齐
+        (List<long> delete, List<HottaGachaItem> insert) = HottaGachaClient.ReconcileGroups(existing, exports.Select(x => x.Export.Items));
+        using (var t = dapper.BeginTransaction())
+        {
+            dapper.Execute($"DELETE FROM {GachaTableName} WHERE Uid = @Uid AND Id = @Id;", delete.Select(id => new { Uid = uid, Id = id }), t);
+            dapper.Execute(InsertSql, insert, t);
+            t.Commit();
+        }
         int newCount = dapper.QueryFirstOrDefault<int>($"SELECT COUNT(*) FROM {GachaTableName} WHERE Uid = @Uid;", new { Uid = uid });
-        _logger.LogInformation("Imported {Count} Neverness to Everness gacha records of uid {Uid}, {Added} added.", items.Count, uid, newCount - oldCount);
-        return new NteGachaImportResult(uid, items.Count, newCount - oldCount, warnings);
+        // 换掉一组重复的记录会让总数变少，新增数不能是负的
+        int added = Math.Max(0, newCount - existing.Count);
+        _logger.LogInformation("Imported {Count} Neverness to Everness gacha records of uid {Uid}, {Added} added, {Replaced} stale removed.", total, uid, added, delete.Count);
+        return new NteGachaImportResult(uid, total, added, warnings);
     }
 
 

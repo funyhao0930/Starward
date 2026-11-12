@@ -197,11 +197,17 @@ public class HottaGachaClient : GachaLogClient
                             .ToList();
 
         // 正常情况下同一秒内的 ordinal 互不相同，直接拿它算序号，抓包深浅变化也不会改 ID。
-        // 但同一显示秒里可能落进两组原始时间戳，整份文件也可能根本没写 ordinal（全当 0），
+        // 但同一显示秒里可能落进两组原始时间戳，文件也可能根本没写 ordinal（全当 0），
         // 这时同一秒会出现重复的 ordinal，两条记录会算出同一个 ID，
-        // 其中一条就被 INSERT OR REPLACE 悄悄覆盖掉。这种文件退回按位置数：
+        // 其中一条就被 INSERT OR REPLACE 悄悄覆盖掉。这样的那一秒退回按位置数：
         // ID 会随抓包深浅变化，但至少不会丢记录。
-        bool ordinalsAreUnique = ordered.GroupBy(x => (x.Time, x.Ordinal)).All(x => x.Count() is 1);
+        // 只退那一秒，不能整份文件一起退：之前是整份退，一处撞号就让整个卡池换了一套 ID，
+        // 与先前导入的同一批记录对不上，常驻池因此每一抽都存了两份。
+        // 两套 ID 撞在一起时由 ReconcileGroups 在入库前收拾。
+        var collidingSeconds = ordered.GroupBy(x => (x.Time, x.Ordinal))
+                                      .Where(x => x.Count() > 1)
+                                      .Select(x => x.Key.Time)
+                                      .ToHashSet();
 
         var items = new List<HottaGachaItem>(ordered.Count);
         var positions = new Dictionary<DateTime, int>();
@@ -210,7 +216,7 @@ public class HottaGachaClient : GachaLogClient
             positions.TryGetValue(time, out int position);
             positions[time] = position + 1;
             // ordered 在同一秒内已经是从旧到新，按位置数出来的序号也就与时间同向
-            int sequence = ordinalsAreUnique ? ToSequence(ordinal) : Math.Clamp(position, 0, MaxSequence);
+            int sequence = collidingSeconds.Contains(time) ? Math.Clamp(position, 0, MaxSequence) : ToSequence(ordinal);
             string itemId = record.RewardId ?? "";
             items.Add(new HottaGachaItem
             {
@@ -233,6 +239,65 @@ public class HottaGachaClient : GachaLogClient
             });
         }
         return new HottaGachaExport(uid, items, dropped, warnings);
+    }
+
+
+    /// <summary>
+    /// 入库前把导入的记录与库里已有的按「卡池 + 时间戳」逐组对齐，决定删哪些、插哪些。
+    /// <para/>
+    /// 同一个卡池、同一个时间戳就是同一抽（十连或单抽），可是同一抽在两份导出里不一定算出同一套 ID：
+    /// 一份按组内 ordinal 算、另一份因为撞号退回按位置数，或者工具的版本不同。
+    /// 光靠 INSERT OR REPLACE 的话，两套 ID 都留在库里，这一抽就存了两份，
+    /// 统计页上同一时间会出现两只同样的角色，三星的数量还会超过总抽数。
+    /// <para/>
+    /// 因此按组判断：新旧两组的 ID 有一方完全包含另一方时是同一套算法（只是抓得深浅不同），照常插入；
+    /// 互不包含就是两套算法撞在一起，保留条数较多（抓得较完整）的那组——
+    /// 新的不比旧的少就整组换成新的，免得工具修正过的字段（例如 result_type）进不来；
+    /// 新的比旧的少，说明这次只抓到这一抽的一部分，跳过不动。
+    /// <para/>
+    /// 一次可以选好几份文件，同一个卡池的两份导出也可能撞出两套 ID，
+    /// 所以逐份文件依次对齐，前一份的结果当作后一份眼中的「已有」。
+    /// </summary>
+    /// <param name="existing">库里同一个账号已有的记录</param>
+    /// <param name="files">这次要导入的记录，一份文件一组，必须已经填好 Uid</param>
+    public static (List<long> Delete, List<HottaGachaItem> Insert) ReconcileGroups(IEnumerable<(long Id, int GachaType, DateTime Time)> existing, IEnumerable<IEnumerable<HottaGachaItem>> files)
+    {
+        // 每组目前留着的记录：值为 null 的是库里原有的，否则是这次要插入的
+        var present = existing.GroupBy(x => (x.GachaType, x.Time))
+                              .ToDictionary(x => x.Key, x => x.ToDictionary(y => y.Id, _ => (HottaGachaItem?)null));
+        var delete = new List<long>();
+        foreach (IEnumerable<HottaGachaItem> file in files)
+        {
+            foreach (var group in file.GroupBy(x => (x.GachaType, x.Time)))
+            {
+                var ids = group.Select(x => x.Id).ToHashSet();
+                if (!present.TryGetValue(group.Key, out var old))
+                {
+                    present[group.Key] = old = [];
+                }
+                else if (!old.Keys.ToHashSet().IsSubsetOf(ids) && !ids.IsSubsetOf(old.Keys))
+                {
+                    if (ids.Count < old.Count)
+                    {
+                        continue;
+                    }
+                    foreach ((long id, HottaGachaItem? item) in old.Where(x => !ids.Contains(x.Key)).ToList())
+                    {
+                        if (item is null)
+                        {
+                            delete.Add(id);
+                        }
+                        old.Remove(id);
+                    }
+                }
+                foreach (HottaGachaItem item in group)
+                {
+                    old[item.Id] = item;
+                }
+            }
+        }
+        var insert = present.Values.SelectMany(x => x.Values).OfType<HottaGachaItem>().ToList();
+        return (delete, insert);
     }
 
 
@@ -270,8 +335,8 @@ public class HottaGachaClient : GachaLogClient
     /// 因此直接倒过来用，比按文件里的位置数更可靠——后者会随抓包深浅变化，
     /// 同一抽在两份导出里就会算出两个 ID。
     /// <para/>
-    /// 只在同一秒内的 ordinal 确实互不相同时才这么算，撞号的文件另走位置数，
-    /// 判断见 <c>ordinalsAreUnique</c>。
+    /// 只在同一秒内的 ordinal 确实互不相同时才这么算，撞号的那一秒另走位置数，
+    /// 判断见 <c>collidingSeconds</c>。
     /// </summary>
     private static int ToSequence(int ordinal)
     {
