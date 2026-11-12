@@ -118,8 +118,9 @@ internal partial class GameInstallHelper
     /// <param name="size"></param>
     /// <param name="md5"></param>
     /// <param name="cancellationToken"></param>
+    /// <param name="onRead">每读一块就报告一次这次读了多少字节</param>
     /// <returns></returns>
-    public async Task<bool> CheckFileMD5Async(GameInstallContext task, string? path, long size, string md5, CancellationToken cancellationToken = default)
+    public async Task<bool> CheckFileMD5Async(GameInstallContext task, string? path, long size, string md5, CancellationToken cancellationToken = default, Action<int>? onRead = null)
     {
         if (!File.Exists(path))
         {
@@ -137,6 +138,7 @@ internal partial class GameInstallHelper
         {
             md5Hash.TransformBlock(buffer, 0, read, null, 0);
             Interlocked.Add(ref task.storageReadBytes, read);
+            onRead?.Invoke(read);
         }
         md5Hash.TransformFinalBlock(buffer, 0, 0);
         if (md5Hash.Hash is null)

@@ -29,6 +29,15 @@ internal sealed class MultiFileStream : Stream
 
     private long _position;
 
+    private long _writtenEnd;
+
+
+    /// <summary>
+    /// 写到的最远位置变大时调用，参数是新的最远位置。hpatch 按顺序写新文件，可以当成已写出的字节数。
+    /// 在 hpatch 的原生回调里调用，不能抛出异常。
+    /// </summary>
+    public Action<long>? Written { get; set; }
+
 
     private MultiFileStream(FileStream[] streams, long[] lengths, bool writable)
     {
@@ -160,6 +169,11 @@ internal sealed class MultiFileStream : Stream
             fs.Write(buffer[..length]);
             _position += length;
             buffer = buffer[length..];
+        }
+        if (_position > _writtenEnd)
+        {
+            _writtenEnd = _position;
+            Written?.Invoke(_writtenEnd);
         }
     }
 

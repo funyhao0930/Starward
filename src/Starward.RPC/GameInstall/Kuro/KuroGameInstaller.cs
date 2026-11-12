@@ -689,12 +689,13 @@ internal class KuroGameInstaller : IGameInstallVendor
         {
             cancellationToken.ThrowIfCancellationRequested();
             double ratio = diff.Group.DstFiles.Sum(x => x.Size) / totalBytes;
+            double start = context.Progress_Percent;
             if (!applied.Contains(diff.File.Dest))
             {
                 string diffPath = KuroDirDiffPatcher.ToFullPath(diffDir, diff.File.Dest);
                 try
                 {
-                    await _patcher.ApplyAsync(context, gameDir, diffPath, diff.Group, workDir, cancellationToken);
+                    await _patcher.ApplyAsync(context, gameDir, diffPath, diff.Group, workDir, x => context.Progress_Percent = Math.Min(1, start + ratio * x), cancellationToken);
                     applied.Add(diff.File.Dest);
                     SaveJournal(pack, applied);
                     File.Delete(diffPath);
@@ -706,7 +707,7 @@ internal class KuroGameInstaller : IGameInstallVendor
                     failed.Add(diff);
                 }
             }
-            context.Progress_Percent = Math.Min(1, context.Progress_Percent + ratio);
+            context.Progress_Percent = Math.Min(1, start + ratio);
         }
 
         if (failed.Count > 0)

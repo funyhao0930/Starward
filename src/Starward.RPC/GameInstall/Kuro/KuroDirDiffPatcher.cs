@@ -63,9 +63,11 @@ internal class KuroDirDiffPatcher
     /// <param name="diffPath">已下载并校验过的差分包</param>
     /// <param name="group">清单上这个差分包的说明，用来校验结果</param>
     /// <param name="workDir">暂存新文件的目录，用完即删</param>
+    /// <param name="progress">这一组做了多少（0～1）：打补丁写出的字节加上校验读过的字节。
+    /// 最大的一组（7 GB 的 pakchunk0）要跑好几分钟，只在整组做完时才更新进度的话，界面会一直停在同一个数字。</param>
     /// <exception cref="InvalidDataException">差分包与本机文件对不上，或打出来的结果校验不过</exception>
     /// <exception cref="NotSupportedException">差分包的格式认不出来</exception>
-    public async Task ApplyAsync(GameInstallContext context, string gameDir, string diffPath, KuroResourceGroup group, string workDir, CancellationToken cancellationToken = default)
+    public async Task ApplyAsync(GameInstallContext context, string gameDir, string diffPath, KuroResourceGroup group, string workDir, Action<double>? progress = null, CancellationToken cancellationToken = default)
     {
         HDiffDirDiffHeader header = ReadHeader(diffPath);
         if (!header.OldPathIsDir || !header.NewPathIsDir)
@@ -83,9 +85,13 @@ internal class KuroDirDiffPatcher
         }
         Directory.CreateDirectory(workDir);
 
+        long patchBytes = header.NewRefSize;
+        double totalBytes = Math.Max(1, patchBytes + group.DstFiles.Sum(x => x.Size));
+        long verifiedBytes = 0;
+
         cancellationToken.ThrowIfCancellationRequested();
         // hpatch 是同步的原生调用，中途不能取消，只能放到线程池上等它做完。
-        // 最大的一组是 6 GB 的 pakchunk0，要跑一两分钟。
+        // 最大的一组是 7 GB 的 pakchunk0，打补丁加校验要跑好几分钟。
         bool success = await Task.Run(() =>
         {
             MultiFileStream? oldStream = oldRefPaths.Count > 0 ? MultiFileStream.OpenRead(oldRefPaths.Select(x => ToFullPath(gameDir, x)).ToList()) : null;
@@ -93,6 +99,10 @@ internal class KuroDirDiffPatcher
             {
                 using var diffStream = new FileSliceStream(diffPath, header.HDiffDataOffset, header.HDiffDataSize);
                 using MultiFileStream newStream = MultiFileStream.Create(newRefFiles.Select(x => ToFullPath(workDir, x.Path)).ToList(), newRefFiles.Select(x => x.Size).ToList());
+                if (progress is not null)
+                {
+                    newStream.Written = end => progress(Math.Min(1, end / totalBytes));
+                }
                 // 不用 Snap.HPatch 自带的外壳：压缩段超过 2 GiB 时它会读不出数据（见 HPatchLarge）
                 return HPatchLarge.PatchZstandard(oldStream, diffStream, newStream);
             }
@@ -127,7 +137,8 @@ internal class KuroDirDiffPatcher
         foreach (KuroResourceFile dst in group.DstFiles)
         {
             string path = ToFullPath(workDir, dst.Dest);
-            if (!await _gameInstallHelper.CheckFileMD5Async(context, path, dst.Size, dst.Md5, cancellationToken))
+            if (!await _gameInstallHelper.CheckFileMD5Async(context, path, dst.Size, dst.Md5, cancellationToken,
+                                                             read => progress?.Invoke(Math.Min(1, (patchBytes + (verifiedBytes += read)) / totalBytes))))
             {
                 throw new InvalidDataException($"Patched file does not match the manifest: {dst.Dest}");
             }
