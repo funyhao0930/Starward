@@ -137,4 +137,12 @@ public class KuroOfficialGameSettings
     [JsonPropertyName("experiment")]
     public KuroLauncherExperiment? Experiment { get; set; }
 
+
+    /// <summary>
+    /// 新启动器的功能令牌，<c>background</c> 是背景图路径里的那一段，
+    /// 与旧启动器配置里的是两套令牌，见 <see cref="KuroLauncherClient.GetBackgroundAsync"/>
+    /// </summary>
+    [JsonPropertyName("functionCode")]
+    public KuroLauncherFunctionCode? FunctionCode { get; set; }
+
 }

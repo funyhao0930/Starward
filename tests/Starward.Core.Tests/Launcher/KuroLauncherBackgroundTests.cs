@@ -211,6 +211,34 @@ public class KuroLauncherBackgroundTests
 
 
     /// <summary>
+    /// 旧启动器的配置在 3.7.0 之后不再轮换令牌，旧路会一直给 3.7.0 的美术。
+    /// 新启动器那一路（分级配置里的令牌 + official 路径）取得到时要用它，不能再问旧路。
+    /// </summary>
+    [Fact]
+    public async Task GetBackgroundAsync_PrefersOfficialLauncherPath()
+    {
+        var handler = new StubHandler(url => url switch
+        {
+            _ when url.EndsWith("/launcher/game/50004_P7xcUZnEr1AXIGON25E6KjpOgTlVrg6e/G153/official/index.json")
+                => """{"config":{"functionCode":{"background":"officialToken1"}}}""",
+            _ when url.EndsWith("/launcher/game/50004_P7xcUZnEr1AXIGON25E6KjpOgTlVrg6e/G153/official/background/officialToken1/zh-Hant.json")
+                => VideoJson,
+            _ when url.EndsWith("/launcher/launcher/50004_obOHXFrFanqsaIEOmuKroCcbZkQRBC7c/G153/index.json")
+                => """{"functionCode":{"background":"staleToken"}}""",
+            _ when url.Contains("/background/staleToken/") => """{"functionSwitch":1,"backgroundFile":"https://example.invalid/stale.webp","backgroundFileType":1}""",
+            _ => null,
+        });
+        var client = new KuroLauncherClient(new HttpClient(handler));
+
+        KuroLauncherBackground? background = await client.GetBackgroundAsync("zh-Hant");
+
+        Assert.NotNull(background);
+        Assert.Equal("https://example.invalid/launcher/clientUpload/video0001.mp4", background.BackgroundFile);
+        Assert.DoesNotContain(handler.Requests, x => x.Contains("staleToken"));
+    }
+
+
+    /// <summary>
     /// 启动器配置取不到时退回内置令牌，而不是整个背景都不要了
     /// </summary>
     [Fact]

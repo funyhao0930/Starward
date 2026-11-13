@@ -51,6 +51,9 @@ public class KuroLauncherClient
     /// 并随游戏版本轮换。旧令牌的路径不会下架，而是一直返回旧版本的美术，
     /// 所以写死令牌不会报错，只会让背景停在旧版本上（3.7.0 就是这样）。
     /// 这里的值只在取不到启动器配置时兜底用。
+    /// <para/>
+    /// 旧启动器的配置本身也在 3.7.0 之后停止轮换了，背景改从新启动器那一路取，
+    /// 见 <see cref="GetOfficialBackgroundTokenAsync"/>。
     /// </summary>
     private const string FALLBACK_BACKGROUND_TOKEN = "lv1emIbKHn38mW6zgxiFqU3Uw8nwstj6";
 
@@ -150,6 +153,30 @@ public class KuroLauncherClient
         {
             language = DEFAULT_LANGUAGE;
         }
+        // 新启动器（3.0.x）那一路优先。旧启动器的配置停在 3.7.0 不再轮换令牌，
+        // 而旧令牌的路径照样 200，只会一直给 3.7.0 的美术，所以旧路只在新路取不到时兜底。
+        try
+        {
+            string? officialToken = await GetOfficialBackgroundTokenAsync(cancellationToken);
+            if (!string.IsNullOrWhiteSpace(officialToken))
+            {
+                KuroLauncherBackground? background = await GetFromCdnAsync<KuroLauncherBackground>(
+                    host => $"{host}/launcher/game/{APP_ID}_{OFFICIAL_APP_KEY}/{GAME_ID}/official/background/{officialToken}/{language}.json",
+                    cancellationToken);
+                if (background is not null)
+                {
+                    return background;
+                }
+            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch
+        {
+            // 新路不通时走旧路，至少还有一张（可能是旧版本的）背景
+        }
         string token = await GetBackgroundTokenAsync(cancellationToken);
         return await GetFromCdnAsync<KuroLauncherBackground>(
             host => $"{host}/launcher/{APP_ID}_{APP_KEY}/{GAME_ID}/background/{token}/{language}.json",
@@ -158,7 +185,19 @@ public class KuroLauncherClient
 
 
     /// <summary>
-    /// 当前版本的背景图令牌，取不到启动器配置时退回内置值。
+    /// 新启动器的背景图令牌，在分级游戏配置的 <c>config.functionCode.background</c>，
+    /// 随游戏版本轮换（3.7.0 是 <c>51684874…</c>，11 月换成 <c>d5f20901…</c>）。
+    /// 路径取自新启动器网页缓存里请求过的地址。
+    /// </summary>
+    private async Task<string?> GetOfficialBackgroundTokenAsync(CancellationToken cancellationToken)
+    {
+        KuroOfficialGameIndex? index = await GetOfficialGameIndexAsync(cancellationToken);
+        return index?.Config?.FunctionCode?.Background;
+    }
+
+
+    /// <summary>
+    /// 旧启动器的背景图令牌，取不到启动器配置时退回内置值。
     /// </summary>
     private async Task<string> GetBackgroundTokenAsync(CancellationToken cancellationToken)
     {
