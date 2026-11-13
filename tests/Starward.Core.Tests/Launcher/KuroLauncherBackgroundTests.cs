@@ -255,6 +255,47 @@ public class KuroLauncherBackgroundTests
 
 
     /// <summary>
+    /// 首页资讯要走新启动器的 <c>launcher/app/…/official/information</c>，旧路只剩空内容
+    /// </summary>
+    [Fact]
+    public async Task GetInformationAsync_PrefersOfficialLauncherPath()
+    {
+        var handler = new StubHandler(url => url switch
+        {
+            _ when url.EndsWith("/launcher/app/50004_P7xcUZnEr1AXIGON25E6KjpOgTlVrg6e/G153/official/information/zh-Hant.json")
+                => """{"slideshow":[{"url":"https://example.invalid/new.png","jumpUrl":"https://example.invalid/","md5":"x","carouselNotes":"new"}]}""",
+            _ when url.Contains("/information/") => """{"slideshow":[{"url":"https://example.invalid/old.jpg"}]}""",
+            _ => null,
+        });
+        var client = new KuroLauncherClient(new HttpClient(handler));
+
+        KuroLauncherInformation? information = await client.GetInformationAsync("zh-Hant");
+
+        Assert.NotNull(information);
+        Assert.Equal("https://example.invalid/new.png", Assert.Single(information.Slideshow!).Url);
+        Assert.Single(handler.Requests);
+    }
+
+
+    /// <summary>
+    /// 新路不通时退回旧启动器的资讯
+    /// </summary>
+    [Fact]
+    public async Task GetInformationAsync_FallsBackToLegacyPath()
+    {
+        var handler = new StubHandler(url => url.EndsWith("/launcher/50004_obOHXFrFanqsaIEOmuKroCcbZkQRBC7c/G153/information/zh-Hant.json")
+            ? """{"slideshow":[{"url":"https://example.invalid/old.jpg"}]}"""
+            : null);
+        var client = new KuroLauncherClient(new HttpClient(handler));
+
+        KuroLauncherInformation? information = await client.GetInformationAsync("zh-Hant");
+
+        Assert.NotNull(information);
+        Assert.Equal("https://example.invalid/old.jpg", Assert.Single(information.Slideshow!).Url);
+    }
+
+
+    /// <summary>
     /// 按网址回 JSON，回 null 的网址当 404
     /// </summary>
     private sealed class StubHandler(Func<string, string?> responder) : HttpMessageHandler

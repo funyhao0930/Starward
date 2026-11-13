@@ -239,7 +239,10 @@ public class KuroLauncherClient
     /// <summary>
     /// 首页的轮播图与资讯，两个 CDN 都取不到时返回 null。
     /// <para/>
-    /// 与背景图同一族路径，按语言分文件。
+    /// 按语言分文件。新启动器（3.0.x）那一路优先：路径是
+    /// <c>launcher/app/{APP_ID}_{新 AppKey}/{GAME_ID}/official/information/{语言}.json</c>
+    /// （是 <c>app</c> 不是 <c>game</c>，与背景图不同），形状与旧版相同。
+    /// 旧启动器那份在 3.7.0 之后不再维护，只剩一张储值轮播、公告新闻都是空的，只在新路取不到时兜底。
     /// </summary>
     /// <param name="language">官方启动器的语言代码，见 <see cref="GetLanguageCode"/></param>
     public async Task<KuroLauncherInformation?> GetInformationAsync(string language, CancellationToken cancellationToken = default)
@@ -247,6 +250,24 @@ public class KuroLauncherClient
         if (string.IsNullOrWhiteSpace(language))
         {
             language = DEFAULT_LANGUAGE;
+        }
+        try
+        {
+            KuroLauncherInformation? information = await GetFromCdnAsync<KuroLauncherInformation>(
+                host => $"{host}/launcher/app/{APP_ID}_{OFFICIAL_APP_KEY}/{GAME_ID}/official/information/{language}.json",
+                cancellationToken);
+            if (information is not null)
+            {
+                return information;
+            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch
+        {
+            // 新路不通时走旧路
         }
         return await GetFromCdnAsync<KuroLauncherInformation>(
             host => $"{host}/launcher/{APP_ID}_{APP_KEY}/{GAME_ID}/information/{language}.json",
