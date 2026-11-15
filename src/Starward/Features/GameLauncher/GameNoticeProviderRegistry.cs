@@ -75,7 +75,7 @@ public class GameNoticeProviderRegistry
             return false;
         }
         HashSet<string> read = GetReadIds(key);
-        return board.Tabs.SelectMany(x => x.Items).Any(x => IsUnread(x, read));
+        return board.ReadableEntries.Any(x => x.NeedRedDot && !read.Contains(x.Id));
     }
 
 
@@ -103,7 +103,7 @@ public class GameNoticeProviderRegistry
     /// </summary>
     public static void SaveReadIds(GameKey key, IEnumerable<string> readIds, GameNoticeBoard board)
     {
-        var online = new HashSet<string>(board.Tabs.SelectMany(x => x.Items).Select(x => x.Id), StringComparer.Ordinal);
+        var online = new HashSet<string>(board.ReadableEntries.Select(x => x.Id), StringComparer.Ordinal);
         AppConfig.SetValue(string.Join('\n', readIds.Where(online.Contains).Distinct()), GetReadIdsSettingKey(key));
     }
 

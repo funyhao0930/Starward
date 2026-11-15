@@ -15,6 +15,140 @@ public class GameNoticeBoard
     /// </summary>
     public List<GameNoticeTab> Tabs { get; set; } = [];
 
+
+    /// <summary>
+    /// 版本活动日历，只有鸣潮有，没有时为 null。只有专属的公告窗口画它，通用窗口不理会。
+    /// </summary>
+    public GameNoticeCalendar? Calendar { get; set; }
+
+
+    /// <summary>
+    /// 公告板上所有会记看过没有的东西：每则公告，加上日历
+    /// </summary>
+    public IEnumerable<(string Id, bool NeedRedDot)> ReadableEntries =>
+        Tabs.SelectMany(x => x.Items).Select(x => (x.Id, x.NeedRedDot))
+            .Concat(Calendar is null ? [] : [(Calendar.Id, Calendar.NeedRedDot)]);
+
+}
+
+
+
+/// <summary>
+/// 版本活动日历：一张长图，图上画好了时间轴与活动卡片，
+/// 界面在上面叠一根表示现在的指针，再把每张卡片做成可点的热区。坐标都是相对于整张图的百分比。
+/// </summary>
+public class GameNoticeCalendar
+{
+
+    public string Id { get; set; } = "";
+
+
+    public bool NeedRedDot { get; set; }
+
+
+    public string BackgroundUrl { get; set; } = "";
+
+
+    /// <summary>
+    /// 时间轴的起讫时刻
+    /// </summary>
+    public DateTimeOffset TimelineStart { get; set; }
+
+
+    public DateTimeOffset TimelineEnd { get; set; }
+
+
+    /// <summary>
+    /// 指针最早停的时刻，现在比它早时停在这里
+    /// </summary>
+    public DateTimeOffset PointerStart { get; set; }
+
+
+    /// <summary>
+    /// 时间轴起点与终点在图上的横向百分比
+    /// </summary>
+    public double TimelineX1 { get; set; }
+
+
+    public double TimelineX2 { get; set; }
+
+
+    public List<GameNoticeCalendarNode> Nodes { get; set; } = [];
+
+
+    /// <summary>
+    /// 指针在图上的横向百分比：时间轴之前停在起点，之后停在终点，中间按时间线性内插
+    /// </summary>
+    public double GetPointerX(DateTimeOffset now)
+    {
+        DateTimeOffset at = now > PointerStart ? now : PointerStart;
+        if (TimelineEnd <= TimelineStart || at <= TimelineStart)
+        {
+            return TimelineX1;
+        }
+        if (at >= TimelineEnd)
+        {
+            return TimelineX2;
+        }
+        return TimelineX1 + (TimelineX2 - TimelineX1) * (at - TimelineStart).TotalMilliseconds / (TimelineEnd - TimelineStart).TotalMilliseconds;
+    }
+
+}
+
+
+
+/// <summary>
+/// 日历图上一块可点的热区
+/// </summary>
+public class GameNoticeCalendarNode
+{
+
+    /// <summary>
+    /// 点了要打开的公告
+    /// </summary>
+    public string NoticeId { get; set; } = "";
+
+
+    /// <summary>
+    /// 那则公告的状态
+    /// </summary>
+    public GameNoticeCalendarNodeStatus Status { get; set; }
+
+
+    /// <summary>
+    /// 左上与右下角，相对于整张图的百分比
+    /// </summary>
+    public double X1 { get; set; }
+
+
+    public double Y1 { get; set; }
+
+
+    public double X2 { get; set; }
+
+
+    public double Y2 { get; set; }
+
+}
+
+
+
+public enum GameNoticeCalendarNodeStatus
+{
+    /// <summary>
+    /// 已上架，可以打开
+    /// </summary>
+    Online = 1,
+
+    /// <summary>
+    /// 还没上架，提示敬请期待
+    /// </summary>
+    NotYetOnline = 2,
+
+    /// <summary>
+    /// 已下架
+    /// </summary>
+    Offline = 3,
 }
 
 

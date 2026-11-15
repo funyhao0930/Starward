@@ -1,6 +1,6 @@
 // 鸣潮游戏内公告板。数据由 Starward（KuroNoticeWindow）通过 WebView2 的消息送进来：
 //   → {action: 'ready'}                       页面就绪，请求公告板
-//   ← {type: 'init', tabs, text}              分页与公告
+//   ← {type: 'init', lang, tabs, calendar, text}  分页与公告；calendar 是日历（可能为 null）
 //   → {action: 'content', id}                 要一则公告的正文
 //   ← {type: 'content', id, banner, html}     正文；取不到时 html 为 null
 //   → {action: 'read', id} / {action: 'url', url} / {action: 'close'}
@@ -23,6 +23,13 @@
         + ` Q${cx + right * k} ${cy + bottom * k} ${cx} ${cy + bottom}`
         + ` Q${cx - left * k} ${cy + bottom * k} ${cx - left} ${cy}`
         + ` Q${cx - left * k} ${cy - top * k} ${cx} ${cy - top} Z`;
+
+    // 五角星，R 外径、r 内径
+    const STAR5 = (cx, cy, R, r) => Array.from({ length: 10 }, (_, i) => {
+        const radius = i % 2 === 0 ? R : r;
+        const angle = -Math.PI / 2 + i * Math.PI / 5;
+        return `${i === 0 ? 'M' : 'L'}${(cx + radius * Math.cos(angle)).toFixed(2)} ${(cy + radius * Math.sin(angle)).toFixed(2)}`;
+    }).join(' ') + ' Z';
 
     const ICONS = {
         // tag 1 公告：挂起来的告示板，里面一支喇叭和一颗星
@@ -78,19 +85,58 @@
             <path d="M22 13 L86 37 L35 79 Z" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="miter"/>
             <path d="M13 24 H82 L47.5 83 Z" fill="currentColor"/>
             <path d="${STAR(47.5, 47, 21, 14, 22, 14, 0.14)}" fill="var(--icon-cut)"/>`,
+        // 推荐分页：书签缎带，中间一颗五角星，两旁各一颗小星芒
+        recommend: `
+            <path d="M14.5 18 H74.5 V80.5 L44.5 66.5 L14.5 80.5 Z" fill="currentColor"/>
+            <rect x="43.7" y="18" width="1.6" height="11" fill="var(--icon-cut)"/>
+            <rect x="17.6" y="18" width="1.3" height="26" fill="var(--icon-cut)"/>
+            <rect x="70.1" y="18" width="1.3" height="26" fill="var(--icon-cut)"/>
+            <path d="${STAR5(44.5, 46.5, 16, 6.8)}" fill="var(--icon-cut)"/>
+            <path d="${STAR(26.5, 53.5, 6, 2.4, 6, 2.4, 0.18)}" fill="var(--icon-cut)"/>
+            <path d="${STAR(62.5, 53.5, 6, 2.4, 6, 2.4, 0.18)}" fill="var(--icon-cut)"/>`,
+        // 日历分页：挂两个环的月历，后面再叠一张，纸上三颗星芒
+        calendar: `
+            <rect x="20.5" y="31" width="58.5" height="49.5" rx="3" fill="currentColor" opacity="0.55"/>
+            <rect x="13.5" y="25" width="62" height="51.5" rx="3" fill="currentColor"/>
+            <rect x="13.5" y="38" width="62" height="1.4" fill="var(--icon-cut)"/>
+            <rect x="24.2" y="19.5" width="4.6" height="11.5" rx="2.3" fill="var(--icon-cut)"/>
+            <rect x="25.3" y="20.6" width="2.4" height="9.3" rx="1.2" fill="currentColor"/>
+            <rect x="58.3" y="19.5" width="4.6" height="11.5" rx="2.3" fill="var(--icon-cut)"/>
+            <rect x="59.4" y="20.6" width="2.4" height="9.3" rx="1.2" fill="currentColor"/>
+            <path d="${STAR(43, 57, 9.5, 5.5, 9.5, 5.5, 0.16)}" fill="var(--icon-cut)"/>
+            <path d="${STAR(28, 57, 4.6, 2.6, 4.6, 2.6, 0.18)}" fill="var(--icon-cut)"/>
+            <path d="${STAR(59.5, 57, 4.6, 2.6, 4.6, 2.6, 0.18)}" fill="var(--icon-cut)"/>`,
         // 关闭：四片刃，中间留一道十字缝
         close: `<path d="M6 6 L47 31 L47 47 L31 47 Z M94 6 L69 47 L53 47 L53 31 Z M6 94 L31 53 L47 53 L47 69 Z M94 94 L53 69 L53 53 L69 53 Z" fill="currentColor"/>`,
         // 返回
         back: `<path d="M82 10 L14 50 L82 90 L72 67 L44 50 L72 33 Z" fill="currentColor"/>`,
     };
 
-    // 鸣潮公告的 tag 对应的图标，没见过的 tag 用告示板
-    const TAG_ICONS = { 1: 'announce', 3: 'sparkles', 4: 'cart', 5: 'stopwatch', 6: 'origami', 10: 'info' };
+    // 鸣潮公告的 tag 对应的图标，没见过的 tag 用告示板。
+    // 1 公告、2 维护、3 活动、4 商城、5 限时活动、6 常驻玩法、7 唤取、8 新剧情、9 新玩法、10 资讯、11 周边、12 推荐
+    const TAG_ICONS = { 1: 'announce', 2: 'announce', 3: 'sparkles', 4: 'cart', 5: 'stopwatch', 6: 'origami', 7: 'recommend', 9: 'origami', 10: 'info', 11: 'cart', 12: 'recommend' };
+
+    // 分页名与提示，照游戏公告网页（aki/announcement/locales/{lang}.json）的写法
+    const LABELS = {
+        'zh-Hant': { recommend: '推薦', announce: '公告', info: '資訊', calendar: '日曆', tips: '提示', notPublic: '公告暫未公開\n敬請期待', unavailable: '公告已下架' },
+        'zh-Hans': { recommend: '推荐', announce: '公告', info: '资讯', calendar: '日历', tips: '提示', notPublic: '公告暂未公开\n敬请期待', unavailable: '公告已下架' },
+        en: { recommend: 'Highlights', announce: 'Info', info: 'News', calendar: 'Calendar', tips: 'Note', notPublic: 'Announcement not yet released. Stay tuned.', unavailable: 'This announcement is no longer available.' },
+        ja: { recommend: '注目', announce: 'お知らせ', info: 'ニュース', calendar: 'カレンダー', tips: '注意', notPublic: '未公開の内容です。\nお楽しみに。', unavailable: 'お知らせの掲載は終了しました' },
+        ko: { recommend: '추천', announce: '공지', info: '정보', calendar: '일정', tips: '알림', notPublic: '공지가 아직 공개되지 않았습니다.\n많은 기대 부탁드립니다.', unavailable: '게시가 종료된 공지사항입니다' },
+        fr: { recommend: 'À la une', announce: 'Informations', info: 'Actualités', calendar: 'Calendrier', tips: 'Info', notPublic: "L'annonce n'a pas encore été publiée.\nRestez à l'affût !", unavailable: "Cette annonce n'est plus disponible." },
+        de: { recommend: 'Highlights', announce: 'Ankündigungen', info: 'Neuigkeiten', calendar: 'Kalender', tips: 'Hinweis', notPublic: 'Noch nicht veröffentlicht.\nBleib dran!', unavailable: 'Diese Ankündigung ist nicht mehr verfügbar.' },
+        es: { recommend: 'Destacados', announce: 'Anuncios', info: 'Noticias', calendar: 'Calendario', tips: 'Aviso', notPublic: 'El anuncio aún no se ha publicado.\nMantente atento.', unavailable: 'El anuncio ya no está disponible.' },
+        th: { recommend: 'ไฮไลต์', announce: 'ประกาศ', info: 'ข่าว', calendar: 'ปฏิทิน', tips: 'แจ้งเตือน', notPublic: 'ยังไม่มีการประกาศอย่างเป็นทางการ\nโปรดติดตามต่อไป', unavailable: 'ประกาศถูกนำออกแล้ว' },
+        'pt-BR': { recommend: 'Destaques', announce: 'Anúncios', info: 'Notícias', calendar: 'Calendário', tips: 'Aviso', notPublic: 'O anúncio ainda não foi publicado.\nContinue acompanhando as novidades.', unavailable: 'Comunicado Removido' },
+    };
+
+    const label = (key) => (LABELS[state.lang] || LABELS.en)[key];
 
     const svg = (name) => `<svg viewBox="0 0 100 100" aria-hidden="true">${ICONS[name] || ICONS.announce}</svg>`;
 
     $('close').innerHTML = svg('close');
     $('back').innerHTML = svg('back');
+    $('popup-close').innerHTML = svg('close');
 
     // 标题列右边的同心弧线
     document.querySelector('.header-deco').innerHTML = [0, 1, 2, 3, 4].map(i => {
@@ -106,11 +152,14 @@
 
     // ---------- 状态 ----------
 
+    // mode：grid 卡片墙、detail 左清单右正文、calendar 日历（日历是最后一页，tab 等于 tabs.length）
     const state = {
         tabs: [],
         tab: 0,
         mode: 'grid',
         selected: null,
+        calendar: null,
+        lang: 'en',
         text: {},
     };
 
@@ -159,6 +208,15 @@
 
     const gridBar = new ScrollBar($('grid-scroll'), $('grid-bar'));
     const contentBar = new ScrollBar($('content-scroll'), $('content-bar'));
+    const calendarBar = new ScrollBar($('calendar-scroll'), $('calendar-bar'));
+
+    // 日历的卷轴跟游戏一样，只在卷动时浮出来
+    let calendarScrollTimer = 0;
+    $('calendar-scroll').addEventListener('scroll', () => {
+        $('calendar-bar').classList.add('scrolling');
+        clearTimeout(calendarScrollTimer);
+        calendarScrollTimer = setTimeout(() => $('calendar-bar').classList.remove('scrolling'), 600);
+    }, { passive: true });
 
     // ---------- 公告正文：远端来的 HTML，插入前清掉会执行的东西 ----------
 
@@ -174,6 +232,10 @@
                 }
                 for (const attr of [...child.attributes]) {
                     const name = attr.name.toLowerCase();
+                    // 3.8 起链接写成 browser:https://… / webView:https://…，前缀是游戏里的开启方式，这里一律用浏览器开
+                    if (name === 'href' && /^\s*(browser|webview):/i.test(attr.value)) {
+                        attr.value = attr.value.trim().replace(/^(browser|webview):/i, '');
+                    }
                     const value = attr.value.trim().toLowerCase();
                     if (name.startsWith('on') || name === 'srcdoc' || name === 'formaction'
                         || ((name === 'href' || name === 'src' || name === 'xlink:href') && !/^(https?:|data:image\/)/.test(value))) {
@@ -203,10 +265,56 @@
     }
 
     function renderTabs() {
-        $('tabs').innerHTML = state.tabs.map((tab, i) => `
-            <button class="tab${i === state.tab ? ' active' : ''}" data-index="${i}">
-                ${svg(tab.icon)}<span class="label">${escapeText(tab.label)}</span>${dot(tab.items.some(x => x.unread))}
+        const tabs = state.tabs.map((tab, i) => ({
+            index: i, icon: tab.icon, label: label(tab.key) || tab.label, unread: tab.items.some(x => x.unread),
+        }));
+        if (state.calendar) {
+            tabs.push({ index: state.tabs.length, icon: 'calendar', label: label('calendar'), unread: state.calendar.unread });
+        }
+        $('tabs').innerHTML = tabs.map(tab => `
+            <button class="tab${tab.index === state.tab ? ' active' : ''}" data-index="${tab.index}">
+                ${svg(tab.icon)}<span class="label">${escapeText(tab.label)}</span>${dot(tab.unread)}
             </button>`).join('');
+    }
+
+    function isCalendarTab(index) {
+        return !!state.calendar && index === state.tabs.length;
+    }
+
+    // 日历是一张长图，图上的时间轴与卡片都是画好的；这里只叠指针与热区。坐标都是对整张图的百分比
+    function renderCalendar() {
+        const calendar = state.calendar;
+        if (!calendar) return;
+        if ($('calendar-image').getAttribute('src') !== calendar.image) {
+            $('calendar-image').src = calendar.image;
+            $('calendar-image').addEventListener('load', () => calendarBar.update(), { once: true });
+        }
+        $('calendar-nodes').innerHTML = calendar.nodes.map((node, i) => `
+            <button class="node" data-index="${i}" style="left:${node.x1}%;top:${node.y1}%;width:${node.x2 - node.x1}%;height:${node.y2 - node.y1}%"></button>`).join('');
+        $('calendar-pointer').style.left = `${calendar.pointer}%`;
+        $('calendar-date').textContent = calendar.date;
+        $('calendar-scroll').scrollTop = 0;
+        requestAnimationFrame(() => calendarBar.update());
+    }
+
+    // 热区点下去：上架的打开那则公告；还没上架、已下架或找不到的跳提示框
+    function openCalendarNode(node) {
+        if (node.status === 2) return showPopup(label('notPublic'));
+        if (node.status === 3) return showPopup(label('unavailable'));
+        const index = state.tabs.findIndex(tab => tab.items.some(x => x.id === node.id));
+        if (index < 0) return showPopup(label('notPublic'));
+        state.tab = index;
+        select(node.id);
+    }
+
+    function showPopup(text) {
+        $('popup-title').textContent = label('tips');
+        $('popup-text').textContent = text;
+        $('popup').classList.add('show');
+    }
+
+    function hidePopup() {
+        $('popup').classList.remove('show');
     }
 
     function renderGrid() {
@@ -232,13 +340,21 @@
 
     function render() {
         board.classList.toggle('detail', state.mode === 'detail');
+        board.classList.toggle('calendar', state.mode === 'calendar');
+        // 打开日历就算看过，先记下来，分页上的红点才会跟着这次重画消失
+        if (state.mode === 'calendar' && state.calendar && state.calendar.unread) {
+            state.calendar.unread = false;
+            post({ action: 'read', id: state.calendar.id });
+        }
         renderTabs();
         if (state.mode === 'grid') {
             renderGrid();
-        } else {
+        } else if (state.mode === 'detail') {
             renderList();
+        } else {
+            renderCalendar();
         }
-        const empty = currentTab().items.length === 0;
+        const empty = state.mode !== 'calendar' && currentTab().items.length === 0;
         $('message').textContent = empty ? (state.text.empty || '') : '';
         $('message').classList.toggle('show', empty);
     }
@@ -290,8 +406,14 @@
     }
 
     function switchTab(index) {
-        if (index === state.tab || !state.tabs[index]) return;
+        if (index === state.tab || !(state.tabs[index] || isCalendarTab(index))) return;
         state.tab = index;
+        if (isCalendarTab(index)) {
+            state.mode = 'calendar';
+            state.selected = null;
+            render();
+            return;
+        }
         const items = currentTab().items;
         if (state.mode === 'detail' && items.length > 0) {
             select(items[0].id);
@@ -302,7 +424,9 @@
         }
     }
 
+    // 日历页的返回回到第一页的卡片墙
     function back() {
+        if (state.mode === 'calendar') state.tab = 0;
         state.mode = 'grid';
         state.selected = null;
         render();
@@ -340,6 +464,15 @@
         post({ action: 'url', url: link.href });
     });
 
+    $('calendar-nodes').addEventListener('click', (e) => {
+        const node = e.target.closest('.node');
+        if (node && state.calendar) openCalendarNode(state.calendar.nodes[Number(node.dataset.index)]);
+    });
+
+    $('popup').addEventListener('click', (e) => {
+        if (e.target === $('popup') || e.target.closest('.popup-close')) hidePopup();
+    });
+
     $('back').addEventListener('click', back);
     $('close').addEventListener('click', () => post({ action: 'close' }));
 
@@ -350,8 +483,12 @@
 
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
-            post({ action: 'close' });
-        } else if (e.key === 'Backspace' && state.mode === 'detail') {
+            if ($('popup').classList.contains('show')) {
+                hidePopup();
+            } else {
+                post({ action: 'close' });
+            }
+        } else if (e.key === 'Backspace' && state.mode !== 'grid') {
             back();
         }
     });
@@ -366,8 +503,10 @@
             if (message.type === 'init') {
                 state.tabs = message.tabs || [];
                 state.text = message.text || {};
+                state.lang = message.lang || 'en';
+                state.calendar = message.calendar || null;
                 state.tab = 0;
-                state.mode = 'grid';
+                state.mode = isCalendarTab(0) ? 'calendar' : 'grid';
                 render();
                 document.body.classList.add('ready');
             } else if (message.type === 'content') {

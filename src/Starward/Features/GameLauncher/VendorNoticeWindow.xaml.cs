@@ -11,6 +11,7 @@ using Microsoft.Web.WebView2.Core;
 using Starward.Core.Games;
 using Starward.Core.HoYoPlay;
 using Starward.Core.Launcher;
+using Starward.Core.Launcher.Kuro;
 using Starward.Core.Localization;
 using Starward.Frameworks;
 using Starward.Helpers;
@@ -496,6 +497,8 @@ public sealed partial class VendorNoticeWindow : WindowEx
             GamePostType.POST_TYPE_ACTIVITY => CoreLang.PostType_Activity,
             GamePostType.POST_TYPE_ANNOUNCE => CoreLang.PostType_Announcement,
             GamePostType.POST_TYPE_INFO => CoreLang.PostType_Information,
+            // 鸣潮的「推荐」放的是唤取与版本活动，通用窗口借「活动」的字
+            KuroNoticeMapper.RecommendTabType => CoreLang.PostType_Activity,
             _ => postType,
         };
     }

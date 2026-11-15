@@ -29,9 +29,11 @@ using Windows.System;
 namespace Starward.Features.GameLauncher;
 
 /// <summary>
-/// 鸣潮的游戏内公告板，照游戏里的样子画：卡片墙、点开后左边标题卡右边正文。
+/// 鸣潮的游戏内公告板，照游戏里的样子画：推荐、公告、资讯三页卡片墙（点开后左边标题卡右边正文），
+/// 加上一页版本活动日历。
 /// <para/>
-/// 游戏里那块是引擎原生画的，不是网页，没有官方页面可以嵌。这里用 WebView2 跑一页自己的网页
+/// 3.7 以前游戏里那块是引擎原生画的；3.8 起改成游戏 SDK 内嵌的网页，现在由 <see cref="KuroAnnouncementWindow"/> 直接嵌入，
+/// 本窗口只在官方网页打不开时顶上，数据与那页读的同一份。这里用 WebView2 跑一页自己的网页
 /// （<c>KuroNotice/</c>），尺寸与颜色照游戏截图量出来；字用游戏 SDK 自带的文鼎方新书 H7，
 /// 从本机的游戏目录读，没装游戏时网页退回系统字体。网页、样式、脚本与字体都由本窗口
 /// 在 <see cref="Origin"/> 这个假网址下供给，不经网络；公告数据与正文由 <see cref="KuroGameNoticeProvider"/> 取。
@@ -399,18 +401,27 @@ public sealed partial class KuroNoticeWindow : WindowEx
                     ["unread"] = GameNoticeProviderRegistry.IsUnread(item, _readIds),
                 });
             }
+            // 分页名优先用网页里照游戏抄的那套（按 lang），这里给的是没有那种语言时的备援
+            (string key, string label) = tab.Type switch
+            {
+                KuroNoticeMapper.RecommendTabType => ("recommend", CoreLang.PostType_Activity),
+                GamePostType.POST_TYPE_INFO => ("info", CoreLang.PostType_Information),
+                _ => ("announce", CoreLang.PostType_Announcement),
+            };
             tabs.Add(new JsonObject
             {
-                ["key"] = tab.Type,
-                ["label"] = tab.Type is GamePostType.POST_TYPE_INFO ? CoreLang.PostType_Information : CoreLang.PostType_Announcement,
-                ["icon"] = tab.Type is GamePostType.POST_TYPE_INFO ? "info" : "announce",
+                ["key"] = key,
+                ["label"] = label,
+                ["icon"] = key,
                 ["items"] = items,
             });
         }
         var init = new JsonObject
         {
             ["type"] = "init",
+            ["lang"] = KuroLauncherClient.GetLanguageCode(),
             ["tabs"] = tabs,
+            ["calendar"] = GetCalendarJson(_board?.Calendar),
             ["text"] = new JsonObject
             {
                 ["empty"] = message ?? Lang.HoyolabToolboxPage_NoData,
@@ -419,6 +430,46 @@ public sealed partial class KuroNoticeWindow : WindowEx
         };
         WebView_Notice.CoreWebView2.PostWebMessageAsJson(init.ToJsonString());
         ShowPage();
+    }
+
+
+
+    /// <summary>
+    /// 日历送给网页的样子。指针位置在这里按打开时的时刻算好，网页开着的这段时间不再移动。
+    /// </summary>
+    private JsonObject? GetCalendarJson(GameNoticeCalendar? calendar)
+    {
+        if (calendar is null)
+        {
+            return null;
+        }
+        DateTimeOffset now = DateTimeOffset.Now;
+        DateTimeOffset pointerTime = now > calendar.PointerStart ? now : calendar.PointerStart;
+        // 官方网页法、德、西、泰、葡语写日在前
+        string lang = KuroLauncherClient.GetLanguageCode();
+        string dateFormat = lang is "fr" or "de" or "es" or "th" or "pt-BR" ? "dd/MM" : "MM/dd";
+        var nodes = new JsonArray();
+        foreach (GameNoticeCalendarNode node in calendar.Nodes)
+        {
+            nodes.Add(new JsonObject
+            {
+                ["id"] = node.NoticeId,
+                ["status"] = (int)node.Status,
+                ["x1"] = node.X1,
+                ["y1"] = node.Y1,
+                ["x2"] = node.X2,
+                ["y2"] = node.Y2,
+            });
+        }
+        return new JsonObject
+        {
+            ["id"] = calendar.Id,
+            ["image"] = calendar.BackgroundUrl,
+            ["unread"] = calendar.NeedRedDot && !_readIds.Contains(calendar.Id),
+            ["pointer"] = calendar.GetPointerX(now),
+            ["date"] = pointerTime.ToLocalTime().ToString(dateFormat, System.Globalization.CultureInfo.InvariantCulture),
+            ["nodes"] = nodes,
+        };
     }
 
 

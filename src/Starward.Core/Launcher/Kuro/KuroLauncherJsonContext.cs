@@ -11,6 +11,7 @@ namespace Starward.Core.Launcher.Kuro;
 [JsonSerializable(typeof(KuroLauncherInformation))]
 [JsonSerializable(typeof(KuroGameNoticeList))]
 [JsonSerializable(typeof(KuroGameNoticeContent))]
+[JsonSerializable(typeof(KuroGameNoticeFeed))]
 [JsonSerializable(typeof(KuroResourceIndex))]
 [JsonSerializable(typeof(KuroLauncherDownloadConfig))]
 [JsonSerializable(typeof(KuroPredownloadMarker))]

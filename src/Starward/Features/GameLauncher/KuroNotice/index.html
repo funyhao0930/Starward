@@ -32,7 +32,31 @@
         </div>
         <div class="scrollbar content-bar" id="content-bar"><div class="thumb"></div></div>
 
+        <!-- 日历：长图卷动，热区跟着图走；指针固定不动 -->
+        <div class="calendar-view" id="calendar-view">
+            <div class="calendar-scroll" id="calendar-scroll">
+                <div class="calendar-sheet">
+                    <img id="calendar-image" alt="" draggable="false">
+                    <div class="calendar-nodes" id="calendar-nodes"></div>
+                </div>
+            </div>
+            <div class="calendar-pointer" id="calendar-pointer">
+                <div class="calendar-tags"><span class="date" id="calendar-date"></span><span class="now">NOW</span></div>
+                <svg class="calendar-spark" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 0 Q11 9 20 10 Q11 11 10 20 Q9 11 0 10 Q9 9 10 0 Z"/></svg>
+            </div>
+            <div class="scrollbar calendar-bar" id="calendar-bar"><div class="thumb"></div></div>
+        </div>
+
         <div class="message" id="message"></div>
+
+        <!-- 日历热区点到还没上架的公告时的提示框 -->
+        <div class="popup" id="popup">
+            <div class="popup-box">
+                <div class="popup-title" id="popup-title"></div>
+                <button class="icon-button popup-close" id="popup-close" aria-label="close"></button>
+                <div class="popup-text" id="popup-text"></div>
+            </div>
+        </div>
     </div>
     <script src="notice.js"></script>
 </body>

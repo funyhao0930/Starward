@@ -329,6 +329,82 @@ public class KuroLauncherClient
 
 
     /// <summary>
+    /// 3.8 起游戏内公告板网页读的那份数据，推荐、公告、资讯、日历连同正文都在里面。这种语言没有时退回英文。
+    /// <para/>
+    /// 网页带的 serverId 是登录后的游戏服务器（亚服是 <c>919752ae…</c>），但这份文件各服相同，
+    /// 用 <see cref="NOTICE_SERVER_ID"/> 取到的内容一样。
+    /// </summary>
+    /// <param name="language">官方启动器的语言代码，见 <see cref="GetLanguageCode"/></param>
+    public async Task<KuroGameNoticeFeed?> GetGameNoticeFeedAsync(string language, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(language))
+        {
+            language = DEFAULT_LANGUAGE;
+        }
+        try
+        {
+            return await GetFromCdnAsync<KuroGameNoticeFeed>(NoticeHosts, host => $"{host}/gamenotice/{GAME_ID}/{NOTICE_SERVER_ID}/{language}.json", cancellationToken);
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode is HttpStatusCode.NotFound && language != DEFAULT_LANGUAGE)
+        {
+            return await GetFromCdnAsync<KuroGameNoticeFeed>(NoticeHosts, host => $"{host}/gamenotice/{GAME_ID}/{NOTICE_SERVER_ID}/{DEFAULT_LANGUAGE}.json", cancellationToken);
+        }
+    }
+
+
+    /// <summary>
+    /// 与 <see cref="GetGameNoticeFeedAsync"/> 同一份，原样返回 JSON 文本，给嵌入的官方公告网页用。这种语言没有时退回英文。
+    /// </summary>
+    /// <param name="language">官方启动器的语言代码，见 <see cref="GetLanguageCode"/></param>
+    public async Task<string> GetGameNoticeFeedJsonAsync(string language, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(language))
+        {
+            language = DEFAULT_LANGUAGE;
+        }
+        try
+        {
+            return await GetStringFromCdnAsync(NoticeHosts, host => $"{host}/gamenotice/{GAME_ID}/{NOTICE_SERVER_ID}/{language}.json", cancellationToken);
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode is HttpStatusCode.NotFound && language != DEFAULT_LANGUAGE)
+        {
+            return await GetStringFromCdnAsync(NoticeHosts, host => $"{host}/gamenotice/{GAME_ID}/{NOTICE_SERVER_ID}/{DEFAULT_LANGUAGE}.json", cancellationToken);
+        }
+    }
+
+
+    /// <summary>
+    /// 游戏里打开的公告网页（3.8 起），不在游戏里也能开
+    /// </summary>
+    public const string ANNOUNCEMENT_PAGE = "https://aki-gm-resources-oversea.aki-game.net/aki/announcement/";
+
+
+    /// <summary>
+    /// 网页认得的几个特殊服务器标识之一（网页里叫 PROD）。用它开网页时，网页不向服务器存取已读，
+    /// 而是透过 jsBridge 向宿主要未读清单（<c>redPoint</c>）、看过一则就把新的未读清单交回（<c>save_redPoint</c>），
+    /// 已读才能由 Starward 记住。这个标识在 CDN 上没有公告数据，数据请求由宿主拦下来改给 <see cref="GetGameNoticeFeedJsonAsync"/> 那份。
+    /// </summary>
+    public const string ANNOUNCEMENT_BRIDGE_SERVER_ID = "e7e8965f8a6ff61b8d10b7dcc742afd5";
+
+
+    /// <summary>
+    /// 网页按 <see cref="ANNOUNCEMENT_BRIDGE_SERVER_ID"/> 去取公告数据的地址前缀，后面接 <c>{语言}.json</c>
+    /// </summary>
+    public static string AnnouncementFeedPrefix => $"{NoticeHosts[0]}/gamenotice/{GAME_ID}/{ANNOUNCEMENT_BRIDGE_SERVER_ID}/";
+
+
+    /// <summary>
+    /// 嵌入用的公告网页地址。网页没有 role_id 时当成还没登录，只显示长期公告，所以给一个假的；
+    /// 它只拿来判断有没有登录，不会送到任何地方（统计请求由宿主拦掉）。
+    /// </summary>
+    /// <param name="language">官方启动器的语言代码，见 <see cref="GetLanguageCode"/></param>
+    public static string GetAnnouncementPageUrl(string language)
+    {
+        return $"{ANNOUNCEMENT_PAGE}index.html?server_id={ANNOUNCEMENT_BRIDGE_SERVER_ID}&lang={Uri.EscapeDataString(language)}&svr_area=global&game_id={GAME_ID}&platform=PC&role_id=1";
+    }
+
+
+    /// <summary>
     /// 一则游戏内公告的正文。这种语言没有时退回英文。
     /// </summary>
     /// <param name="contentPrefixes">取自 <see cref="KuroGameNotice.ContentPrefix"/>，主站在前</param>
@@ -356,6 +432,29 @@ public class KuroLauncherClient
     private Task<T?> GetFromCdnAsync<T>(Func<string, string> urlFactory, CancellationToken cancellationToken) where T : class
     {
         return GetFromCdnAsync<T>(Hosts, urlFactory, cancellationToken);
+    }
+
+
+    private async Task<string> GetStringFromCdnAsync(IReadOnlyList<string> hosts, Func<string, string> urlFactory, CancellationToken cancellationToken)
+    {
+        Exception? lastException = null;
+        foreach (string host in hosts)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            try
+            {
+                return await _httpClient.GetStringAsync(urlFactory(host), cancellationToken);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                lastException = ex;
+            }
+        }
+        throw lastException ?? new HttpRequestException("No notice host.");
     }
 
 

@@ -48,14 +48,40 @@ internal class KuroGameNoticeProvider : IGameNoticeProvider
         string cacheKey = $"{nameof(KuroGameNoticeProvider)}_{language}";
         if (!_memoryCache.TryGetValue(cacheKey, out GameNoticeBoard? board))
         {
-            KuroGameNoticeList? list = await _client.GetGameNoticeListAsync(cancellationToken);
-            board = KuroNoticeMapper.ToNoticeBoard(list, language, DateTimeOffset.Now);
+            board = await GetFeedBoardAsync(language, cancellationToken);
+            if (board is null)
+            {
+                // 3.8 以前的旧清单还在，新数据取不到时至少还有公告与资讯
+                KuroGameNoticeList? list = await _client.GetGameNoticeListAsync(cancellationToken);
+                board = KuroNoticeMapper.ToNoticeBoard(list, language, DateTimeOffset.Now);
+            }
             if (board is not null)
             {
                 _memoryCache.Set(cacheKey, board, TimeSpan.FromMinutes(1));
             }
         }
         return board;
+    }
+
+
+    /// <summary>
+    /// 3.8 起公告板网页读的那份，推荐与日历都在里面。取不到时返回 null，交给旧清单兜底。
+    /// </summary>
+    private async Task<GameNoticeBoard?> GetFeedBoardAsync(string language, CancellationToken cancellationToken)
+    {
+        try
+        {
+            KuroGameNoticeFeed? feed = await _client.GetGameNoticeFeedAsync(language, cancellationToken);
+            return KuroNoticeMapper.ToNoticeBoard(feed, DateTimeOffset.Now);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch
+        {
+            return null;
+        }
     }
 
 
@@ -74,6 +100,11 @@ internal class KuroGameNoticeProvider : IGameNoticeProvider
     /// </summary>
     public async Task<KuroGameNoticeContent?> GetContentAsync(GameNoticeItem item, CancellationToken cancellationToken = default)
     {
+        // 新数据的正文随清单一起来了
+        if (item.ContentHtml is not null)
+        {
+            return new KuroGameNoticeContent { TextContent = item.ContentHtml, Banner = item.BannerUrl };
+        }
         if (item.ContentUrls.Count is 0)
         {
             return null;

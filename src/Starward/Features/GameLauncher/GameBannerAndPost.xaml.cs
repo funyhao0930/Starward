@@ -612,18 +612,24 @@ public sealed partial class GameBannerAndPost : UserControl
                     }.Activate(),
                 }.Activate();
             }
-            else if (KuroNoticeWindow.Supports(CurrentGameKey))
+            else if (KuroAnnouncementWindow.Supports(CurrentGameKey))
             {
-                // 鸣潮的公告板照游戏里的样子画；网页打不开时退回通用的公告板
+                // 鸣潮 3.8 起游戏内公告也是网页，直接嵌入；官方网页打不开时退回照游戏样子画的公告板，
+                // 那块再打不开才用通用的公告板
                 GameKey key = CurrentGameKey;
-                new KuroNoticeWindow
+                new KuroAnnouncementWindow
                 {
                     CurrentGameKey = key,
                     ParentWindowHandle = parentWindowHandle,
-                    Fallback = () => new VendorNoticeWindow
+                    Fallback = () => new KuroNoticeWindow
                     {
                         CurrentGameKey = key,
                         ParentWindowHandle = parentWindowHandle,
+                        Fallback = () => new VendorNoticeWindow
+                        {
+                            CurrentGameKey = key,
+                            ParentWindowHandle = parentWindowHandle,
+                        }.Activate(),
                     }.Activate(),
                 }.Activate();
             }

@@ -249,6 +249,7 @@ public sealed class VendorNoticeTheme
             GamePostType.POST_TYPE_ANNOUNCE => "UPDATES",
             GamePostType.POST_TYPE_ACTIVITY => "EVENTS",
             GamePostType.POST_TYPE_INFO => "NEWS",
+            Core.Launcher.Kuro.KuroNoticeMapper.RecommendTabType => "HIGHLIGHTS",
             _ => "",
         };
     }

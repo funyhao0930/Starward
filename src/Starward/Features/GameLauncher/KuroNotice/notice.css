@@ -555,6 +555,223 @@ button {
     }
 }
 
+/* ---------- 日历 ---------- */
+
+/* 日历页与详细模式一样宽；图就铺满整块公告板的宽度 */
+.board.calendar {
+    width: calc(1832 * var(--u));
+}
+
+.board.calendar .back {
+    display: block;
+}
+
+.board.calendar .grid-scroll,
+.board.calendar .grid-bar,
+.board.calendar .grid-deco {
+    display: none;
+}
+
+.calendar-view {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(138 * var(--u));
+    height: calc(812 * var(--u));
+    display: none;
+}
+
+.board.calendar .calendar-view {
+    display: block;
+}
+
+.calendar-scroll {
+    position: absolute;
+    inset: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: none;
+    /* 底部渐渐淡进公告板的底色，最下面一小段全白，与游戏内一样 */
+    -webkit-mask-image: linear-gradient(to bottom, #000 0, #000 calc(100% - 100 * var(--u)), transparent calc(100% - 28 * var(--u)));
+}
+
+.calendar-scroll::-webkit-scrollbar {
+    display: none;
+}
+
+.calendar-sheet {
+    position: relative;
+    width: 100%;
+    /* 图还没载入时先撑出一块深紫，免得一片空白 */
+    min-height: 100%;
+    background: #2C2650;
+}
+
+.calendar-sheet img {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+.calendar-nodes {
+    position: absolute;
+    inset: 0;
+}
+
+.calendar-nodes .node {
+    position: absolute;
+    border-radius: calc(8 * var(--u));
+    transition: background-color 0.12s;
+}
+
+.calendar-nodes .node:hover {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+/* 现在的指针：一条细金线，上头一颗 NOW 胶囊，底下一颗小星芒。固定不动，不跟着图卷 */
+.calendar-pointer {
+    position: absolute;
+    top: 0;
+    width: 0;
+    height: calc(780 * var(--u));
+    pointer-events: none;
+    z-index: 2;
+}
+
+.calendar-pointer::before {
+    content: "";
+    position: absolute;
+    left: calc(-1 * var(--u));
+    top: 0;
+    bottom: calc(10 * var(--u));
+    width: calc(2 * var(--u));
+    background: rgba(196, 165, 124, 0.85);
+}
+
+.calendar-spark {
+    position: absolute;
+    left: calc(-9 * var(--u));
+    bottom: 0;
+    width: calc(18 * var(--u));
+    height: calc(18 * var(--u));
+    fill: #C4A57C;
+}
+
+.calendar-tags {
+    position: absolute;
+    left: 0;
+    top: 0;
+    transform: translate(-50%, -50%);
+    white-space: nowrap;
+    pointer-events: auto;
+    cursor: default;
+}
+
+.calendar-tags span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: calc(20 * var(--u));
+    line-height: 1;
+    color: #F2F2F2;
+    border-radius: calc(999 * var(--u));
+}
+
+.calendar-tags .now {
+    padding: calc(4 * var(--u)) calc(10 * var(--u));
+    background: #C4A57C;
+}
+
+/* 游戏里指到胶囊上会换成当天日期 */
+.calendar-tags .date {
+    padding: calc(4 * var(--u)) calc(14 * var(--u));
+    background: #DCAD6C;
+    display: none;
+}
+
+.calendar-tags:hover .date {
+    display: flex;
+}
+
+.calendar-tags:hover .now {
+    display: none;
+}
+
+/* 卷轴压在图上，白色，只在卷动时浮出来 */
+.scrollbar.calendar-bar {
+    left: calc(1797 * var(--u));
+    top: calc(20 * var(--u));
+    bottom: calc(80 * var(--u));
+    width: calc(9 * var(--u));
+    opacity: 0;
+    transition: opacity 0.3s;
+    z-index: 3;
+}
+
+.scrollbar.calendar-bar.scrolling,
+.scrollbar.calendar-bar:hover {
+    opacity: 1;
+}
+
+.calendar-bar::before {
+    background: rgba(255, 255, 255, 0.25);
+}
+
+.calendar-bar .thumb {
+    background: #FFFFFF;
+}
+
+
+/* ---------- 提示框 ---------- */
+
+.popup {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.45);
+}
+
+.popup.show {
+    display: flex;
+}
+
+.popup-box {
+    position: relative;
+    width: calc(760 * var(--u));
+    min-height: calc(330 * var(--u));
+    padding: calc(36 * var(--u)) calc(60 * var(--u)) calc(56 * var(--u));
+    background: var(--board-bg);
+    border-radius: calc(10 * var(--u));
+    box-shadow: 0 0 0 calc(2 * var(--u)) #E2DCCF, 0 calc(6 * var(--u)) calc(30 * var(--u)) rgba(0, 0, 0, 0.35);
+    color: var(--text);
+    text-align: center;
+}
+
+.popup-title {
+    font-size: calc(34 * var(--u));
+    letter-spacing: calc(3 * var(--u));
+    padding-bottom: calc(24 * var(--u));
+    border-bottom: calc(1 * var(--u)) solid #DCD6C8;
+}
+
+.popup-close {
+    top: calc(30 * var(--u));
+    right: calc(30 * var(--u));
+    width: calc(40 * var(--u));
+    height: calc(40 * var(--u));
+}
+
+.popup-text {
+    margin-top: calc(56 * var(--u));
+    font-size: calc(30 * var(--u));
+    line-height: 1.4;
+    white-space: pre-line;
+}
+
+
 .message {
     position: absolute;
     left: 0;
