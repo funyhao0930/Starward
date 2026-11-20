@@ -2981,4 +2981,10 @@
   <data name="MaaEndButton_ChangePath" xml:space="preserve">
     <value>更换位置</value>
   </data>
+  <data name="GachaLogPage_SyncFromZZZOfficialGachaStats" xml:space="preserve">
+    <value>从官方调频统计补齐 S 级记录</value>
+  </data>
+  <data name="ZZZGachaService_OfficialGachaStatsResult" xml:space="preserve">
+    <value>从官方调频统计获取 {0} 条 S 级记录，本地记录开始前的抽数已补进统计</value>
+  </data>
 </root>

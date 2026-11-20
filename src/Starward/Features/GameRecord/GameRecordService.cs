@@ -979,6 +979,36 @@ internal class GameRecordService
     }
 
 
+    public async Task<ZZZOfficialGachaIndex> GetZZZOfficialGachaIndexAsync(GameRecordRole role, string? language = null, CancellationToken cancellationToken = default)
+    {
+        PrepareZZZOfficialGachaClient(role, language);
+        return await _gameRecordClient.GetZZZOfficialGachaIndexAsync(role, cancellationToken);
+    }
+
+
+    public async Task<ZZZOfficialGachaPoolList> GetZZZOfficialGachaPoolsAsync(GameRecordRole role, int gachaType, IReadOnlyCollection<string>? versions, string? language = null, CancellationToken cancellationToken = default)
+    {
+        PrepareZZZOfficialGachaClient(role, language);
+        return await _gameRecordClient.GetZZZOfficialGachaPoolsAsync(role, gachaType, versions, cancellationToken);
+    }
+
+
+    private void PrepareZZZOfficialGachaClient(GameRecordRole role, string? language)
+    {
+        ArgumentNullException.ThrowIfNull(role);
+        // 调频统计工具目前只有 HoYoLAB 版
+        if (!(role.GameBiz?.EndsWith("_global", StringComparison.OrdinalIgnoreCase) ?? false))
+        {
+            throw new NotSupportedException("ZZZ official gacha stats tool is only available on HoYoLAB.");
+        }
+        IsHoyolab = true;
+        if (!string.IsNullOrWhiteSpace(language))
+        {
+            Language = language;
+        }
+    }
+
+
 
 
     #endregion

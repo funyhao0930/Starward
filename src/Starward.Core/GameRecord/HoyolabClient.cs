@@ -774,6 +774,46 @@ public class HoyolabClient : GameRecordClient
     }
 
 
+    private const string ZZZOfficialGachaApiBase = "https://sg-act-public-api.hoyolab.com/event/nap_gacha_record/api/zzz/";
+
+
+    private HttpRequestMessage CreateZZZOfficialGachaRequest(GameRecordRole role, string url)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Get, url);
+        request.Headers.Add(Cookie, role.Cookie);
+        request.Headers.Add(Referer, "https://act.hoyolab.com/");
+        request.Headers.Add(x_rpc_app_version, AppVersion);
+        request.Headers.Add(x_rpc_client_type, "5");
+        request.Headers.Add(x_rpc_device_id, DeviceId);
+        request.Headers.Add(x_rpc_device_fp, DeviceFp);
+        return request;
+    }
+
+
+    /// <summary>
+    /// 绝区零调频统计工具：各频段总抽数与当前垫抽
+    /// </summary>
+    public override async Task<ZZZOfficialGachaIndex> GetZZZOfficialGachaIndexAsync(GameRecordRole role, CancellationToken cancellationToken = default)
+    {
+        var url = $"{ZZZOfficialGachaApiBase}index?uid={role.Uid}&region={role.Region}&lang={Language}";
+        var request = CreateZZZOfficialGachaRequest(role, url);
+        return await CommonSendAsync<ZZZOfficialGachaIndex>(request, cancellationToken);
+    }
+
+
+    /// <summary>
+    /// 绝区零调频统计工具：卡池的 S 级出货
+    /// </summary>
+    public override async Task<ZZZOfficialGachaPoolList> GetZZZOfficialGachaPoolsAsync(GameRecordRole role, int gachaType, IReadOnlyCollection<string>? versions, CancellationToken cancellationToken = default)
+    {
+        var url = versions is { Count: > 0 }
+            ? $"{ZZZOfficialGachaApiBase}hist_pool_stat?uid={role.Uid}&region={role.Region}&lang={Language}&gacha_type={gachaType}&vers={string.Join(',', versions)}"
+            : $"{ZZZOfficialGachaApiBase}cur_pool_stat?uid={role.Uid}&region={role.Region}&lang={Language}&gacha_type={gachaType}";
+        var request = CreateZZZOfficialGachaRequest(role, url);
+        return await CommonSendAsync<ZZZOfficialGachaPoolList>(request, cancellationToken);
+    }
+
+
     /// <summary>
     /// 式舆防卫战
     /// </summary>

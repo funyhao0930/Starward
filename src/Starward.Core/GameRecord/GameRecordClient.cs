@@ -538,6 +538,24 @@ public abstract class GameRecordClient
 
 
     /// <summary>
+    /// 绝区零调频统计工具：各频段总抽数与当前垫抽
+    /// </summary>
+    public virtual Task<ZZZOfficialGachaIndex> GetZZZOfficialGachaIndexAsync(GameRecordRole role, CancellationToken cancellationToken = default)
+    {
+        throw new NotSupportedException("ZZZ official gacha stats tool is only available on HoYoLAB.");
+    }
+
+
+    /// <summary>
+    /// 绝区零调频统计工具：卡池的 S 级出货。versions 为空时是当前版本（cur_pool_stat），否则为历史版本（hist_pool_stat，一次最多 8 个版本）
+    /// </summary>
+    public virtual Task<ZZZOfficialGachaPoolList> GetZZZOfficialGachaPoolsAsync(GameRecordRole role, int gachaType, IReadOnlyCollection<string>? versions, CancellationToken cancellationToken = default)
+    {
+        throw new NotSupportedException("ZZZ official gacha stats tool is only available on HoYoLAB.");
+    }
+
+
+    /// <summary>
     /// 绳网月报总结
     /// </summary>
     /// <param name="role"></param>

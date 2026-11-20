@@ -8551,5 +8551,23 @@ namespace Starward.Language {
                 return ResourceManager.GetString("MaaEndButton_ChangePath", resourceCulture);
             }
         }
+    
+        /// <summary>
+        ///   Fill S-Rank History from HoYoLAB Signal Search Stats
+        /// </summary>
+        public static string GachaLogPage_SyncFromZZZOfficialGachaStats {
+            get {
+                return ResourceManager.GetString("GachaLogPage_SyncFromZZZOfficialGachaStats", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Got {0} S-Rank records from the official stats tool. Pulls before your local records start are now included in the stats.
+        /// </summary>
+        public static string ZZZGachaService_OfficialGachaStatsResult {
+            get {
+                return ResourceManager.GetString("ZZZGachaService_OfficialGachaStatsResult", resourceCulture);
+            }
+        }
     }
 }

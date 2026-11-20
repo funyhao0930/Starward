@@ -242,6 +242,11 @@
                                         CommandParameter="all"
                                         Text="{x:Bind lang:Lang.GachaLogPage_SyncAllFromHoYoLAB}"
                                         Visibility="Collapsed" />
+                        <MenuFlyoutItem x:Name="MenuFlyoutItem_SyncFromZZZOfficialStats"
+                                        Command="{x:Bind SyncFromMiyousheCommand}"
+                                        CommandParameter="official"
+                                        Text="{x:Bind lang:Lang.GachaLogPage_SyncFromZZZOfficialGachaStats}"
+                                        Visibility="Collapsed" />
                         <!--  输入 URL  -->
                         <MenuFlyoutItem Command="{x:Bind InputUrlCommand}" Text="{x:Bind lang:Lang.GachaLogPage_InputURL}" />
                         <MenuFlyoutItem x:Name="MenuFlyoutItem_CloudGame"

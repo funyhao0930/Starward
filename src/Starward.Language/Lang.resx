@@ -2981,4 +2981,10 @@ You are welcome to submit the exported data to the following repository:</value>
   <data name="MaaEndButton_ChangePath" xml:space="preserve">
     <value>Change location</value>
   </data>
+  <data name="GachaLogPage_SyncFromZZZOfficialGachaStats" xml:space="preserve">
+    <value>Fill S-Rank History from HoYoLAB Signal Search Stats</value>
+  </data>
+  <data name="ZZZGachaService_OfficialGachaStatsResult" xml:space="preserve">
+    <value>Got {0} S-Rank records from the official stats tool. Pulls before your local records start are now included in the stats.</value>
+  </data>
 </root>

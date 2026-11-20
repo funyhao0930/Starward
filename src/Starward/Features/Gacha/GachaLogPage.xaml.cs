@@ -99,6 +99,7 @@ public sealed partial class GachaLogPage : PageBase
             {
                 MenuFlyoutItem_SyncFromHoYoLAB.Visibility = Visibility.Visible;
                 MenuFlyoutItem_SyncFromHoYoLABAll.Visibility = Visibility.Visible;
+                MenuFlyoutItem_SyncFromZZZOfficialStats.Visibility = Visibility.Visible;
             }
         }
         if (CurrentGameBiz.IsGlobalServer())
@@ -795,7 +796,9 @@ public sealed partial class GachaLogPage : PageBase
             };
             InAppToast.MainWindow?.Show(infoBar);
             var progress = new Progress<string>((str) => infoBar.Message = str);
-            var uid = await zzzGachaService.GetGachaLogByGameRecordAsync(role, param is "all", GachaLanguage, progress, cancelSource.Token);
+            var uid = param is "official"
+                ? await zzzGachaService.SyncOfficialGachaStatsAsync(role, GachaLanguage, progress, cancelSource.Token)
+                : await zzzGachaService.GetGachaLogByGameRecordAsync(role, param is "all", GachaLanguage, progress, cancelSource.Token);
             infoBar.Title = $"Uid {uid}";
             infoBar.Severity = InfoBarSeverity.Success;
             infoBar.ActionButton = null;

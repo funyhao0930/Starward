@@ -269,6 +269,7 @@ internal static class DatabaseService
         Sql_v29,
         Sql_v30,
         Sql_v31,
+        Sql_v32,
     ];
 
 
@@ -1328,6 +1329,40 @@ internal static class DatabaseService
         DROP TABLE NteMixedGroup;
 
         PRAGMA USER_VERSION = 31;
+        COMMIT TRANSACTION;
+        """;
+
+
+    // 绝区零 HoYoLAB 调频统计工具的 S 级出货（自开服起，只有 S 级），用来补齐本地逐抽记录开始之前的统计。
+    // Sort 是该频段自开服起的累计抽数，Count 是这只 S 用了几抽，Time 已换成服务器时区（与逐抽记录一致）；Stats 存各频段的官方总抽数。
+    private const string Sql_v32 = """
+        BEGIN TRANSACTION;
+
+        CREATE TABLE IF NOT EXISTS ZZZOfficialGachaS
+        (
+            Uid       INTEGER NOT NULL,
+            GachaType INTEGER NOT NULL,
+            Sort      INTEGER NOT NULL,
+            ItemId    INTEGER NOT NULL,
+            Name      TEXT,
+            ItemType  TEXT,
+            Icon      TEXT,
+            IsUp      INTEGER NOT NULL,
+            Count     INTEGER NOT NULL,
+            Time      TEXT NOT NULL,
+            PRIMARY KEY (Uid, GachaType, Sort)
+        );
+
+        CREATE TABLE IF NOT EXISTS ZZZOfficialGachaStats
+        (
+            Uid        INTEGER NOT NULL,
+            GachaType  INTEGER NOT NULL,
+            TotalCount INTEGER NOT NULL,
+            UpdateTime TEXT NOT NULL,
+            PRIMARY KEY (Uid, GachaType)
+        );
+
+        PRAGMA USER_VERSION = 32;
         COMMIT TRANSACTION;
         """;
 

@@ -50,6 +50,8 @@ namespace Starward.Core.GameRecord;
 [JsonSerializable(typeof(miHoYoApiWrapper<DeadlyAssaultInfo>))]
 [JsonSerializable(typeof(miHoYoApiWrapper<ZZZDailyNote>))]
 [JsonSerializable(typeof(miHoYoApiWrapper<ZZZGachaRecordData>))]
+[JsonSerializable(typeof(miHoYoApiWrapper<ZZZOfficialGachaIndex>))]
+[JsonSerializable(typeof(miHoYoApiWrapper<ZZZOfficialGachaPoolList>))]
 [JsonSerializable(typeof(miHoYoApiWrapper<BH3DailyNote>))]
 [JsonSerializable(typeof(miHoYoApiWrapper<ThresholdSimulationAbstractInfo>))]
 [JsonSerializable(typeof(miHoYoApiWrapper<ThresholdSimulationDetailInfo>))]
