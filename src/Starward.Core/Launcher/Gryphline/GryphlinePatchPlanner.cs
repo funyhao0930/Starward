@@ -45,6 +45,8 @@ public static class GryphlinePatchPlanner
 
     public const string DeleteFilesName = "delete_files.txt";
 
+    public const string PackageFilesName = "package_files";
+
     /// <summary>
     /// 本机旧文件与 patch.json 对得上的比例达到这个值，才认定本机是补丁的起点版本。
     /// 对不上的那些文件会改为下载完整的新文件，所以不必要求全部对上
@@ -158,60 +160,80 @@ public static class GryphlinePatchPlanner
     /// 看的是 patch.json 里差分的旧文件与没变的文件：在本机存在、而且大小一致的算对上。
     /// 只比大小不比 MD5，几十 GB 的资源逐个算 MD5 太慢；打完补丁会校验新文件的 MD5，对不上的改为下载。
     /// </summary>
-    /// <param name="getLength">VFS 目录下相对路径的文件大小，不存在时返回 null</param>
-    public static double ScoreLocalMatch(GryphlinePatchInfo info, Func<string, long?> getLength)
+    /// <param name="getLength">游戏目录下相对路径的文件大小，不存在时返回 null</param>
+    /// <param name="firstMismatch">第一个没对上的文件（游戏目录下的相对路径），全部对上时为 null，比例太低时记进日志好查原因</param>
+    public static double ScoreLocalMatch(GryphlinePatchInfo info, Func<string, long?> getLength, out string? firstMismatch)
     {
         int total = 0, matched = 0;
+        string? mismatch = null;
+        void Check(string relative, long size)
+        {
+            total++;
+            string path = ToGamePath(info, relative);
+            if (getLength(path) == size)
+            {
+                matched++;
+            }
+            else
+            {
+                mismatch ??= path;
+            }
+        }
         foreach (GryphlinePatchFile file in info.Files ?? [])
         {
             if (file.Patch is { Count: > 0 } diffs)
             {
                 foreach (GryphlinePatchDiff diff in diffs)
                 {
-                    total++;
-                    if (getLength(diff.BaseFile) == diff.BaseSize)
-                    {
-                        matched++;
-                    }
+                    Check(diff.BaseFile, diff.BaseSize);
                 }
             }
             else if (string.IsNullOrWhiteSpace(file.LocalPath))
             {
-                total++;
-                if (getLength(file.Name) == file.Size)
-                {
-                    matched++;
-                }
+                Check(file.Name, file.Size);
             }
         }
+        firstMismatch = mismatch;
         return total == 0 ? 0 : (double)matched / total;
     }
 
 
 
     /// <summary>
-    /// verify_files.json 里一个要放进游戏目录的文件，在 zip 里的路径：
-    /// 非 VFS 文件就是原路径，新的 VFS 文件在 <see cref="ZipNewFilesPrefix"/> 下
+    /// patch.json 里的路径换成游戏目录下的。路径相对于 <see cref="GryphlinePatchInfo.VfsBasePath"/>，照字面接：
+    /// 1.6.3 的 patch.json 写的是 VFS 目录、路径只有 VFS 下的那段；
+    /// 1.7.2 起（schema_version 1）基准是空字串、路径本身就从游戏目录算起
     /// </summary>
-    public static string? GetZipPath(string gamePath, IReadOnlySet<string> zipNames)
+    public static string ToGamePath(GryphlinePatchInfo info, string relative)
     {
-        string path = gamePath.Replace('\\', '/').TrimStart('/');
-        if (zipNames.Contains(path))
-        {
-            return path;
-        }
-        string prefixed = ZipNewFilesPrefix + path;
-        return zipNames.Contains(prefixed) ? prefixed : null;
+        string path = relative.Replace('\\', '/').TrimStart('/');
+        string? baseDir = info.VfsBasePath?.Replace('\\', '/').Trim('/');
+        return string.IsNullOrEmpty(baseDir) ? path : baseDir + "/" + path;
     }
 
 
     /// <summary>
-    /// VFS 目录下的相对路径换成游戏目录下的
+    /// 要原样放进游戏目录的文件：(zip 里的路径, 游戏目录下的路径)。
+    /// <para/>
+    /// 1.7.2 起补丁里不再有 verify_files.json，清单改从 zip 的条目推出：
+    /// 根目录下的文件按原路径放，<see cref="ZipNewFilesPrefix"/> 下的去掉前缀。
+    /// 差分、patch.json、verify_files.json、delete_files.txt 是补丁自己用的，不放；
+    /// package_files 也不放：补丁里的只是这次的增量，官方启动器更新时同样不换掉游戏目录里那份完整的。
     /// </summary>
-    public static string ToGamePath(GryphlinePatchInfo info, string vfsRelative)
+    /// <param name="zipNames">zip 里的文件（不含目录）</param>
+    public static IReadOnlyList<(string ZipPath, string GamePath)> GetMoveFiles(IEnumerable<string> zipNames)
     {
-        string vfs = string.IsNullOrWhiteSpace(info.VfsBasePath) ? GryphlineDownloadPlanner.VfsDirectory : info.VfsBasePath.Replace('\\', '/').Trim('/');
-        return vfs + "/" + vfsRelative.Replace('\\', '/').TrimStart('/');
+        var skip = new HashSet<string>([PatchInfoName, VerifyFilesName, DeleteFilesName, PackageFilesName], StringComparer.OrdinalIgnoreCase);
+        var list = new List<(string, string)>();
+        foreach (string name in zipNames)
+        {
+            if (name.EndsWith('/') || skip.Contains(name) || name.StartsWith(ZipDiffPrefix, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+            list.Add((name, name.StartsWith(ZipNewFilesPrefix, StringComparison.OrdinalIgnoreCase) ? name[ZipNewFilesPrefix.Length..] : name));
+        }
+        return list.AsReadOnly();
     }
 
 

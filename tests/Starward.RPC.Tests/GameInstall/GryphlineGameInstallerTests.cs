@@ -15,11 +15,12 @@ namespace Starward.RPC.Tests.GameInstall;
 /// <summary>
 /// 终末地的补丁更新与预下载，对着记忆体里的假接口与假 CDN 跑。
 /// <para/>
-/// 补丁包照线上 1.5.3 → 1.6.3 的布局做：WinZip AES-256 加密、切成两卷，
+/// 补丁包照线上的布局做：WinZip AES-256 加密、切成两卷，
 /// 里面有 VFS 差分（HDIFFSF20）、新的 VFS 文件、变了的 exe、删除清单与新的 game_files / config.ini。
-/// 本机版本 1.0.0，线上 1.1.0。
+/// 本机版本 1.0.0，线上 1.1.0。同一组测试跑两种补丁格式，见 <see cref="GryphlineGameInstallerTests"/>
+/// 与 <see cref="GryphlineGameInstallerSchemaV1Tests"/>。
 /// </summary>
-public sealed class GryphlineGameInstallerTests : IDisposable
+public abstract class GryphlineGameInstallerTestsBase : IDisposable
 {
 
     private const string Api = "https://launcher.gryphline.com/api/proxy/batch_proxy";
@@ -52,7 +53,12 @@ public sealed class GryphlineGameInstallerTests : IDisposable
 
     private readonly byte[] _patchInfo;
 
-    private readonly byte[] _fullPackage;
+    private byte[] _fullPackage;
+
+    /// <summary>
+    /// 预下载期（<see cref="_released"/> 为 false）也给整包，测修复
+    /// </summary>
+    private bool _repairPackage;
 
     private const string FullPackageUrl = "https://cdn.test/1.1.0/packs/full.zip.001";
 
@@ -61,9 +67,22 @@ public sealed class GryphlineGameInstallerTests : IDisposable
     /// </summary>
     private bool _released = true;
 
+    /// <summary>
+    /// 整包给的 game_files MD5，测它与补丁里的 game_files 对不上时
+    /// </summary>
+    private string _packageGameFilesMd5 = Md5("files 1.1.0");
 
-    public GryphlineGameInstallerTests()
+    /// <summary>
+    /// 1.7.2 起的补丁格式：patch.json 的 vfs_base_path 是空字串、路径从游戏目录算起，zip 里没有 verify_files.json
+    /// </summary>
+    private readonly bool _schemaV1;
+
+
+    protected GryphlineGameInstallerTestsBase(bool schemaV1)
     {
+        _schemaV1 = schemaV1;
+        // patch.json 里的路径：旧格式相对 VFS 目录，新格式相对游戏目录
+        string P(string vfsRelative) => schemaV1 ? Vfs + vfsRelative : vfsRelative;
         _new1 = [.. _old1, .. RandomBytes(500, 2)];
         _new1[10] ^= 0x55;
         _new1[2999] += 3;
@@ -71,18 +90,19 @@ public sealed class GryphlineGameInstallerTests : IDisposable
         _patchInfo = Encoding.UTF8.GetBytes(new JsonObject
         {
             ["version"] = "1.1.0",
-            ["vfs_base_path"] = "Endfield_Data/StreamingAssets/VFS",
+            ["vfs_base_path"] = schemaV1 ? "" : "Endfield_Data/StreamingAssets/VFS",
+            ["schema_version"] = schemaV1 ? 1 : null,
             ["files"] = new JsonArray(
             [
                 new JsonObject
                 {
-                    ["name"] = "AA/NEW1.chk",
+                    ["name"] = P("AA/NEW1.chk"),
                     ["md5"] = Md5(_new1),
                     ["size"] = _new1.Length,
                     ["diffType"] = 1,
                     ["patch"] = new JsonArray(new JsonObject
                     {
-                        ["base_file"] = "AA/OLD1.chk",
+                        ["base_file"] = P("AA/OLD1.chk"),
                         ["base_md5"] = Md5(_old1),
                         ["base_size"] = _old1.Length,
                         ["patch"] = "diff_1.1.0_1.0.0/AA_NEW1.chk_patch",
@@ -91,7 +111,7 @@ public sealed class GryphlineGameInstallerTests : IDisposable
                 },
                 new JsonObject
                 {
-                    ["name"] = "AA/AA.blc",
+                    ["name"] = P("AA/AA.blc"),
                     ["md5"] = Md5("blc 1.1.0"),
                     ["size"] = 9,
                     ["diffType"] = 2,
@@ -99,14 +119,14 @@ public sealed class GryphlineGameInstallerTests : IDisposable
                 },
                 new JsonObject
                 {
-                    ["name"] = "BB/SAME.chk",
+                    ["name"] = P("BB/SAME.chk"),
                     ["md5"] = Md5("same file"),
                     ["size"] = 9,
                     ["diffType"] = 1,
                 },
                 .. Enumerable.Range(0, UnchangedCount).Select(i => (JsonNode?)new JsonObject
                 {
-                    ["name"] = $"DD/U{i}.chk",
+                    ["name"] = P($"DD/U{i}.chk"),
                     ["md5"] = Md5($"unchanged {i}"),
                     ["size"] = Bytes($"unchanged {i}").Length,
                     ["diffType"] = 1,
@@ -125,17 +145,25 @@ public sealed class GryphlineGameInstallerTests : IDisposable
             ["patch"] = new JsonArray(Verify(Vfs + "AA/NEW1.chk", _new1)),
         }.ToJsonString());
 
-        byte[] zip = FakePatchZip.Build(
-        [
+        var entries = new List<(string, byte[])>
+        {
             ("Endfield.exe", Bytes("exe 1.1.0")),
+            ("Endfield_Data/Plugins/x86_64/new.dll", Bytes("dll 1.1.0")),
             ("vfs_files/files/" + Vfs + "AA/AA.blc", Bytes("blc 1.1.0")),
             ("vfs_files/vfs_patch/diff_1.1.0_1.0.0/AA_NEW1.chk_patch", FakePatchZip.Diff(_old1, _new1)),
             ("game_files", Bytes("files 1.1.0")),
             ("config.ini", Bytes("config 1.1.0")),
+            // 官方会把它放进游戏目录；package_files 只是这次的增量，不能盖掉游戏目录里那份完整的
+            ("verify_files", Bytes("encrypted verify list")),
+            ("package_files", Bytes("package delta")),
             ("patch.json", _patchInfo),
-            ("verify_files.json", verifyFiles),
-            ("delete_files.txt", Bytes(Vfs + "AA/OLD1.chk\r\n" + Vfs + "CC/GONE.chk\r\n")),
-        ], CdKey);
+            ("delete_files.txt", Bytes(Vfs + "AA/OLD1.chk\r\n" + Vfs + "CC/GONE.chk\r\nEndfield_Data/Plugins/old.dll\r\n")),
+        };
+        if (!schemaV1)
+        {
+            entries.Add(("verify_files.json", verifyFiles));
+        }
+        byte[] zip = FakePatchZip.Build(entries, CdKey);
         // 切在 zip 中间，条目会跨卷
         _parts = FakePatchZip.Split(zip, zip.Length / 2 + 1);
         for (int i = 0; i < _parts.Count; i++)
@@ -168,6 +196,8 @@ public sealed class GryphlineGameInstallerTests : IDisposable
         WriteGame(Vfs + "AA/OLD1.chk", _old1);
         WriteGame(Vfs + "BB/SAME.chk", Bytes("same file"));
         WriteGame(Vfs + "CC/GONE.chk", Bytes("gone"));
+        WriteGame("Endfield_Data/Plugins/old.dll", Bytes("old dll"));
+        WriteGame("package_files", Bytes("package full list"));
         for (int i = 0; i < UnchangedCount; i++)
         {
             WriteGame(Vfs + $"DD/U{i}.chk", Bytes($"unchanged {i}"));
@@ -258,11 +288,11 @@ public sealed class GryphlineGameInstallerTests : IDisposable
             ["request_version"] = version,
             ["pkg"] = new JsonObject
             {
-                ["packs"] = _released
+                ["packs"] = _released || _repairPackage
                           ? new JsonArray(new JsonObject { ["url"] = FullPackageUrl, ["md5"] = Md5(_fullPackage), ["package_size"] = _fullPackage.Length.ToString() })
                           : new JsonArray(),
                 ["file_path"] = _released ? FilePath : "https://cdn.test/1.0.0/files",
-                ["game_files_md5"] = Md5(_released ? "files 1.1.0" : "files 1.0.0"),
+                ["game_files_md5"] = _released ? _packageGameFilesMd5 : Md5("files 1.0.0"),
             },
         };
         if (version == "1.0.0" && _released)
@@ -321,6 +351,19 @@ public sealed class GryphlineGameInstallerTests : IDisposable
         Assert.False(File.Exists(PathOf(Vfs + "CC/GONE.chk")));
         Assert.Empty(Directory.EnumerateFiles(GameDir, "*_tmp", SearchOption.AllDirectories));
         Assert.False(Directory.Exists(StagingRoot));
+        Assert.Equal("package full list", ReadText("package_files"));
+    }
+
+
+    /// <summary>
+    /// 打补丁才有的结果：非 VFS 的新文件、verify_files 放进游戏目录，删除清单上的非 VFS 文件删掉
+    /// </summary>
+    private void AssertPatched()
+    {
+        AssertUpdated();
+        Assert.Equal("dll 1.1.0", ReadText("Endfield_Data/Plugins/x86_64/new.dll"));
+        Assert.Equal("encrypted verify list", ReadText("verify_files"));
+        Assert.False(File.Exists(PathOf("Endfield_Data/Plugins/old.dll")));
     }
 
 
@@ -333,7 +376,7 @@ public sealed class GryphlineGameInstallerTests : IDisposable
     {
         GameInstallContext context = await RunAsync(GameInstallOperation.Update);
 
-        AssertUpdated();
+        AssertPatched();
         Assert.Equal("1.0.0", context.LocalGameVersion);
         Assert.Equal(GameInstallDownloadMode.Patch, context.DownloadMode);
         // 都从补丁来，不必单独下载完整文件
@@ -351,7 +394,7 @@ public sealed class GryphlineGameInstallerTests : IDisposable
 
         await RunAsync(GameInstallOperation.Update);
 
-        AssertUpdated();
+        AssertPatched();
         Assert.True(_cdn.WasRequested(FilePath + "/" + Vfs + "AA/NEW1.chk"));
     }
 
@@ -363,7 +406,7 @@ public sealed class GryphlineGameInstallerTests : IDisposable
 
         await RunAsync(GameInstallOperation.Update);
 
-        AssertUpdated();
+        AssertPatched();
         Assert.True(_cdn.WasRequested(FilePath + "/" + Vfs + "BB/SAME.chk"));
     }
 
@@ -405,10 +448,62 @@ public sealed class GryphlineGameInstallerTests : IDisposable
         _released = true;
         GameInstallContext update = await RunAsync(GameInstallOperation.Update);
 
-        AssertUpdated();
+        AssertPatched();
         Assert.Equal("1.0.0", update.LocalGameVersion);
         Assert.Equal(1, _cdn.CountRequests(PartUrl(0)));
         Assert.Equal(1, _cdn.CountRequests(PartUrl(1)));
+    }
+
+
+    /// <summary>
+    /// 预下载过、补丁却准备不了（这里是本机文件对不上）：报错并留着预下载，不退回下载整个游戏；
+    /// 之后用修复按文件更新到那一版，预下载用不着了才删
+    /// </summary>
+    [Fact]
+    public async Task Update_KeepsThePredownload_WhenItsPatchCannotBeApplied_ThenRepairRemovesIt()
+    {
+        _released = false;
+        await RunAsync(GameInstallOperation.Predownload);
+        _released = true;
+        File.Delete(PathOf(Vfs + "AA/OLD1.chk"));
+        File.Delete(PathOf(Vfs + "BB/SAME.chk"));
+        for (int i = 0; i < UnchangedCount; i++)
+        {
+            File.Delete(PathOf(Vfs + $"DD/U{i}.chk"));
+        }
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => RunAsync(GameInstallOperation.Update));
+
+        Assert.Contains("1.0.0", ex.Message);
+        Assert.Contains("1.1.0", ex.Message);
+        Assert.True(GryphlinePatchPlanner.IsPredownloadFinished(_root, "1.0.0", "1.1.0"));
+        Assert.False(_cdn.WasRequested(FullPackageUrl));
+        Assert.False(_cdn.WasRequested(FilePath));
+        Assert.Equal("exe 1.0.0", ReadText("Endfield.exe"));
+
+        await RunAsync(GameInstallOperation.Repair);
+
+        AssertUpdated();
+    }
+
+
+    [Fact]
+    public async Task Repair_KeepsAPredownloadOfTheNextVersion()
+    {
+        // 本机已是最新（1.0.0）时预下载 1.1.0，之后修复：修复的目标是 1.0.0，不碰 1.1.0 的预下载
+        _released = false;
+        await RunAsync(GameInstallOperation.Predownload);
+        File.Delete(PathOf(Vfs + "BB/SAME.chk"));
+        _fullPackage = BuildFullPackage([("Endfield.exe", Bytes("exe 1.0.0")), (Vfs + "BB/SAME.chk", Bytes("same file"))]);
+        _cdn.Add(FullPackageUrl, _fullPackage);
+        _cdn.Add("https://cdn.test/1.0.0/files/" + Vfs + "BB/SAME.chk", Bytes("same file"));
+        _cdn.Add("https://cdn.test/1.0.0/files/Endfield.exe", Bytes("exe 1.0.0"));
+        _repairPackage = true;
+
+        await RunAsync(GameInstallOperation.Repair);
+
+        Assert.Equal("same file", ReadText(Vfs + "BB/SAME.chk"));
+        Assert.True(GryphlinePatchPlanner.IsPredownloadFinished(_root, "1.0.0", "1.1.0"));
     }
 
 
@@ -422,4 +517,41 @@ public sealed class GryphlineGameInstallerTests : IDisposable
         Assert.False(_cdn.WasRequested(PartUrl(0)));
     }
 
+
+
+    /// <summary>
+    /// 没有 verify_files.json 时，game_files 对整包给的 MD5，对不上就不写，免得半新不旧的游戏被当成最新版
+    /// </summary>
+    [Fact]
+    public async Task Update_RejectsAGameFilesThatDoesNotMatchThePackage()
+    {
+        if (!_schemaV1)
+        {
+            // 旧格式由 verify_files.json 校验，这条只测新格式
+            return;
+        }
+        _packageGameFilesMd5 = Md5("something else");
+
+        await Assert.ThrowsAsync<InvalidDataException>(() => RunAsync(GameInstallOperation.Update));
+        Assert.Equal("files 1.0.0", ReadText("game_files"));
+    }
+
+}
+
+
+/// <summary>
+/// 1.6.3 的补丁格式：patch.json 的路径相对 VFS 目录，zip 里有 verify_files.json
+/// </summary>
+public sealed class GryphlineGameInstallerTests : GryphlineGameInstallerTestsBase
+{
+    public GryphlineGameInstallerTests() : base(false) { }
+}
+
+
+/// <summary>
+/// 1.7.2 起的补丁格式（schema_version 1）
+/// </summary>
+public sealed class GryphlineGameInstallerSchemaV1Tests : GryphlineGameInstallerTestsBase
+{
+    public GryphlineGameInstallerSchemaV1Tests() : base(true) { }
 }

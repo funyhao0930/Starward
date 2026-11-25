@@ -869,5 +869,14 @@ namespace Starward.Core.Localization {
                 return ResourceManager.GetString("KuroInstall_UpdateBeforeChangingResourceTiers", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   查找类似 The predownloaded patch ({0} → {1}) cannot be applied right now. The update was stopped so the predownload is kept. Try again later; if it keeps failing, use Repair Game to update file by file (this downloads the full game files again). 的本地化字符串。
+        /// </summary>
+        public static string GryphlineInstall_PredownloadNotApplicable {
+            get {
+                return ResourceManager.GetString("GryphlineInstall_PredownloadNotApplicable", resourceCulture);
+            }
+        }
     }
 }

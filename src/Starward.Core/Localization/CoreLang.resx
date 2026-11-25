@@ -388,4 +388,7 @@
   <data name="KuroInstall_UpdateBeforeChangingResourceTiers" xml:space="preserve">
     <value>Update the game before changing the resource quality ({0} → {1}).</value>
   </data>
+  <data name="GryphlineInstall_PredownloadNotApplicable" xml:space="preserve">
+    <value>The predownloaded patch ({0} → {1}) cannot be applied right now. The update was stopped so the predownload is kept. Try again later; if it keeps failing, use Repair Game to update file by file (this downloads the full game files again).</value>
+  </data>
 </root>

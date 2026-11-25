@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using Starward.Core.Games.Gryphline;
 using Starward.Core.Launcher;
 using Starward.Core.Launcher.Gryphline;
+using Starward.Core.Localization;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -47,6 +48,11 @@ internal partial class GryphlineGameInstaller
         /// 最新整包逐个文件下载的根目录，差分打不上时从这里下载完整的新文件；预下载时为 null
         /// </summary>
         public string? FilePath { get; init; }
+
+        /// <summary>
+        /// 最新整包 game_files 的 MD5。1.7.2 起补丁里没有 verify_files.json，game_files 用它校验；预下载时为 null
+        /// </summary>
+        public string? GameFilesMd5 { get; init; }
 
         public IReadOnlyList<string> PartPaths => Parts.Select((x, i) => Path.Combine(StagingDir, GryphlinePatchPlanner.GetPartFileName(x.Url ?? "", i))).ToList();
     }
@@ -100,9 +106,14 @@ internal partial class GryphlineGameInstaller
     /// <para/>
     /// 本机版本先看预下载留下的标记，再试 <see cref="GryphlinePatchPlanner.GetCandidateLocalVersions"/>；
     /// 有补丁的版本都要用明文 patch.json 比对本机文件确认，不能只信标记（之后可能用官方启动器更新过）。
+    /// <para/>
+    /// 预下载过这一版时，准备不了补丁（网络问题、补丁格式又变了、本机文件对不上）就报错，不退回按文件更新：
+    /// 按文件更新会下载整个游戏，结束时还会删掉暂存目录，几 GB 的预下载就白费了。
+    /// 真的要按文件更新时用修复，修复不碰暂存目录。
     /// </summary>
     private async Task<GryphlinePatchPlan?> TryPrepareUpdateAsync(GameInstallContext context, string gameDir, CancellationToken cancellationToken)
     {
+        GryphlinePredownloadMarker? marker = null;
         try
         {
             GryphlineLatestGame latest = await _launcherClient.GetLatestGameAsync(GryphlineLauncherClient.ENDFIELD_APP_CODE, cancellationToken: cancellationToken)
@@ -111,9 +122,10 @@ internal partial class GryphlineGameInstaller
             string? filePath = latest.Package?.FilePath;
 
             var candidates = new List<string>();
-            if (GryphlinePatchPlanner.FindMarker(context.InstallPath, targetVersion)?.LocalVersion is string marked)
+            marker = GryphlinePatchPlanner.FindMarker(context.InstallPath, targetVersion);
+            if (marker is not null)
             {
-                candidates.Add(marked);
+                candidates.Add(marker.LocalVersion);
             }
             candidates.AddRange(GryphlinePatchPlanner.GetCandidateLocalVersions(targetVersion).Where(x => !candidates.Contains(x)));
 
@@ -131,7 +143,6 @@ internal partial class GryphlineGameInstaller
                 }
             }));
 
-            string vfsDir = ToFullPath(gameDir, GryphlineDownloadPlanner.VfsDirectory);
             for (int i = 0; i < candidates.Count; i++)
             {
                 GryphlinePatch? patch = responses[i]?.Patch;
@@ -145,8 +156,8 @@ internal partial class GryphlineGameInstaller
                 {
                     continue;
                 }
-                double score = GryphlinePatchPlanner.ScoreLocalMatch(info, relative => GetFileLength(vfsDir, relative));
-                _logger.LogInformation("Endfield patch {local} -> {target}: {score:P1} of local files match.", candidates[i], targetVersion, score);
+                double score = GryphlinePatchPlanner.ScoreLocalMatch(info, relative => GetFileLength(gameDir, relative), out string? mismatch);
+                _logger.LogInformation("Endfield patch {local} -> {target}: {score:P1} of local files match, first mismatch: {mismatch}.", candidates[i], targetVersion, score, mismatch);
                 if (score < GryphlinePatchPlanner.LocalMatchThreshold)
                 {
                     continue;
@@ -163,16 +174,33 @@ internal partial class GryphlineGameInstaller
                     Parts = parts,
                     CdKey = patch.CdKey,
                     FilePath = filePath,
+                    GameFilesMd5 = latest.Package?.GameFilesMd5,
                 };
             }
-            _logger.LogInformation("No Endfield patch matches the local files, update file by file.");
-            return null;
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
+            if (marker is not null)
+            {
+                _logger.LogWarning(ex, "Prepare Endfield patch update {local} -> {target} failed, keep the predownload.", marker.LocalVersion, marker.TargetVersion);
+                throw PredownloadNotApplicable(marker, ex);
+            }
             _logger.LogWarning(ex, "Prepare Endfield patch update, update file by file instead.");
             return null;
         }
+        if (marker is not null)
+        {
+            _logger.LogWarning("No Endfield patch matches the local files, keep the predownload {local} -> {target}.", marker.LocalVersion, marker.TargetVersion);
+            throw PredownloadNotApplicable(marker, null);
+        }
+        _logger.LogInformation("No Endfield patch matches the local files, update file by file.");
+        return null;
+    }
+
+
+    private static InvalidOperationException PredownloadNotApplicable(GryphlinePredownloadMarker marker, Exception? inner)
+    {
+        return new InvalidOperationException(string.Format(CoreLang.GryphlineInstall_PredownloadNotApplicable, marker.LocalVersion, marker.TargetVersion), inner);
     }
 
 
@@ -282,10 +310,9 @@ internal partial class GryphlineGameInstaller
     {
         using PatchArchive archive = PatchArchive.Open(plan.PartPaths, cdKey);
         GryphlinePatchInfo info = GryphlinePatchPlanner.ParsePatchInfo(archive.ReadAllBytes(GryphlinePatchPlanner.PatchInfoName));
-        GryphlineVerifyFiles verify = GryphlinePatchPlanner.ParseVerifyFiles(archive.ReadAllBytes(GryphlinePatchPlanner.VerifyFilesName));
         var manifestNames = new HashSet<string>(GryphlineDownloadPlanner.ManifestFiles, StringComparer.OrdinalIgnoreCase);
         List<GryphlinePatchFile> diffs = info.Files?.Where(x => x.Patch is { Count: > 0 }).ToList() ?? [];
-        List<GryphlineVerifyFile> moves = verify.Move?.Where(x => !manifestNames.Contains(x.Path)).ToList() ?? [];
+        List<MoveFile> moves = GetMoveFiles(archive, info).Where(x => !manifestNames.Contains(x.GamePath)).ToList();
         List<GryphlinePatchFile> unchanged = info.Files?.Where(x => x.Patch is not { Count: > 0 } && string.IsNullOrWhiteSpace(x.LocalPath)).ToList() ?? [];
 
         string journalPath = Path.Combine(plan.StagingDir, GryphlinePatchPlanner.JournalFileName);
@@ -319,15 +346,13 @@ internal partial class GryphlineGameInstaller
             context.Progress_Percent = Math.Min(1, doneBytes / totalBytes);
         }
 
-        foreach (GryphlineVerifyFile file in moves)
+        foreach (MoveFile file in moves)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            if (!applied.Contains(file.Path))
+            if (!applied.Contains(file.GamePath))
             {
-                string zipPath = GryphlinePatchPlanner.GetZipPath(file.Path, archive.Names)
-                    ?? throw new InvalidDataException($"File is missing from the Endfield patch: {file.Path}");
-                ExtractEntry(archive, zipPath, ToFullPath(gameDir, file.Path), file.Md5, cancellationToken);
-                MarkApplied(file.Path);
+                ExtractEntry(archive, file.ZipPath, ToFullPath(gameDir, file.GamePath), file.Md5, cancellationToken);
+                MarkApplied(file.GamePath);
             }
             doneBytes += file.Size;
             context.Progress_Percent = Math.Min(1, doneBytes / totalBytes);
@@ -344,6 +369,42 @@ internal partial class GryphlineGameInstaller
         }
         _logger.LogInformation("Endfield: applied {diffs} diffs and {moves} files, {fallback} files need a full download.", diffs.Count, moves.Count, fallback.Count);
         return fallback;
+    }
+
+
+
+    private sealed record MoveFile(string ZipPath, string GamePath, long Size, string? Md5);
+
+
+    /// <summary>
+    /// 要原样放进游戏目录的文件，见 <see cref="GryphlinePatchPlanner.GetMoveFiles"/>。
+    /// MD5 先看 verify_files.json（1.6.3 有、1.7.2 起没有），再看 patch.json（VFS 文件）；
+    /// 都没有的靠 zip 条目自己的 HMAC 与下载时校验过的分卷 MD5，game_files 另外对整包给的 MD5
+    /// </summary>
+    private static List<MoveFile> GetMoveFiles(PatchArchive archive, GryphlinePatchInfo info)
+    {
+        var md5 = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (GryphlinePatchFile file in info.Files ?? [])
+        {
+            if (!string.IsNullOrWhiteSpace(file.Md5))
+            {
+                md5[GryphlinePatchPlanner.ToGamePath(info, file.Name)] = file.Md5;
+            }
+        }
+        if (archive.Names.Contains(GryphlinePatchPlanner.VerifyFilesName))
+        {
+            GryphlineVerifyFiles verify = GryphlinePatchPlanner.ParseVerifyFiles(archive.ReadAllBytes(GryphlinePatchPlanner.VerifyFilesName));
+            foreach (GryphlineVerifyFile file in verify.Move ?? [])
+            {
+                if (!string.IsNullOrWhiteSpace(file.Md5))
+                {
+                    md5[file.Path] = file.Md5;
+                }
+            }
+        }
+        return GryphlinePatchPlanner.GetMoveFiles(archive.Names)
+                                    .Select(x => new MoveFile(x.ZipPath, x.GamePath, archive.GetSize(x.ZipPath), md5.GetValueOrDefault(x.GamePath)))
+                                    .ToList();
     }
 
 
@@ -447,14 +508,14 @@ internal partial class GryphlineGameInstaller
     {
         using PatchArchive archive = PatchArchive.Open(plan.PartPaths, cdKey);
         GryphlinePatchInfo info = GryphlinePatchPlanner.ParsePatchInfo(archive.ReadAllBytes(GryphlinePatchPlanner.PatchInfoName));
-        GryphlineVerifyFiles verify = GryphlinePatchPlanner.ParseVerifyFiles(archive.ReadAllBytes(GryphlinePatchPlanner.VerifyFilesName));
+        List<MoveFile> moves = GetMoveFiles(archive, info);
         IReadOnlyList<string> deleteList = archive.Names.Contains(GryphlinePatchPlanner.DeleteFilesName)
                                          ? GryphlinePatchPlanner.ParseDeleteList(GryphlinePatchPlanner.DecodeText(archive.ReadAllBytes(GryphlinePatchPlanner.DeleteFilesName)))
                                          : [];
         // 删除清单与新文件不会重叠，以防万一还是跳过新版本有的文件
         var keep = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         keep.UnionWith(info.Files?.Select(x => GryphlinePatchPlanner.ToGamePath(info, x.Name)) ?? []);
-        keep.UnionWith(verify.Move?.Select(x => x.Path) ?? []);
+        keep.UnionWith(moves.Select(x => x.GamePath));
         int deleted = 0;
         foreach (string relative in deleteList)
         {
@@ -475,13 +536,11 @@ internal partial class GryphlineGameInstaller
         foreach (string name in GryphlineDownloadPlanner.ManifestFiles)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            GryphlineVerifyFile? file = verify.Move?.FirstOrDefault(x => string.Equals(x.Path, name, StringComparison.OrdinalIgnoreCase));
-            string? zipPath = GryphlinePatchPlanner.GetZipPath(name, archive.Names);
-            if (zipPath is null)
-            {
-                throw new InvalidDataException($"File is missing from the Endfield patch: {name}");
-            }
-            ExtractEntry(archive, zipPath, ToFullPath(gameDir, name), file?.Md5, cancellationToken);
+            MoveFile file = moves.FirstOrDefault(x => string.Equals(x.GamePath, name, StringComparison.OrdinalIgnoreCase))
+                ?? throw new InvalidDataException($"File is missing from the Endfield patch: {name}");
+            // game_files 决定官方启动器与 Starward 认不认得这是最新版，没有 verify_files.json 时对整包给的 MD5
+            string? md5 = file.Md5 ?? (string.Equals(name, GryphlineVersionMapper.GameFilesName, StringComparison.OrdinalIgnoreCase) ? plan.GameFilesMd5 : null);
+            ExtractEntry(archive, file.ZipPath, ToFullPath(gameDir, name), md5, cancellationToken);
         }
         context.Progress_Percent = 1;
     }
@@ -558,6 +617,8 @@ internal partial class GryphlineGameInstaller
             ZipEntryInfo entry = _entries.TryGetValue(name, out ZipEntryInfo? e) ? e : throw new FileNotFoundException($"Not in the Endfield patch: {name}");
             return ZipEntryReader.Open(_stream, entry, _password);
         }
+
+        public long GetSize(string name) => _entries.TryGetValue(name, out ZipEntryInfo? e) ? e.Size : 0;
 
         public byte[] ReadAllBytes(string name)
         {

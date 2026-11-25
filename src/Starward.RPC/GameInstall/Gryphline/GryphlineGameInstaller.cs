@@ -122,6 +122,13 @@ internal partial class GryphlineGameInstaller : IGameInstallVendor
             // 暂存的补丁（含预下载）都是旧的了
             DeleteStagingRoot(context.InstallPath);
         }
+        else if (context.Operation is GameInstallOperation.Repair && context.VendorState is GryphlineInstallPlan synced
+                 && GryphlinePatchPlanner.FindMarker(context.InstallPath, synced.Version) is not null)
+        {
+            // 预下载的补丁打不上、改用修复更新到了那一版，那份预下载用不着了。
+            // 目标是更新版本的预下载（本机已是最新时才有）不受影响
+            DeleteStagingRoot(context.InstallPath);
+        }
     }
 
 

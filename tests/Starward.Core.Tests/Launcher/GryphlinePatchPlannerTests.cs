@@ -65,20 +65,51 @@ public class GryphlinePatchPlannerTests
     }
 
 
-    [Fact]
-    public void ScoreLocalMatch_CountsDiffBasesAndUnchangedFilesBySize()
+    /// <summary>
+    /// 1.7.2 起（schema_version 1）的形状：vfs_base_path 是空字串，路径本身就从游戏目录算起
+    /// </summary>
+    private const string PatchInfoJsonV1 = """
+        {"version":"1.7.2","vfs_base_path":"","schema_version":1,"files":[
+          {"name":"Endfield_Data/StreamingAssets/VFS/AA/NEW1.chk","name_path":"","md5":"m1","size":300,"diffType":1,
+           "patch":[{"base_file":"Endfield_Data/StreamingAssets/VFS/AA/OLD1.chk","base_file_path":"","base_md5":"b1","base_size":200,"patch":"diff_1.7.2_1.6.4/AA_NEW1.chk_patch","patch_path":"","patch_size":50}]},
+          {"name":"Endfield_Data/StreamingAssets/VFS/BB/SAME.chk","name_path":"","md5":"m3","size":1000,"diffType":1}
+        ]}
+        """;
+
+
+    [Theory]
+    [InlineData(PatchInfoJson)]
+    [InlineData(PatchInfoJsonV1)]
+    public void ScoreLocalMatch_CountsDiffBasesAndUnchangedFilesBySize(string json)
     {
-        GryphlinePatchInfo info = GryphlinePatchPlanner.ParsePatchInfo(Encoding.UTF8.GetBytes(PatchInfoJson));
-        var local = new Dictionary<string, long> { ["AA/OLD1.chk"] = 200, ["BB/SAME.chk"] = 1000 };
+        GryphlinePatchInfo info = GryphlinePatchPlanner.ParsePatchInfo(Encoding.UTF8.GetBytes(json));
+        // 两种形状都换成游戏目录下的路径再问大小
+        var local = new Dictionary<string, long>
+        {
+            ["Endfield_Data/StreamingAssets/VFS/AA/OLD1.chk"] = 200,
+            ["Endfield_Data/StreamingAssets/VFS/BB/SAME.chk"] = 1000,
+        };
 
-        Assert.Equal(1.0, GryphlinePatchPlanner.ScoreLocalMatch(info, x => local.TryGetValue(x, out long v) ? v : null));
+        Assert.Equal(1.0, GryphlinePatchPlanner.ScoreLocalMatch(info, x => local.TryGetValue(x, out long v) ? v : null, out string? mismatch));
+        Assert.Null(mismatch);
 
-        // 旧文件大小不对：一半对上
-        local["AA/OLD1.chk"] = 201;
-        Assert.Equal(0.5, GryphlinePatchPlanner.ScoreLocalMatch(info, x => local.TryGetValue(x, out long v) ? v : null));
+        // 旧文件大小不对：一半对上，并指出是哪个
+        local["Endfield_Data/StreamingAssets/VFS/AA/OLD1.chk"] = 201;
+        Assert.Equal(0.5, GryphlinePatchPlanner.ScoreLocalMatch(info, x => local.TryGetValue(x, out long v) ? v : null, out mismatch));
+        Assert.Equal("Endfield_Data/StreamingAssets/VFS/AA/OLD1.chk", mismatch);
 
         // 新文件（local_path）不算：本机本来就没有
-        Assert.Equal(0, GryphlinePatchPlanner.ScoreLocalMatch(info, _ => null));
+        Assert.Equal(0, GryphlinePatchPlanner.ScoreLocalMatch(info, _ => null, out _));
+    }
+
+
+    [Fact]
+    public void ToGamePath_TakesAnEmptyBaseAsTheGameDirectory()
+    {
+        GryphlinePatchInfo info = GryphlinePatchPlanner.ParsePatchInfo(Encoding.UTF8.GetBytes(PatchInfoJsonV1));
+
+        Assert.Equal("Endfield_Data/StreamingAssets/VFS/AA/NEW1.chk", GryphlinePatchPlanner.ToGamePath(info, info.Files![0].Name));
+        Assert.Equal("Endfield_Data/StreamingAssets/VFS/AA/OLD1.chk", GryphlinePatchPlanner.ToGamePath(info, info.Files[0].Patch![0].BaseFile));
     }
 
 
@@ -97,17 +128,36 @@ public class GryphlinePatchPlannerTests
 
 
     [Fact]
-    public void GetZipPath_MapsGamePathsToZipEntries()
+    public void GetMoveFiles_MapsZipEntriesToGamePathsAndSkipsPatchMetadata()
     {
-        var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-        {
+        // 与 1.7.2 补丁的根目录相同：没有 verify_files.json，有加密的 verify_files 与增量的 package_files
+        string[] names =
+        [
             "Endfield.exe",
+            "Endfield_Data/Plugins/x86_64/a.dll",
             "vfs_files/files/Endfield_Data/StreamingAssets/VFS/AA/AA.blc",
-        };
+            "vfs_files/vfs_patch/diff_1.7.2_1.6.4/AA_NEW1.chk_patch",
+            "game_files",
+            "config.ini",
+            "verify_files",
+            "package_files",
+            "patch.json",
+            "delete_files.txt",
+            "verify_files.json",
+            "AntiCheatExpert/",
+        ];
 
-        Assert.Equal("Endfield.exe", GryphlinePatchPlanner.GetZipPath("Endfield.exe", names));
-        Assert.Equal("vfs_files/files/Endfield_Data/StreamingAssets/VFS/AA/AA.blc", GryphlinePatchPlanner.GetZipPath("Endfield_Data/StreamingAssets/VFS/AA/AA.blc", names));
-        Assert.Null(GryphlinePatchPlanner.GetZipPath("missing.dll", names));
+        var moves = GryphlinePatchPlanner.GetMoveFiles(names);
+
+        Assert.Equal(
+        [
+            ("Endfield.exe", "Endfield.exe"),
+            ("Endfield_Data/Plugins/x86_64/a.dll", "Endfield_Data/Plugins/x86_64/a.dll"),
+            ("vfs_files/files/Endfield_Data/StreamingAssets/VFS/AA/AA.blc", "Endfield_Data/StreamingAssets/VFS/AA/AA.blc"),
+            ("game_files", "game_files"),
+            ("config.ini", "config.ini"),
+            ("verify_files", "verify_files"),
+        ], moves);
     }
 
 
