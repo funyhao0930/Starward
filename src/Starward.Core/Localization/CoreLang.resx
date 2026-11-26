@@ -391,4 +391,7 @@
   <data name="GryphlineInstall_PredownloadNotApplicable" xml:space="preserve">
     <value>The predownloaded patch ({0} → {1}) cannot be applied right now. The update was stopped so the predownload is kept. Try again later; if it keeps failing, use Repair Game to update file by file (this downloads the full game files again).</value>
   </data>
+  <data name="Game_AzurPromilia" xml:space="preserve">
+    <value>Azur Promilia</value>
+  </data>
 </root>

@@ -1,36 +1,38 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Win32;
 using Starward.Core.Games;
-using Starward.Core.Games.Gryphline;
 using Starward.Features.GameSetting;
 using System;
 using System.Linq;
 
-namespace Starward.Providers.Gryphline;
+namespace Starward.Providers;
 
 /// <summary>
-/// 终末地的画面设置。它是 Unity 游戏，分辨率与窗口模式存在引擎自己的
-/// 注册表键里（<see cref="UnityScreenSettingKeys"/>），与厂商无关。
+/// Unity 游戏的画面设置。分辨率与窗口模式存在引擎自己的
+/// 注册表键里（<see cref="UnityScreenSettingKeys"/>），与厂商无关，
+/// 各游戏只差在公司那一层的键名，因此由构造时传入（终末地是 Hypergryph，蓝色星原是 manjuu）。
 /// </summary>
-internal class GryphlineGameSettingProvider : IGameSettingProvider
+internal class UnityGameSettingProvider : IGameSettingProvider
 {
 
     /// <summary>
-    /// Unity 的存放位置是 HKCU\Software\&lt;公司&gt;\&lt;产品&gt;
+    /// Unity 的存放位置是 HKCU\Software\&lt;公司&gt;\&lt;产品&gt;，这里是公司那一层
     /// </summary>
-    private const string CompanyKeyPath = @"Software\Hypergryph";
+    private readonly string _companyKeyPath;
 
 
-    private readonly ILogger<GryphlineGameSettingProvider> _logger;
+    private readonly ILogger<UnityGameSettingProvider> _logger;
 
 
-    public GryphlineGameSettingProvider(ILogger<GryphlineGameSettingProvider> logger)
+    public UnityGameSettingProvider(string providerId, string companyKeyPath, ILogger<UnityGameSettingProvider> logger)
     {
+        ProviderId = providerId;
+        _companyKeyPath = companyKeyPath;
         _logger = logger;
     }
 
 
-    public string ProviderId => GryphlineGameMapping.ProviderId;
+    public string ProviderId { get; }
 
 
     public GameResolutionSetting? GetResolution(GameKey key)
@@ -94,12 +96,12 @@ internal class GryphlineGameSettingProvider : IGameSettingProvider
 
 
     /// <summary>
-    /// 产品子键名带着版本代号（如 EndfieldTBeta2），正式版会变，
+    /// 产品子键名可能带着版本代号（如终末地的 EndfieldTBeta2），正式版会变，
     /// 因此按「含有 Unity 屏幕设置键」来认，而不是写死名字。
     /// </summary>
-    private static RegistryKey? OpenProductKey(bool writable)
+    private RegistryKey? OpenProductKey(bool writable)
     {
-        using RegistryKey? company = Registry.CurrentUser.OpenSubKey(CompanyKeyPath, false);
+        using RegistryKey? company = Registry.CurrentUser.OpenSubKey(_companyKeyPath, false);
         if (company is null)
         {
             return null;

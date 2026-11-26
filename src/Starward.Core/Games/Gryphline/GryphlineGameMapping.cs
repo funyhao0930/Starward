@@ -35,6 +35,12 @@ public static class GryphlineGameMapping
     public const string GameFolderName = @"games\EndField Game";
 
 
+    /// <summary>
+    /// Unity 存画面设置的位置 HKCU\Software\&lt;公司&gt;\&lt;产品&gt;，这里是公司那一层
+    /// </summary>
+    public const string UnityCompanyKeyPath = @"Software\Hypergryph";
+
+
     public static IReadOnlyList<GameKey> SupportedGameKeys { get; } = new[] { EndfieldDefault }.AsReadOnly();
 
 

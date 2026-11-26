@@ -379,4 +379,7 @@
   <data name="GryphlineInstall_PredownloadNotApplicable" xml:space="preserve">
     <value>已預下載的補丁（{0} → {1}）目前套用不上，為了保留預下載，更新已停止。請稍後再試；若一直失敗，可改用「一鍵修復」按檔案更新（會重新下載完整的遊戲檔案）。</value>
   </data>
+  <data name="Game_AzurPromilia" xml:space="preserve">
+    <value>藍色星原：旅謠</value>
+  </data>
 </root>

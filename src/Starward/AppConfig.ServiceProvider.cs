@@ -16,6 +16,7 @@ using Starward.Core.Games.Gryphline;
 using Starward.Core.Games.HoYo;
 using Starward.Core.Games.Hotta;
 using Starward.Core.Games.Kuro;
+using Starward.Core.Games.Manjuu;
 using Starward.Core.HoYoPlay;
 using Starward.Core.Launcher.Gryphline;
 using Starward.Core.Launcher.Hotta;
@@ -41,6 +42,7 @@ using Starward.Providers.Gryphline;
 using Starward.Providers.HoYo;
 using Starward.Providers.Hotta;
 using Starward.Providers.Kuro;
+using Starward.Providers.Manjuu;
 using Starward.Setup.Core;
 using System;
 using System.Collections.Generic;
@@ -98,6 +100,10 @@ public static partial class AppConfig
             AddSimpleGameProvider(sc, GryphlineGameMapping.ProviderId, GryphlineGameMapping.GetDescriptors, (catalog, settings) => new GryphlineGameLaunchProvider(catalog, settings));
             sc.AddSingleton<IGameDiscoveryProvider, GryphlineDiscoveryProvider>();
 
+            // 蓝色星原：AzurPromilia.exe 会以系统管理员身份重新拉起自己，启动 Provider 改按进程名追踪
+            AddSimpleGameProvider(sc, ManjuuGameMapping.ProviderId, ManjuuGameMapping.GetDescriptors, (catalog, settings) => new ManjuuGameLaunchProvider(catalog, settings));
+            sc.AddSingleton<IGameDiscoveryProvider, ManjuuDiscoveryProvider>();
+
             // 在线背景图。各家官方启动器的接口形状差别很大，
             // 由各自的 Provider 换成统一的 GameBackground。
             sc.AddSingleton<BackgroundProviderRegistry>();
@@ -108,6 +114,7 @@ public static partial class AppConfig
             sc.AddSingleton<IGameBackgroundProvider, GryphlineBackgroundProvider>();
             sc.AddSingleton<HottaLauncherClient>();
             sc.AddSingleton<IGameBackgroundProvider, HottaBackgroundProvider>();
+            sc.AddSingleton<IGameBackgroundProvider, ManjuuBackgroundProvider>();
 
             // 启动页的横幅与资讯。各家接口的形状同样差别很大，
             // 由各自的 Provider 换成统一的 GameContent。
@@ -173,7 +180,14 @@ public static partial class AppConfig
                 HottaGameMapping.ProviderId,
                 HottaGameMapping.GetGameUserSettingsPath,
                 sp.GetRequiredService<ILogger<UnrealGameSettingProvider>>()));
-            sc.AddSingleton<IGameSettingProvider, GryphlineGameSettingProvider>();
+            sc.AddSingleton<IGameSettingProvider>(sp => new UnityGameSettingProvider(
+                GryphlineGameMapping.ProviderId,
+                GryphlineGameMapping.UnityCompanyKeyPath,
+                sp.GetRequiredService<ILogger<UnityGameSettingProvider>>()));
+            sc.AddSingleton<IGameSettingProvider>(sp => new UnityGameSettingProvider(
+                ManjuuGameMapping.ProviderId,
+                ManjuuGameMapping.UnityCompanyKeyPath,
+                sp.GetRequiredService<ILogger<UnityGameSettingProvider>>()));
 
             sc.AddSingleton<HoyolabClient>();
             sc.AddSingleton<HyperionClient>();

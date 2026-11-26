@@ -673,6 +673,15 @@ namespace Starward.Core.Localization {
         }
         
         /// <summary>
+        ///   查找类似 Azur Promilia 的本地化字符串。
+        /// </summary>
+        public static string Game_AzurPromilia {
+            get {
+                return ResourceManager.GetString("Game_AzurPromilia", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Arknights: Endfield 的本地化字符串。
         /// </summary>
         public static string Game_Endfield {

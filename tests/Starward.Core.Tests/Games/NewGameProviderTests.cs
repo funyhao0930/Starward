@@ -3,6 +3,7 @@ using Starward.Core.Games.Gryphline;
 using Starward.Core.Games.HoYo;
 using Starward.Core.Games.Hotta;
 using Starward.Core.Games.Kuro;
+using Starward.Core.Games.Manjuu;
 using Starward.Core.Tests.Games.Fakes;
 using Xunit;
 
@@ -35,6 +36,12 @@ public class NewGameProviderTests
             "Endfield",
             GryphlineGameMapping.Capabilities
         },
+        {
+            ManjuuGameMapping.AzurPromiliaTC,
+            @"AzurPromilia_TC_game\AzurPromilia.exe",
+            "AzurPromilia",
+            ManjuuGameMapping.Capabilities
+        },
     };
 
 
@@ -43,6 +50,7 @@ public class NewGameProviderTests
         .. KuroGameMapping.GetDescriptors(),
         .. HottaGameMapping.GetDescriptors(),
         .. GryphlineGameMapping.GetDescriptors(),
+        .. ManjuuGameMapping.GetDescriptors(),
     ];
 
 
@@ -98,6 +106,9 @@ public class NewGameProviderTests
     /// 能力说的是「这款游戏有抽卡」，不是「Starward 已经抓得到」：
     /// 异环没有抽卡记录接口，只能导入第三方抓包工具的导出文件。
     /// 有没有实现由应用层的抽卡供应商注册表决定，本项目看不到。
+    /// <para/>
+    /// 蓝色星原例外：它也有抽卡，但还没找到能用的记录来源，
+    /// 声明了只会在导航里多一个「尚未支持」的占位页，因此暂不声明。
     /// </summary>
     [Theory]
     [MemberData(nameof(Games))]
@@ -106,7 +117,8 @@ public class NewGameProviderTests
         _ = exe;
         _ = processName;
         _ = capabilities;
-        Assert.True(AllDescriptors().First(x => x.Key == key).HasCapability(GameCapability.Gacha));
+        bool expected = key.ProviderId != ManjuuGameMapping.ProviderId;
+        Assert.Equal(expected, AllDescriptors().First(x => x.Key == key).HasCapability(GameCapability.Gacha));
     }
 
 

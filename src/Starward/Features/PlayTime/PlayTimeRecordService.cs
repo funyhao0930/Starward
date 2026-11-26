@@ -10,6 +10,7 @@ using Starward.Features.GameLauncher;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Starward.Features.PlayTime;
@@ -176,13 +177,23 @@ internal class PlayTimeRecordService
     #region Start process to log playtime
 
 
+    /// <summary>
+    /// 刚启动的进程与游戏同名时，等它多久没退出才当它就是游戏本体
+    /// </summary>
+    private static readonly TimeSpan LaunchedProcessGracePeriod = TimeSpan.FromSeconds(10);
+
+
 
     /// <summary>
     /// 启动进程记录游戏时间，返回游戏进程
     /// </summary>
     /// <param name="gameId"></param>
+    /// <param name="launched">Starward 刚刚启动的进程。
+    /// 有的游戏（蓝色星原）启动的文件一开就退出，再以系统管理员身份拉起同名的进程，
+    /// 按名称找会先找到这个马上就退出的进程，游玩时间只记到几秒。
+    /// 因此优先找别的同名进程；它等了一阵子还在、又没有别的同名进程，才当它就是游戏本体。</param>
     /// <returns></returns>
-    public async Task<Process?> StartProcessToLogAsync(GameKey key)
+    public async Task<Process?> StartProcessToLogAsync(GameKey key, Process? launched = null)
     {
         try
         {
@@ -198,6 +209,18 @@ internal class PlayTimeRecordService
                 if (processes.Length == 0)
                 {
                     continue;
+                }
+                if (launched is not null && processes.Any(x => x.Id == launched.Id))
+                {
+                    if (processes.Length == 1 && waiting.Elapsed < LaunchedProcessGracePeriod)
+                    {
+                        // 只有刚启动的那个，可能是正要退出的中转进程，再等一下
+                        continue;
+                    }
+                    if (processes.Length > 1)
+                    {
+                        processes = processes.Where(x => x.Id != launched.Id).ToArray();
+                    }
                 }
                 foreach (var process in processes)
                 {

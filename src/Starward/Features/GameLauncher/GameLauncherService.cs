@@ -369,8 +369,9 @@ internal partial class GameLauncherService
             {
                 if (command.TrackByProcessName)
                 {
-                    // 创建出来的进程是第三方工具或 cmd.exe，需要按进程名查找真正的游戏进程
-                    return await _playTimeRecorderService.StartProcessToLogAsync(key);
+                    // 创建出来的进程是第三方工具、cmd.exe、官方外壳，或会重新拉起自己的中转进程，
+                    // 需要按进程名查找真正的游戏进程
+                    return await _playTimeRecorderService.StartProcessToLogAsync(key, process);
                 }
                 else
                 {
